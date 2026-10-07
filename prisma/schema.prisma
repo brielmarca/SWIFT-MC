@@ -1,0 +1,141 @@
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  FULFILLED
+  PAYMENT_FAILED
+  EXPIRED
+  REFUNDED
+  REVIEW_REQUIRED
+}
+
+enum PaymentProvider {
+  MERCADO_PAGO
+}
+
+enum PaymentStatus {
+  CREATED
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+  REFUNDED
+  CHARGED_BACK
+  REVIEW_REQUIRED
+}
+
+enum PaymentEventStatus {
+  RECEIVED
+  PROCESSING
+  PROCESSED
+  RETRY_PENDING
+  DEAD_LETTER
+  IGNORED
+}
+
+enum FulfillmentStatus {
+  PENDING
+  PROCESSING
+  SUCCEEDED
+  RETRY_PENDING
+  FAILED
+}
+
+model Order {
+  id                     String       @id @default(cuid())
+  publicToken            String       @unique
+  orderNumber            String       @unique
+  status                 OrderStatus  @default(PENDING_PAYMENT)
+  rankSlug               String
+  rankName               String
+  rankDuration           String
+  minecraftUsername      String
+  email                  String
+  currency               String       @default("BRL")
+  subtotalCents          Int
+  discountCents          Int          @default(0)
+  totalCents             Int
+  checkoutIdempotencyKey String       @unique
+  expiresAt              DateTime     @db.Timestamptz(3)
+  paidAt                 DateTime?    @db.Timestamptz(3)
+  createdAt              DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt              DateTime     @updatedAt @db.Timestamptz(3)
+  payments               Payment[]
+  fulfillment            Fulfillment?
+
+  @@index([status, createdAt])
+  @@index([minecraftUsername])
+}
+
+model Payment {
+  id                   String          @id @default(cuid())
+  orderId              String
+  provider             PaymentProvider @default(MERCADO_PAGO)
+  status               PaymentStatus   @default(CREATED)
+  providerOrderId      String?         @unique
+  providerIdempotencyKey String?       @unique
+  checkoutUrl          String?
+  preferenceId         String?         @unique
+  providerPaymentId    String?         @unique
+  providerStatus       String?
+  providerStatusDetail String?
+  paymentMethod        String?
+  amountCents          Int?
+  currency             String?
+  approvedAt           DateTime?       @db.Timestamptz(3)
+  lastSyncedAt         DateTime?       @db.Timestamptz(3)
+  createdAt            DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt            DateTime        @updatedAt @db.Timestamptz(3)
+  order                Order           @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@index([orderId, createdAt])
+}
+
+model PaymentEvent {
+  id                 String             @id @default(cuid())
+  provider           PaymentProvider    @default(MERCADO_PAGO)
+  deduplicationKey   String             @unique
+  providerEventId    String?
+  providerResourceId String
+  eventType          String
+  signatureValid     Boolean
+  payload            Json
+  status             PaymentEventStatus @default(RECEIVED)
+  attemptCount       Int                @default(0)
+  nextAttemptAt      DateTime?          @db.Timestamptz(3)
+  processedAt        DateTime?          @db.Timestamptz(3)
+  lastErrorCode      String?
+  createdAt          DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime           @updatedAt @db.Timestamptz(3)
+
+  @@index([status, nextAttemptAt])
+  @@index([providerResourceId])
+}
+
+model Fulfillment {
+  id                String            @id @default(cuid())
+  orderId           String            @unique
+  status            FulfillmentStatus @default(PENDING)
+  rankSlug          String
+  minecraftUsername String
+  attemptCount      Int               @default(0)
+  nextAttemptAt     DateTime?         @db.Timestamptz(3)
+  lockedAt          DateTime?         @db.Timestamptz(3)
+  lastErrorCode     String?
+  providerReference String?
+  fulfilledAt       DateTime?         @db.Timestamptz(3)
+  createdAt         DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime          @updatedAt @db.Timestamptz(3)
+  order             Order             @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@index([status, nextAttemptAt])
+}

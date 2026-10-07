@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-swiftmc}
+      POSTGRES_USER: ${POSTGRES_USER:-swiftmc}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-swiftmc_dev}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - swiftmc_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  swiftmc_postgres_data:
