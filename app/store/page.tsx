@@ -6,7 +6,7 @@ import { StoreCatalog } from "@/components/store-catalog";
 
 export const metadata: Metadata = {
   title: "Loja de Ranks | SWIFT MC",
-  description: "Compare os ranks VIP, VIP+ e MVP da rede SWIFT MC.",
+  description: "Compare os ranks Swift, Eclipse, Cosmic e Overdrive da rede SWIFT MC.",
 };
 
 const assurances = [

@@ -9,8 +9,15 @@ type RankCardProps = {
   detailed?: boolean;
 };
 
+function getRankIcon(rank: Rank) {
+  if (rank.featured) return <Sparkles className="text-ultraviolet" aria-hidden="true" />;
+  if (rank.slug === "overdrive") return <Crown className="text-ultraviolet" aria-hidden="true" />;
+  return <ShieldCheck className="text-muted" aria-hidden="true" />;
+}
+
 export function RankCard({ rank, detailed = false }: RankCardProps) {
   const benefits = detailed ? rank.benefits : rank.summaryBenefits;
+  const hasPrice = rank.price !== null;
 
   return (
     <article className={`rank-card ${rank.featured ? "rank-card-featured" : ""}`}>
@@ -22,19 +29,19 @@ export function RankCard({ rank, detailed = false }: RankCardProps) {
       <div>
         <div className="flex items-center justify-between gap-4">
           <span className={`rank-badge ${rank.featured ? "rank-badge-featured" : ""}`}>{rank.badge}</span>
-          {rank.name === "MVP" ? (
-            <Crown className="text-ultraviolet" aria-hidden="true" />
-          ) : rank.featured ? (
-            <Sparkles className="text-ultraviolet" aria-hidden="true" />
-          ) : (
-            <ShieldCheck className="text-muted" aria-hidden="true" />
-          )}
+          {getRankIcon(rank)}
         </div>
         <h3 className="mt-6 text-3xl font-extrabold uppercase text-ink">{rank.name}</h3>
         <p className="mt-2 min-h-14 text-sm leading-6 text-muted">{rank.description}</p>
         <div className="mt-6 flex flex-wrap items-end gap-2">
-          <span className="text-3xl font-extrabold tabular-nums text-ink">{rank.price}</span>
-          <span className="micro-label pb-1">/ {rank.duration}</span>
+          {hasPrice ? (
+            <>
+              <span className="text-3xl font-extrabold tabular-nums text-ink">{rank.price}</span>
+              <span className="micro-label pb-1">/ {rank.duration}</span>
+            </>
+          ) : (
+            <span className="text-3xl font-extrabold tabular-nums text-muted">TBD</span>
+          )}
         </div>
         <div className="my-6 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
         <p className={`micro-label mb-4 ${rank.featured ? "!text-ultraviolet" : ""}`}>Vantagens inclusas</p>
@@ -48,10 +55,10 @@ export function RankCard({ rank, detailed = false }: RankCardProps) {
         </ul>
       </div>
       <div className="mt-8 grid gap-2">
-        <BuyNowButton slug={rank.slug} />
-        <AddToCartButton slug={rank.slug} className="button-secondary" />
+        <BuyNowButton slug={rank.slug} disabled={!hasPrice} />
+        <AddToCartButton slug={rank.slug} className="button-secondary" disabled={!hasPrice} />
         <Link href={`/ranks/${rank.slug}`} className="inline-flex min-h-11 items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider text-muted hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet">
-          <Diamond size={17} className="text-ultraviolet" aria-hidden="true" /> Ver detalhes
+          <Diamond size={17} className="text-ultraviolet" aria-hidden="true" /> Ver benefícios
         </Link>
       </div>
     </article>

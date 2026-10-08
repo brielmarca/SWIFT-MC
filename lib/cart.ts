@@ -28,5 +28,5 @@ export function getCartRanks(slugs: readonly RankSlug[]): Rank[] {
 }
 
 export function getCartSubtotal(items: readonly Pick<Rank, "priceCents">[]): number {
-  return items.reduce((subtotal, rank) => subtotal + rank.priceCents, 0);
+  return items.reduce((subtotal, rank) => subtotal + (rank.priceCents ?? 0), 0);
 }

@@ -35,8 +35,8 @@ async function createPersistedOrder(overrides: Partial<{
       publicToken: crypto.randomUUID().replaceAll("-", "") + crypto.randomUUID().replaceAll("-", ""),
       orderNumber: `SWIFT-20261003-${crypto.randomUUID().replaceAll("-", "").slice(0, 10).toUpperCase()}`,
       status: overrides.status ?? OrderStatus.PENDING_PAYMENT,
-      rankSlug: "vip-plus",
-      rankName: "VIP+",
+      rankSlug: "eclipse",
+      rankName: "Eclipse",
       rankDuration: "Vitalício",
       minecraftUsername: "Payment Player",
       email: "authoritative@example.com",
@@ -87,7 +87,7 @@ test("creates one Mercado Pago order from persisted authoritative values", datab
   assert.equal(calls[0].request.total_amount, "39.90");
   assert.equal(calls[0].request.external_reference, order.orderNumber);
   assert.deepEqual(calls[0].request.payer, { email: "authoritative@example.com" });
-  assert.deepEqual(calls[0].request.items, [{ title: "Rank VIP+", quantity: 1, unit_price: "39.90", unit_measure: "unit", total_amount: "39.90", external_code: "vip-plus" }]);
+  assert.deepEqual(calls[0].request.items, [{ title: "Rank Eclipse", quantity: 1, unit_price: "39.90", unit_measure: "unit", total_amount: "39.90", external_code: "eclipse" }]);
   assert.deepEqual(calls[0].request.config.online, {
     success_url: "https://swift.example/checkout/return/success",
     pending_url: "https://swift.example/checkout/return/pending",

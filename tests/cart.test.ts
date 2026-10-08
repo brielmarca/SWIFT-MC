@@ -3,14 +3,14 @@ import test from "node:test";
 import { getCartRanks, getCartSubtotal, parseCart } from "@/lib/cart";
 
 test("parses only unique rank slugs from persisted cart data", () => {
-  assert.deepEqual(parseCart('["vip","vip","invalid","mvp"]'), ["vip", "mvp"]);
+  assert.deepEqual(parseCart('["swift","swift","invalid","eclipse"]'), ["swift", "eclipse"]);
   assert.deepEqual(parseCart("not-json"), []);
-  assert.deepEqual(parseCart('{"vip":true}'), []);
+  assert.deepEqual(parseCart('{"swift":true}'), []);
 });
 
 test("derives cart products and subtotal from the rank catalog", () => {
-  const items = getCartRanks(["vip", "vip-plus"]);
+  const items = getCartRanks(["swift", "eclipse"]);
 
-  assert.deepEqual(items.map((rank) => rank.name), ["VIP", "VIP+"]);
-  assert.equal(getCartSubtotal(items), 5980);
+  assert.deepEqual(items.map((rank) => rank.name), ["Swift", "Eclipse"]);
+  assert.equal(getCartSubtotal(items), 0);
 });

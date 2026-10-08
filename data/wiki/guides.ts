@@ -238,19 +238,32 @@ export const wikiGuides: readonly WikiGuide[] = [
     slug: "como-funcionam-os-ranks",
     title: "Como funcionam os ranks",
     category: "Ranks e VIPs",
-    description: "O que os ranks oferecem, como funciona a seleção na loja e o que esperar da ativação — sem promessas e sem letras miúdas.",
-    tags: ["vip", "loja", "ranks"],
+    description: "O que os ranks Swift, Eclipse, Cosmic e Overdrive oferecem, como funciona a seleção na loja e o que esperar da ativação — sem promessas e sem letras miúdas.",
+    tags: ["vip", "loja", "ranks", "swift", "eclipse", "cosmic", "overdrive"],
     related: ["como-funciona-a-economia", "como-entrar-no-servidor"],
     sections: [
       {
         id: "o-que-sao-ranks",
         title: "O que são os ranks",
         blocks: [
-          { type: "paragraph", text: "Os ranks VIP são opções voluntárias de apoio ao servidor: quem compra recebe benefícios de conveniência e cosméticos, e o valor ajuda a manter a estrutura online. Jogar sem rank é totalmente equivalente em termos de progressão — nada no Survival exige VIP." },
+          { type: "paragraph", text: "Os ranks VIP (Swift, Eclipse, Cosmic, Overdrive) são opções voluntárias de apoio ao servidor: quem compra recebe benefícios de conveniência e cosméticos, e o valor ajuda a manter a estrutura online. Jogar sem rank é totalmente equivalente em termos de progressão — nada no Survival exige VIP." },
           { type: "bullets", items: [
             "Benefícios valem para a conta vinculada ao usuário comprado.",
-            "Ranks superiores incluem tudo dos inferiores.",
+            "Ranks superiores incluem tudo dos inferiores (Overdrive inclui Cosmic, Cosmic inclui Eclipse, Eclipse inclui Swift).",
             "Nenhum rank vende vantagem em combate: o jogo justo vale para todos.",
+          ] },
+        ],
+      },
+      {
+        id: "niveis-disponiveis",
+        title: "Níveis disponíveis",
+        blocks: [
+          { type: "paragraph", text: "A loja oferece quatro níveis progressivos, cada um adicionando mais vantagens e kits mais poderosos:" },
+          { type: "table", caption: "Resumo dos ranks VIP", headers: ["Rank", "Homes", "XP mcMMO", "Destaque principal"], rows: [
+            ["Swift", "3", "+10%", "Mesa de trabalho portátil, tag [SWIFT]"],
+            ["Eclipse", "5", "+25%", "Baú do fim e bigorna portáteis, /hat, tag [ECLIPSE]"],
+            ["Cosmic", "8", "+50%", "Todas as bancadas, /nick, teleporte sem espera, tag [COSMIC]"],
+            ["Overdrive", "12", "2x", "/heal, teleporte sem cooldown, kits netherite/elytra/beacon, tag [OVERDRIVE]"],
           ] },
         ],
       },
@@ -268,8 +281,21 @@ export const wikiGuides: readonly WikiGuide[] = [
           { type: "table", caption: "Perguntas rápidas", headers: ["Pergunta", "Resposta"], rows: [
             ["O carrinho ativa o rank?", "Não. Ele guarda a seleção neste navegador apenas."],
             ["Preciso de conta no site?", "Não para consultar a loja ou usar o carrinho."],
-            ["O rank expira?", "Cada nível tem uma duração informada na página do rank."],
+            ["O rank expira?", "Todos os ranks atuais são vitalícios."],
             ["Vantagem em PvP?", "Não. Ranks oferecem conveniência e cosméticos."],
+          ] },
+        ],
+      },
+      {
+        id: "kits-e-resgate",
+        title: "Kits e resgate",
+        blocks: [
+          { type: "paragraph", text: "Cada rank inclui quatro kits com cooldowns próprios: Diário (24h), Semanal (7 dias), Mensal (30 dias) e Boas-vindas (resgate único). Os kits superiores substituem os inferiores com itens melhores." },
+          { type: "bullets", items: [
+            "Digite /vip ou use o item MENU VIP para abrir o menu de kits.",
+            "Clique no kit para resgatar. Cada kit tem seu próprio tempo de espera.",
+            "Kits e vantagens ativam automaticamente após a compra.",
+            "Itens encantados vêm com os encantamentos listados na página do rank.",
           ] },
         ],
       },
@@ -280,6 +306,10 @@ export const wikiGuides: readonly WikiGuide[] = [
           { type: "paragraph", text: "Com a compra concluída (quando reativada), o benefício é aplicado na conta indicada na finalização. Prazos e confirmações são comunicados nos canais oficiais — desconfie de quem ofereça ativação por fora." },
           { type: "links", items: [
             { href: "/store", label: "Loja de ranks", description: "Compare níveis, benefícios e preços atuais" },
+            { href: "/ranks/swift", label: "Rank Swift", description: "Detalhes completos, kits e comparação" },
+            { href: "/ranks/eclipse", label: "Rank Eclipse", description: "Detalhes completos, kits e comparação" },
+            { href: "/ranks/cosmic", label: "Rank Cosmic", description: "Detalhes completos, kits e comparação" },
+            { href: "/ranks/overdrive", label: "Rank Overdrive", description: "Detalhes completos, kits e comparação" },
             { href: "/faq#beneficios-vip", label: "FAQ: benefícios dos VIPs", description: "Resposta rápida sobre o que cada rank oferece" },
             { href: "/faq#carrinho-vip", label: "FAQ: carrinho ativa o rank?", description: "Por que a seleção no carrinho não muda nada no servidor" },
           ] },

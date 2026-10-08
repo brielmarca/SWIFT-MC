@@ -51,6 +51,10 @@ export async function POST(request: Request) {
     return errorResponse("Rank not found.", 404, requestId);
   }
 
+  if (!validated.data && validated.error === "UNPRICED_RANK") {
+    return errorResponse("Rank not available for purchase.", 400, requestId);
+  }
+
   if (!validated.data) {
     return errorResponse("Invalid order details.", 400, requestId);
   }

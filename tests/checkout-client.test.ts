@@ -18,7 +18,7 @@ test("checkout request sends only rank, username, and email", async () => {
   let requestHeaders: Headers | undefined;
 
   const order = await submitOrder(
-    "vip",
+    "eclipse",
     { minecraftUsername: "Player Name", email: "player@example.com" },
     "12345678-1234-1234-1234-123456789abc",
     async (_input, init) => {
@@ -28,8 +28,8 @@ test("checkout request sends only rank, username, and email", async () => {
         orderNumber: "SWIFT-20261003-ABC123",
         paymentToken: "a".repeat(43),
         status: "PENDING_PAYMENT",
-        rank: { slug: "vip", name: "VIP", duration: "Vitalício" },
-        totalCents: 1990,
+        rank: { slug: "eclipse", name: "Eclipse", duration: "Vitalício" },
+        totalCents: 3990,
         currency: "BRL",
         expiresAt: "2026-10-03T13:04:56.789Z",
       });
@@ -37,7 +37,7 @@ test("checkout request sends only rank, username, and email", async () => {
   );
 
   assert.deepEqual(requestBody, {
-    rankSlug: "vip",
+    rankSlug: "eclipse",
     minecraftUsername: "Player Name",
     email: "player@example.com",
   });
@@ -70,7 +70,7 @@ test("server failure does not mutate entered checkout values", async () => {
   const originalFields = { ...fields };
 
   await assert.rejects(
-    submitOrder("mvp", fields, "12345678-1234-1234-1234-123456789abc", async () =>
+    submitOrder("overdrive", fields, "12345678-1234-1234-1234-123456789abc", async () =>
       Response.json({ error: "Unavailable" }, { status: 503 }),
     ),
     /ORDER_UNAVAILABLE/,

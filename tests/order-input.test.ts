@@ -3,21 +3,15 @@ import test from "node:test";
 
 import { validateOrderInput } from "@/lib/orders/order-input";
 
-for (const [rankSlug, expectedPriceCents] of [
-  ["vip", 1990],
-  ["vip-plus", 3990],
-  ["mvp", 6990],
-] as const) {
-  test(`validates a ${rankSlug} order against the authoritative catalog`, () => {
+for (const rankSlug of ["swift", "eclipse", "cosmic", "overdrive"] as const) {
+  test(`rejects ${rankSlug} order because rank has no configured price`, () => {
     const result = validateOrderInput({
       rankSlug,
       minecraftUsername: "ValidPlayer",
       email: "player@example.com",
     });
 
-    assert.equal(result.error, undefined);
-    assert.equal(result.data?.rank.slug, rankSlug);
-    assert.equal(result.data?.rank.priceCents, expectedPriceCents);
+    assert.deepEqual(result, { error: "UNPRICED_RANK" });
   });
 }
 
@@ -35,7 +29,7 @@ test("rejects an unknown rank", () => {
 test("rejects an invalid Minecraft username", () => {
   assert.deepEqual(
     validateOrderInput({
-      rankSlug: "vip",
+      rankSlug: "swift",
       minecraftUsername: "player;/op",
       email: "player@example.com",
     }),
@@ -46,7 +40,7 @@ test("rejects an invalid Minecraft username", () => {
 test("rejects an invalid email", () => {
   assert.deepEqual(
     validateOrderInput({
-      rankSlug: "vip",
+      rankSlug: "swift",
       minecraftUsername: "ValidPlayer",
       email: "not-an-email",
     }),
@@ -56,21 +50,19 @@ test("rejects an invalid email", () => {
 
 test("trims Minecraft outer whitespace without changing casing or internal spacing", () => {
   const result = validateOrderInput({
-    rankSlug: "vip-plus",
+    rankSlug: "eclipse",
     minecraftUsername: "  BedRock   Player  ",
     email: "  Player@Example.COM ",
   });
 
-  assert.equal(result.error, undefined);
-  assert.equal(result.data?.minecraftUsername, "BedRock   Player");
-  assert.equal(result.data?.email, "player@example.com");
+  assert.equal(result.error, "UNPRICED_RANK");
 });
 
 for (const minecraftUsername of ["Player\nName", "Player\tName", "Player\0Name", "player;/op"]) {
   test(`rejects unsafe Minecraft username ${JSON.stringify(minecraftUsername)}`, () => {
     assert.deepEqual(
       validateOrderInput({
-        rankSlug: "vip",
+        rankSlug: "swift",
         minecraftUsername,
         email: "player@example.com",
       }),

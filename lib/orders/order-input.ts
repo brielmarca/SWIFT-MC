@@ -22,12 +22,12 @@ export type CreateOrderInput = {
 };
 
 export type ValidatedOrderInput = {
-  rank: NonNullable<ReturnType<typeof getRank>>;
+  rank: NonNullable<ReturnType<typeof getRank>> & { priceCents: number };
   minecraftUsername: string;
   email: string;
 };
 
-export type OrderInputError = "INVALID_INPUT" | "UNKNOWN_RANK";
+export type OrderInputError = "INVALID_INPUT" | "UNKNOWN_RANK" | "UNPRICED_RANK";
 
 export function validateOrderInput(
   input: unknown,
@@ -44,9 +44,13 @@ export function validateOrderInput(
     return { error: "UNKNOWN_RANK" };
   }
 
+  if (rank.priceCents === null) {
+    return { error: "UNPRICED_RANK" };
+  }
+
   return {
     data: {
-      rank,
+      rank: { ...rank, priceCents: rank.priceCents },
       minecraftUsername: result.data.minecraftUsername,
       email: result.data.email,
     },
