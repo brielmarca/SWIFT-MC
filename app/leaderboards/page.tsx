@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Leaderboards } from "@/components/leaderboards";
-import { PlayerPage } from "@/components/player-page";
+import { NetworkPage } from "@/components/network-page";
 
 export const metadata: Metadata = {
   title: "Ranking | SWIFT MC",
@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 };
 
 export default function LeaderboardsPage() {
-  return <PlayerPage title="Ranking do servidor" description="Os melhores jogadores por categoria, informados diretamente pela API do servidor SWIFT MC. Quando a integração não está disponível, nada é estimado.">
+  return <NetworkPage active="/leaderboards" title="Ranking do servidor" description="Quem faz história na SwiftMC. Explore os destaques em tempo de jogo, abates e coins.">
     <Leaderboards />
-  </PlayerPage>;
+  </NetworkPage>;
 }

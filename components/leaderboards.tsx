@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { RefreshCw } from "lucide-react";
+import { Crown, Trophy } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   DEFAULT_LEADERBOARD_ENTRIES,
@@ -9,33 +8,19 @@ import {
   leaderboardDataSchema,
   type LeaderboardCategory,
   type LeaderboardData,
-  type LeaderboardEntry,
 } from "@/lib/minecraft-data/types";
 import { formatPlayerNumber, formatPlaytime } from "@/lib/player-format";
-import { PlayerAvatar } from "./player-avatar";
+import { NetworkPlayer } from "./network-player";
+import { NetworkRefresh, NetworkStat, NetworkState } from "./network-ui";
 
 const CATEGORY_LABELS: Record<LeaderboardCategory, string> = {
-  playtime: "Tempo de jogo",
-  kills: "Abates",
+  playtime: "Playtime",
+  kills: "Kills",
   coins: "Coins",
 };
 
 function formatValue(category: LeaderboardCategory, value: number): string {
   return category === "playtime" ? formatPlaytime(value) : formatPlayerNumber(value);
-}
-
-function avatarProfile(entry: LeaderboardEntry) {
-  return { username: entry.username, uuid: entry.uuid, avatarUrl: `/api/minecraft/avatar/${entry.uuid}` };
-}
-
-function EntryIdentity({ entry, compact = false }: { entry: LeaderboardEntry; compact?: boolean }) {
-  return <div className={compact ? "flex min-w-0 items-center gap-3" : "mt-4 flex min-w-0 items-center gap-3"}>
-    <PlayerAvatar profile={avatarProfile(entry)} size={compact ? "sm" : "md"} />
-    <div className="min-w-0">
-      <Link href={`/player/${entry.username}`} className="block break-all font-bold text-ink transition hover:text-ultraviolet focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet">{entry.username}</Link>
-      {entry.rank && <span className="mt-1 inline-block rounded-md border border-violet/40 bg-violet/10 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-ultraviolet">{entry.rank}</span>}
-    </div>
-  </div>;
 }
 
 export function Leaderboards() {
@@ -71,7 +56,10 @@ export function Leaderboards() {
   }, [category, refresh]);
 
   const selectCategory = (next: LeaderboardCategory) => {
-    if (next !== category) setCategory(next);
+    if (next !== category) {
+      setState({ data: null, loading: true });
+      setCategory(next);
+    }
   };
 
   const { data, loading } = state;
@@ -80,8 +68,12 @@ export function Leaderboards() {
   const remaining = entries.slice(3);
 
   return <div>
-    <div className="glass-panel p-5 sm:p-6">
-      <div role="tablist" aria-label="Categorias do ranking" className="flex flex-wrap gap-2">
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-sm font-bold text-ink">Destaques da comunidade</h2>
+        <NetworkRefresh loading={loading} onRefresh={() => void refresh(category)} />
+      </div>
+      <div role="tablist" aria-label="Categorias do ranking" className="grid grid-cols-3 gap-2">
         {LEADERBOARD_CATEGORIES.map((item) => (
           <button
             key={item}
@@ -101,58 +93,52 @@ export function Leaderboards() {
               selectCategory(next);
               document.getElementById(`leaderboard-tab-${next}`)?.focus();
             }}
-            className={`min-h-11 rounded-lg border px-4 py-2 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet ${category === item ? "border-violet bg-violet/15 text-ultraviolet" : "border-white/10 bg-card text-muted hover:text-ink"}`}
+            className={`min-h-12 rounded-lg border px-3 py-2 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet ${category === item ? "border-violet/60 bg-violet/15 text-ultraviolet" : "border-white/10 bg-card/80 text-muted hover:border-violet/30 hover:text-ink"}`}
           >
             {CATEGORY_LABELS[item]}
           </button>
         ))}
       </div>
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-        <p role="status" className="text-sm text-muted">{loading ? "Consultando o ranking do servidor…" : data ? `${entries.length} ${entries.length === 1 ? "jogador no ranking" : "jogadores no ranking"}` : "Ranking indisponível"}</p>
-        <button type="button" disabled={loading} onClick={() => void refresh(category)} className="button-secondary disabled:cursor-wait disabled:opacity-60">
-          <RefreshCw size={17} aria-hidden="true" className={loading ? "animate-spin" : ""} />{loading ? "Consultando…" : "Tentar novamente"}
-        </button>
-      </div>
+      <dl className="grid gap-3 sm:grid-cols-2">
+        <NetworkStat label="Categoria" value={CATEGORY_LABELS[category]} detail={category === "playtime" ? "Tempo total de jogo" : category === "kills" ? "Abates registrados" : "Coins registrados"} />
+        <NetworkStat label="Jogadores no ranking" value={loading ? "…" : data ? entries.length : "—"} detail={`Até ${DEFAULT_LEADERBOARD_ENTRIES} jogadores por categoria`} />
+      </dl>
     </div>
 
-    <div id="leaderboard-panel" role="tabpanel" aria-labelledby={`leaderboard-tab-${category}`} className="mt-6">
-      {loading && <div className="glass-panel flex items-center gap-4 p-8"><RefreshCw size={20} aria-hidden="true" className="animate-spin text-ultraviolet" /><p className="text-sm text-muted">Carregando os melhores jogadores de {CATEGORY_LABELS[category].toLowerCase()}…</p></div>}
+    <div id="leaderboard-panel" role="tabpanel" aria-labelledby={`leaderboard-tab-${category}`} tabIndex={0} className="mt-6 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet">
+      {loading && <NetworkState kind="loading" title="Buscando os destaques" description={`Carregando o ranking de ${CATEGORY_LABELS[category]}.`} />}
 
-      {!loading && !data && <div className="glass-panel p-8 text-center">
-        <h2 className="text-xl font-bold text-ink">Ranking indisponível</h2>
-        <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted">A integração com a API do servidor pode não estar configurada ou o serviço está indisponível agora. Nenhum jogador ou valor é estimado.</p>
-        <button type="button" onClick={() => void refresh(category)} className="button-primary mt-5">Tentar novamente</button>
-      </div>}
+      {!loading && !data && <NetworkState kind="error" title="Ranking indisponível" description="Não foi possível carregar esta categoria. Tente atualizar em instantes ou explore outro ranking.">
+        <button type="button" onClick={() => void refresh(category)} className="network-action">Tentar novamente</button>
+      </NetworkState>}
 
-      {!loading && data && entries.length === 0 && <div className="glass-panel p-8 text-center">
-        <h2 className="text-xl font-bold text-ink">Nenhum jogador no ranking</h2>
-        <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted">A API do servidor ainda não retornou jogadores para esta categoria. O ranking é exibido somente com dados reais do servidor.</p>
-      </div>}
+      {!loading && data && entries.length === 0 && <NetworkState kind="empty" title="Uma história ainda por escrever" description="Nenhum jogador no ranking desta categoria por enquanto. Os destaques aparecem aqui assim que o servidor informar os resultados." />}
 
       {!loading && data && entries.length > 0 && <div>
-        <ol className="grid gap-4 sm:grid-cols-3">
+        <ol aria-label="Top 3" className="grid gap-3 md:grid-cols-3">
           {podium.map((entry, index) => {
             const position = index + 1;
-            return <li key={entry.uuid} className={`glass-panel min-w-0 p-5 ${position === 1 ? "border-violet/50" : ""}`}>
+            return <li key={entry.uuid} className={`network-panel relative min-w-0 overflow-hidden p-5 ${position === 1 ? "border-violet/50 bg-gradient-to-br from-violet/20 via-card to-card" : ""}`}>
               <div className="flex items-center justify-between gap-3">
                 <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg text-sm font-extrabold ${position === 1 ? "bg-violet text-ink" : "bg-white/10 text-ink"}`} aria-label={`${position}º lugar`}>#{position}</span>
-                <span className="text-right text-sm font-extrabold tabular-nums text-ultraviolet">{formatValue(category, entry.value)}</span>
+                {position === 1 ? <Crown size={22} aria-hidden="true" className="text-ultraviolet" /> : <Trophy size={20} aria-hidden="true" className="text-muted" />}
               </div>
-              <EntryIdentity entry={entry} />
+              <div className="mt-5"><NetworkPlayer player={entry} /></div>
+              <div className="mt-5 border-t border-white/10 pt-4"><p className="micro-label">{CATEGORY_LABELS[category]}</p><p className="mt-2 break-words text-2xl font-extrabold tabular-nums text-ultraviolet">{formatValue(category, entry.value)}</p></div>
             </li>;
           })}
         </ol>
-        {remaining.length > 0 && <ol start={4} className="mt-4 grid gap-2">
+        {remaining.length > 0 && <><div aria-hidden="true" className="mt-6 flex justify-between px-4 pb-3 text-[11px] font-bold uppercase tracking-wider text-muted"><span>Posição / Jogador</span><span>{CATEGORY_LABELS[category]}</span></div><ol start={4} className="network-panel divide-y divide-white/10 overflow-hidden">
           {remaining.map((entry, index) => {
             const position = index + 4;
-            return <li key={entry.uuid} className="flex min-w-0 items-center gap-3 rounded-xl border border-white/10 bg-card/80 px-4 py-3">
+            return <li key={entry.uuid} className="grid min-w-0 grid-cols-[2rem_minmax(0,1fr)] items-center gap-3 px-4 py-4 even:bg-white/[0.02] sm:grid-cols-[2rem_minmax(0,1fr)_auto]">
               <span className="w-9 shrink-0 text-sm font-bold tabular-nums text-muted" aria-label={`${position}º lugar`}>#{position}</span>
-              <div className="min-w-0 flex-1"><EntryIdentity entry={entry} compact /></div>
-              <span className="shrink-0 text-sm font-extrabold tabular-nums text-ultraviolet">{formatValue(category, entry.value)}</span>
+              <NetworkPlayer player={entry} compact />
+              <span className="col-start-2 break-words text-sm font-extrabold tabular-nums text-ultraviolet sm:col-start-3 sm:text-right">{formatValue(category, entry.value)}<span className="sr-only"> {CATEGORY_LABELS[category]}</span></span>
             </li>;
           })}
-        </ol>}
-        <p className="mt-6 text-xs leading-5 text-muted">Dados fornecidos pela API do servidor SWIFT MC, com cache de até 15 segundos. Nenhum valor é estimado quando a integração está indisponível.</p>
+        </ol></>}
+        <p className="mt-6 text-xs leading-5 text-muted">Dados do servidor SwiftMC · Cache de até 15s. Classificação por {CATEGORY_LABELS[category].toLowerCase()}.</p>
       </div>}
     </div>
   </div>;

@@ -1,16 +1,13 @@
 "use client";
 
-import Link from "next/link";
-import { RefreshCw, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { onlinePlayersSchema, type OnlinePlayer } from "@/lib/minecraft-data/types";
 import { formatPlaytime } from "@/lib/player-format";
 import { useServerStatus } from "./server-status-provider";
-import { PlayerAvatar } from "./player-avatar";
-
-function avatarProfile(player: OnlinePlayer) {
-  return { username: player.username, uuid: player.uuid, avatarUrl: `/api/minecraft/avatar/${player.uuid}` };
-}
+import { NetworkPlayer } from "./network-player";
+import { NetworkRefresh, NetworkStat, NetworkState } from "./network-ui";
+import { CopyIpButton } from "./copy-ip-button";
 
 export function OnlinePlayers() {
   const [state, setState] = useState<{ data: OnlinePlayer[] | null; loading: boolean }>({ data: null, loading: true });
@@ -53,21 +50,16 @@ export function OnlinePlayers() {
   const maxPlayers = status?.maxPlayers ?? null;
 
   return <div>
-    <div className="glass-panel p-5 sm:p-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0">
-          <p className="micro-label">Jogadores online agora</p>
-          <p className="mt-2 text-4xl font-extrabold tabular-nums text-ink" role="status">
-            {loading ? "…" : count !== null ? count : "—"}
-            <span className="ml-1 text-xl font-bold text-muted">/ {maxPlayers !== null ? maxPlayers : "—"}</span>
-          </p>
-          <p className="mt-2 text-xs leading-5 text-muted">{loading ? "Consultando a lista de jogadores online…" : count !== null ? "Lista informada pela API do servidor; capacidade informada pelo status do servidor." : "A lista de jogadores está indisponível agora. Nenhum jogador é estimado."}</p>
-        </div>
-        <button type="button" disabled={loading} onClick={() => void refresh()} className="button-secondary disabled:cursor-wait disabled:opacity-60">
-          <RefreshCw size={17} aria-hidden="true" className={loading ? "animate-spin" : ""} />{loading ? "Consultando…" : "Tentar novamente"}
-        </button>
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-sm font-bold text-ink">Na rede agora</h2>
+        <NetworkRefresh loading={loading} onRefresh={() => void refresh()} />
       </div>
-      {data && data.length > 0 && <div className="mt-5">
+      <dl className="grid gap-3 sm:grid-cols-2">
+        <NetworkStat label="Jogadores online" value={loading ? "…" : count ?? "—"} detail="Lista informada pelo servidor" />
+        <NetworkStat label="Capacidade" value={maxPlayers ?? "—"} detail="Máximo informado pelo status da rede" />
+      </dl>
+      {data && data.length > 0 && <div className="network-panel p-5">
         <label htmlFor={searchId} className="micro-label">Buscar jogador online</label>
         <div className="relative mt-2">
           <Search size={19} aria-hidden="true" className="pointer-events-none absolute left-4 top-4 text-muted" />
@@ -78,39 +70,26 @@ export function OnlinePlayers() {
     </div>
 
     <div className="mt-6">
-      {loading && <div className="glass-panel flex items-center gap-4 p-8"><RefreshCw size={20} aria-hidden="true" className="animate-spin text-ultraviolet" /><p className="text-sm text-muted">Carregando jogadores online…</p></div>}
+      {loading && <NetworkState kind="loading" title="Buscando jogadores" description="Consultando quem está conectado à SwiftMC agora." />}
 
-      {!loading && !data && <div className="glass-panel p-8 text-center">
-        <h2 className="text-xl font-bold text-ink">Lista de jogadores indisponível</h2>
-        <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted">A integração com a API do servidor pode não estar configurada ou o serviço está indisponível agora. Nenhum jogador é exibido sem dados reais.</p>
-        <button type="button" onClick={() => void refresh()} className="button-primary mt-5">Tentar novamente</button>
-      </div>}
+      {!loading && !data && <NetworkState kind="error" title="Lista de jogadores indisponível" description="Não foi possível carregar os jogadores da rede. Tente atualizar em instantes.">
+        <button type="button" onClick={() => void refresh()} className="network-action">Tentar novamente</button>
+      </NetworkState>}
 
-      {!loading && data && data.length === 0 && <div className="glass-panel p-8 text-center">
-        <h2 className="text-xl font-bold text-ink">Nenhum jogador online</h2>
-        <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted">O servidor informou 0 jogadores no momento. Confira novamente mais tarde ou entre no servidor para ser o primeiro.</p>
-      </div>}
+      {!loading && data && data.length === 0 && <NetworkState kind="empty" title="A próxima aventura pode ser sua" description="Nenhum jogador online no momento. Copie o IP e confira o status da rede para entrar na SwiftMC."><CopyIpButton /></NetworkState>}
 
-      {!loading && data && data.length > 0 && visible.length === 0 && <div className="glass-panel p-8 text-center">
-        <h2 className="text-xl font-bold text-ink">Nenhum jogador corresponde à busca</h2>
-        <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted">Confira a escrita do username ou limpe a busca para ver todos os {count} jogadores online.</p>
-        <button type="button" onClick={() => setQuery("")} className="button-secondary mt-5">Limpar busca</button>
-      </div>}
+      {!loading && data && data.length > 0 && visible.length === 0 && <NetworkState kind="empty" title="Nenhum jogador encontrado" description="Confira o username ou limpe a busca para ver todos os jogadores online.">
+        <button type="button" onClick={() => setQuery("")} className="network-action">Limpar busca</button>
+      </NetworkState>}
 
       {!loading && data && visible.length > 0 && <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {visible.map((player) => <li key={player.uuid} className="flex min-w-0 items-center gap-3 rounded-xl border border-white/10 bg-card/80 px-4 py-3">
-          <PlayerAvatar profile={avatarProfile(player)} size="sm" />
-          <div className="min-w-0 flex-1">
-            <Link href={`/player/${player.username}`} className="block truncate font-bold text-ink transition hover:text-ultraviolet focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet">{player.username}</Link>
-            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-              {player.rank && <span className="rounded-md border border-violet/40 bg-violet/10 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-ultraviolet">{player.rank}</span>}
-              {player.playtimeSeconds !== null && <span className="text-xs tabular-nums text-muted">{formatPlaytime(player.playtimeSeconds)} de jogo</span>}
-            </div>
-          </div>
+        {visible.map((player) => <li key={player.uuid} className="network-panel min-w-0 p-5 transition hover:border-violet/40">
+          <NetworkPlayer player={player} />
+          {player.playtimeSeconds !== null && <p className="mt-4 border-t border-white/10 pt-3 text-xs tabular-nums text-muted">Tempo de jogo <span className="float-right font-bold text-ink">{formatPlaytime(player.playtimeSeconds)}</span></p>}
         </li>)}
       </ul>}
 
-      {!loading && data && data.length > 0 && <p className="mt-6 text-xs leading-5 text-muted">Lista fornecida pela API do servidor SWIFT MC, com cache de até 10 segundos. Use “Tentar novamente” para atualizar.</p>}
+      {!loading && data && <p className="mt-6 text-xs leading-5 text-muted">Dados do servidor SwiftMC · Cache de até 10s. Use “Atualizar” para consultar novamente.</p>}
     </div>
   </div>;
 }

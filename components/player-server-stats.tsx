@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { RefreshCw } from "lucide-react";
 import { playerStatsSchema, type PlayerStats } from "@/lib/minecraft-data/types";
 import { formatPlayerNumber, formatPlayerTimestamp, formatPlaytime } from "@/lib/player-format";
+import { NetworkRefresh, NetworkStat, NetworkState } from "./network-ui";
+import { NetworkPlayerRank } from "./network-player";
 
 export function PlayerServerStats({ username, uuid }: { username: string; uuid: string }) {
   const [state, setState] = useState<{ data: PlayerStats | null; loading: boolean }>({ data: null, loading: true });
@@ -31,21 +32,44 @@ export function PlayerServerStats({ username, uuid }: { username: string; uuid: 
   }, [refresh]);
 
   const { data, loading } = state;
-  const fields = [
-    ["Rank", data?.rank ?? "Indisponível"],
-    ["Coins", formatPlayerNumber(data?.coins)],
-    ["Tempo de jogo", formatPlaytime(data?.playtimeSeconds)],
-    ["Primeira entrada", formatPlayerTimestamp(data?.firstJoin)],
-    ["Visto por último", formatPlayerTimestamp(data?.lastSeen)],
-    ["Presença", data?.online == null ? "Indisponível" : data.online ? "Online" : "Offline"],
-    ["Abates", formatPlayerNumber(data?.kills)],
-    ["Mortes", formatPlayerNumber(data?.deaths)],
-  ];
-
-  return <section className="glass-panel mt-8 p-5 sm:p-8" aria-labelledby="server-player-stats-title">
-    <div className="flex flex-wrap items-center justify-between gap-4"><h2 id="server-player-stats-title" className="text-2xl font-bold text-ink">No servidor SWIFT MC</h2><button type="button" disabled={loading} onClick={() => void refresh()} className="button-secondary disabled:cursor-wait disabled:opacity-60"><RefreshCw size={17} aria-hidden="true" className={loading ? "animate-spin" : ""} />{loading ? "Consultando…" : "Atualizar dados"}</button></div>
-    <p className="mt-3 font-bold text-ultraviolet" role="status">{loading ? "Consultando dados do servidor…" : data ? "Dados informados pelo servidor" : "Dados do servidor indisponíveis"}</p>
-    <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">{!loading && !data ? "A integração pode não estar configurada, o serviço pode estar indisponível ou este jogador ainda não possui dados no servidor. Nenhum valor é estimado." : "Os valores são fornecidos pela API do servidor e podem usar cache de até 15 segundos. Datas exibidas em UTC; campos não informados permanecem indisponíveis."}</p>
-    <dl className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{fields.map(([label, value]) => <div key={label} className="min-w-0 rounded-xl border border-white/10 bg-void/40 p-4"><dt className="micro-label">{label}</dt><dd className="mt-2 min-h-6 break-words text-sm tabular-nums text-ink">{loading ? "Consultando…" : value}</dd></div>)}</dl>
+  return <section className="mt-8 space-y-6" aria-labelledby="server-player-stats-title">
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <div><p className="micro-label">Trajetória na rede</p><h2 id="server-player-stats-title" className="mt-1 text-lg font-extrabold text-ink">Na SwiftMC</h2></div>
+      <NetworkRefresh loading={loading} onRefresh={() => void refresh()} />
+    </div>
+    {loading ? <NetworkState kind="loading" title="Consultando a trajetória" description="Buscando presença e estatísticas informadas pelo servidor." />
+      : !data ? <NetworkState kind="error" title="Dados do servidor indisponíveis" description="Este jogador pode ainda não ter dados na SwiftMC, ou a consulta está indisponível. A identidade Minecraft continua disponível acima.">
+        <button type="button" onClick={() => void refresh()} className="network-action">Tentar novamente</button>
+      </NetworkState>
+      : <>
+        <section aria-labelledby="player-network-identity">
+          <h3 id="player-network-identity" className="mb-3 text-sm font-bold text-ink">Identidade na SwiftMC</h3>
+          <dl className="grid gap-3 sm:grid-cols-2">
+            <NetworkStat label="Rank" value={data.rank ? <NetworkPlayerRank rank={data.rank} /> : <span className="text-base text-muted">Indisponível</span>} detail="Rank informado pelo servidor" />
+            <NetworkStat label="Presença" value={data.online === null ? <span className="text-base text-muted">Indisponível</span> : <span className="inline-flex items-center gap-2"><span aria-hidden="true" className={`h-2 w-2 rounded-full ${data.online ? "bg-ultraviolet" : "bg-muted"}`} />{data.online ? "Online" : "Offline"}</span>} detail="Estado na última consulta" />
+          </dl>
+        </section>
+        <section aria-labelledby="player-gameplay">
+          <h3 id="player-gameplay" className="mb-3 text-sm font-bold text-ink">Em jogo</h3>
+          <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              { label: "Tempo de jogo", raw: data.playtimeSeconds, value: formatPlaytime(data.playtimeSeconds) },
+              { label: "Kills · Abates", raw: data.kills, value: formatPlayerNumber(data.kills) },
+              { label: "Mortes", raw: data.deaths, value: formatPlayerNumber(data.deaths) },
+              { label: "Coins", raw: data.coins, value: formatPlayerNumber(data.coins) },
+            ].map(({ label, raw, value }) => <NetworkStat key={label} label={label} value={raw === null ? <span className="text-base text-muted">Indisponível</span> : value} />)}
+          </dl>
+        </section>
+        <section aria-labelledby="player-activity">
+          <h3 id="player-activity" className="mb-3 text-sm font-bold text-ink">Atividade</h3>
+          <dl className="grid gap-3 sm:grid-cols-2">
+            {[
+              { label: "Primeira entrada", value: data.firstJoin },
+              { label: "Visto por último", value: data.lastSeen },
+            ].map(({ label, value }) => <NetworkStat key={label} label={label} value={value ? <time dateTime={value} className="block text-base leading-6">{formatPlayerTimestamp(value)}</time> : <span className="text-base text-muted">Indisponível</span>} />)}
+          </dl>
+        </section>
+        <p className="text-xs leading-5 text-muted">Dados do servidor SwiftMC · Cache de até 15s · Datas em UTC. “Indisponível” indica um campo não informado; zero é um valor registrado.</p>
+      </>}
   </section>;
 }

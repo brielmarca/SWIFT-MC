@@ -1,5 +1,6 @@
-import { PlayerPage } from "@/components/player-page";
+import { NetworkPage } from "@/components/network-page";
+import { NetworkState } from "@/components/network-ui";
 
 export default function LoadingPlayer() {
-  return <PlayerPage title="Perfil do jogador" description="Consultando o perfil público do Minecraft Java…"><div className="glass-panel min-h-96 p-8 text-muted" role="status">Carregando perfil…</div></PlayerPage>;
+  return <NetworkPage active="/player" title="Perfil do jogador" description="Identidade Minecraft e trajetória na SwiftMC."><NetworkState kind="loading" title="Buscando perfil" description="Consultando o nome e o visual da conta Minecraft Java." /></NetworkPage>;
 }

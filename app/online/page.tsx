@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { OnlinePlayers } from "@/components/online-players";
-import { PlayerPage } from "@/components/player-page";
+import { NetworkPage } from "@/components/network-page";
 
 export const metadata: Metadata = {
   title: "Online | SWIFT MC",
@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 };
 
 export default function OnlinePage() {
-  return <PlayerPage title="Jogadores online" description="Confira quem está conectado agora, busque por username e acesse o perfil público de cada jogador. A lista mostra somente dados reais informados pelo servidor.">
+  return <NetworkPage active="/online" title="Jogadores online" description="Veja quem está na rede, encontre seus amigos e explore os perfis dos jogadores.">
     <OnlinePlayers />
-  </PlayerPage>;
+  </NetworkPage>;
 }
