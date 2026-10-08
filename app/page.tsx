@@ -1,4 +1,4 @@
-import { CommunityBanner } from "@/components/community-banner";
+import { CommunityCTA } from "@/components/community-cta";
 import { FeatureGrid } from "@/components/feature-grid";
 import { Footer } from "@/components/footer";
 import { Hero } from "@/components/hero";
@@ -6,7 +6,6 @@ import { NewsTeaser } from "@/components/news-teaser";
 import { NetworkMetrics } from "@/components/network-metrics";
 import { SiteHeader } from "@/components/site-header";
 import { StoreSection } from "@/components/store-section";
-import { SystemsBanner } from "@/components/systems-banner";
 
 export default function Home() {
   return (
@@ -17,9 +16,8 @@ export default function Home() {
         <NetworkMetrics />
         <StoreSection />
         <FeatureGrid />
-        <SystemsBanner />
         <NewsTeaser />
-        <CommunityBanner />
+        <CommunityCTA />
       </main>
       <Footer />
     </>
