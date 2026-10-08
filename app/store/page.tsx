@@ -46,8 +46,17 @@ export default function StorePage() {
           </div>
         </section>
 
-        <section className="section-shell">
-          <div className="site-container">
+        <section className="relative min-h-[70vh] flex items-center">
+          <div className="absolute inset-0 z-0">
+            <img
+              src="/brand/enderman.png"
+              alt=""
+              className="w-full h-full object-cover opacity-30"
+              aria-hidden="true"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/60 to-black/40" />
+          </div>
+          <div className="site-container relative z-10 w-full py-20 sm:py-32">
             <StoreCatalog />
             <p className="mx-auto mt-8 max-w-2xl text-center text-xs leading-5 text-muted">
               Seu carrinho fica salvo apenas neste dispositivo. Nenhuma cobrança será realizada nesta fase.

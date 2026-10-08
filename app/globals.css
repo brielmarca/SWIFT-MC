@@ -46,9 +46,10 @@ button { cursor: pointer; }
   .cart-count { @apply inline-grid min-h-5 min-w-5 place-items-center rounded-full bg-ultraviolet px-1 text-[10px] font-extrabold leading-none text-void; }
   .rank-card { @apply relative flex min-h-[540px] flex-col justify-between rounded-2xl border border-violet/15 bg-card/85 p-6 shadow-card backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-violet/60 sm:p-8; }
   .rank-card-featured { @apply border-violet/55 bg-elevated/90 shadow-[inset_0_1px_0_rgba(192,132,252,0.35),0_0_34px_-12px_rgba(168,85,247,0.6)] lg:-translate-y-4 lg:hover:-translate-y-5; }
+  .rank-card-tall { @apply relative flex flex-col min-h-[520px] rounded-xl border border-violet/15 bg-card/85 shadow-card backdrop-blur-xl transition-all duration-300 hover:-translate-y-1.5; }
   .rank-badge { @apply inline-flex min-h-7 items-center rounded-full border border-white/[0.08] bg-white/[0.05] px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-muted; }
   .rank-badge-featured { @apply border-violet/25 bg-deep/25 text-ultraviolet; }
-  .popular-ribbon { @apply absolute -top-4 left-1/2 inline-flex -translate-x-1/2 items-center gap-1.5 whitespace-nowrap rounded-full border border-ultraviolet/40 bg-gradient-to-r from-deep via-violet to-ultraviolet px-4 py-1.5 text-[9px] font-extrabold uppercase tracking-[0.1em] text-white shadow-violet; }
+  .popular-ribbon { @apply absolute -top-2 left-1/2 inline-flex -translate-x-1/2 items-center gap-1.5 whitespace-nowrap rounded-full border border-ultraviolet/40 bg-gradient-to-r from-deep via-violet to-ultraviolet px-4 py-1.5 text-[9px] font-extrabold uppercase tracking-[0.1em] text-white shadow-violet; }
   .feature-card { @apply rounded-xl border border-white/[0.06] bg-card/70 p-6 shadow-card transition duration-300 hover:-translate-y-1 hover:border-violet/35 hover:bg-elevated/80; }
   .systems-card { @apply relative flex flex-col items-start justify-between gap-10 overflow-hidden rounded-2xl border border-violet/15 bg-card/85 p-7 shadow-card sm:p-10 lg:flex-row lg:items-center; }
   .systems-card::after { content: ""; @apply pointer-events-none absolute -bottom-32 -right-20 h-80 w-80 rounded-full bg-violet/20 blur-[90px]; }
