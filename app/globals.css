@@ -65,6 +65,10 @@ button { cursor: pointer; }
 
 @keyframes cart-enter { from { opacity: 0; transform: translateY(1.5rem); } to { opacity: 1; transform: translateY(0); } }
 
+@keyframes dropdown-enter { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+
+.animate-dropdown-enter { animation: dropdown-enter 120ms ease-out; }
+
 @media (min-width: 640px) {
   .cart-drawer { bottom: 0; top: 0; max-height: none; max-width: 28rem; border-radius: 0; border-bottom: 0; border-right: 0; border-top: 0; animation-name: cart-enter-desktop; }
   .cart-toast { bottom: 1.5rem; }
