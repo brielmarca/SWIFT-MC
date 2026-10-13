@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import { publicPageMetadata } from "@/lib/seo";
 import { NewsListing } from "@/components/news-listing";
 import { ContentPage } from "@/components/content/content-page";
 import { getPublishedNews } from "@/data/content";
@@ -6,10 +6,7 @@ import { getPublishedNews } from "@/data/content";
 // Visibility depends on publishedAt vs the current date, so render per request.
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "Novidades | SWIFT MC",
-  description: "Notícias, atualizações e avisos da comunidade do servidor SWIFT MC.",
-};
+export const metadata = publicPageMetadata("/news");
 
 export default function NewsPage() {
   const posts = getPublishedNews();

@@ -1,9 +1,9 @@
-import type { Metadata } from "next";
+import { publicPageMetadata } from "@/lib/seo";
 import { DiscordLink } from "@/components/discord-link";
 import { NetworkPage } from "@/components/network-page";
 import { ServerStatusPanel } from "@/components/server-status-panel";
 
-export const metadata: Metadata = { title: "Status do servidor | SWIFT MC", description: "Consulte o status, jogadores e versão atual do servidor Minecraft SWIFT MC." };
+export const metadata = publicPageMetadata("/status");
 
 export default function StatusPage() {
   return <NetworkPage active="/status" title="Status do servidor" description="Tudo pronto para jogar? Confira a disponibilidade e os detalhes de conexão.">

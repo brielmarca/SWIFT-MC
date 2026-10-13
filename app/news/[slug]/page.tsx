@@ -5,6 +5,7 @@ import { ArticleCard } from "@/components/content/article-card";
 import { ContentPage } from "@/components/content/content-page";
 import { getNewsBySlug, getPublishedNews, getRelatedNews, type ArticleBlock } from "@/data/content";
 import { formatNewsDate } from "@/lib/content-format";
+import { createPageMetadata, SITE_DESCRIPTION } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
@@ -13,18 +14,15 @@ type Props = { params: Promise<{ slug: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const post = getNewsBySlug(slug);
-  if (!post) return { title: "Notícia não encontrada | SWIFT MC" };
-  return {
-    title: `${post.title} | SWIFT MC`,
+  if (!post) return createPageMetadata({ title: "Notícia não encontrada", description: SITE_DESCRIPTION, index: false });
+  return createPageMetadata({
+    title: post.title,
     description: post.excerpt,
-    openGraph: {
-      type: "article",
-      title: post.title,
-      description: post.excerpt,
-      publishedTime: post.publishedAt,
-      ...(post.image ? { images: [{ url: post.image.src, alt: post.image.alt }] } : {}),
-    },
-  };
+    path: `/news/${encodeURIComponent(post.slug)}`,
+    type: "article",
+    publishedTime: post.publishedAt,
+    image: post.image,
+  });
 }
 
 function ArticleBody({ block }: { block: ArticleBlock }) {

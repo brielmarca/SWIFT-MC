@@ -50,6 +50,7 @@ Generated `.cloudflare/`, `.vinext/`, `.next/`, `.wrangler/`, `dist/`, `out/`, a
 | `MINECRAFT_PORT` | Same as host | `25565`; invalid/out-of-range ports return offline with unknown counts | Server-side TCP target port |
 | `MINECRAFT_PUBLIC_ADDRESS` | Same as host | Derived from the host and non-default port | Intentionally public: rendered in HTML and returned by the status API |
 | `NEXT_PUBLIC_DISCORD_URL` | **Build environment**, before either build | Discord CTA becomes disabled when missing/invalid | Public build-time value. Only credential-free HTTPS URLs on `discord.gg` or `discord.com`, without a custom port, are accepted. Rebuild after changes. |
+| `NEXT_PUBLIC_SITE_URL` | **Build environment**, before either build | `https://swiftmc.com.br` when missing/invalid | Public canonical HTTPS origin for metadata, social previews and sitemap. No credentials, custom port, path, query, local/private host. Rebuild after changes. |
 | `MINECRAFT_DATA_API_URL` | Build/deploy environment or ignored `.env.production.local`; emitted as a Worker text binding | Blank disables stats, online list, and leaderboard integration | Server-only base URL. Use HTTPS without credentials, query, or fragment. |
 | `MINECRAFT_DATA_API_TOKEN` | **Runtime Secret** on Worker `swift-mc` | Missing/invalid token produces `unavailable`, without contacting the data API or Mojang for stats | Private bearer token; never use `NEXT_PUBLIC_` or a text binding |
 
@@ -62,6 +63,18 @@ Set the non-secret variables in the Cloudflare **build** environment as well as 
 The private data token is not needed by the build. For local Workers testing of an enabled integration, supply it via an ignored `.dev.vars`/`.dev.vars.production` file or the local process environment. Do not upload a developer `.env` wholesale as Worker bindings: it includes unrelated database/payment settings.
 
 Contract details: [Minecraft Data API](minecraft-data-api.md).
+
+### SEO and browser identity
+
+Set `NEXT_PUBLIC_SITE_URL=https://swiftmc.com.br` before building/deploying. It is a public value, not a secret. Both Next.js and vinext inline it at build time; it does not need a Worker runtime binding. Canonicals never derive from the incoming Host header or a localhost development URL.
+
+- `/sitemap.xml`: public landing/network/content pages, all local ranks, published wiki guides, and news whose publication date has passed. No arbitrary player profiles, checkout pages, drafts, or invented modification dates. News visibility is evaluated per request.
+- `/robots.txt`: permits the public site and disallows `/api/`. HTML noindex pages remain crawlable so crawlers can read their directives.
+- `/manifest.webmanifest`: SwiftMC browser identity using the existing local emblem and black/purple colors. No service worker or offline/PWA behavior is added.
+- `/player/[username]` and `/checkout` descendants use `noindex, follow`. Player profiles remain shareable with dynamic titles and social previews; `/player` itself is indexable. Missing content uses noindex metadata and the existing not-found behavior.
+- Page metadata shares the `%s | SwiftMC` title template, canonical origin, Open Graph site identity and Twitter summary cards. Published articles use their existing local image when supplied; otherwise `/brand/emblem.png` is used. The near-square brand image is not represented as a wide social banner.
+
+Submit `https://swiftmc.com.br/sitemap.xml` to Google Search Console after the production domain is connected. Indexing and social preview refresh timing are controlled by the respective crawlers.
 
 ## Runtime compatibility and failure behavior
 

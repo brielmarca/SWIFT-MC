@@ -2,12 +2,20 @@
 
 import { useState } from "react";
 import { ArrowLeft, CheckCircle2, Clock3, Diamond, Package, Sparkles, Star, Shield, Sword, HeartPulse, Zap } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { Footer } from "@/components/footer";
 import { RankComparison } from "@/components/rank-comparison";
 import { SiteHeader } from "@/components/site-header";
 import { getRank, type Rank } from "@/data/ranks";
+
+const rankArtworkPaths: Record<string, string> = {
+  swift: "/brand/ranks/swift.png",
+  eclipse: "/brand/ranks/eclipse.png",
+  cosmic: "/brand/ranks/cosmic.png",
+  overdrive: "/brand/ranks/overdrive.jpeg",
+};
 
 type KitDisplayItem = {
   quantity: number;
@@ -264,6 +272,8 @@ function ComoFuncionaSection() {
 }
 
 export function RankPageClient({ rank }: RankPageClientProps) {
+  const artworkSrc = rankArtworkPaths[rank.slug];
+
   return (
     <>
       <SiteHeader />
@@ -274,7 +284,7 @@ export function RankPageClient({ rank }: RankPageClientProps) {
             <Link href="/store" className="inline-flex min-h-11 items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted hover:text-ink">
               <ArrowLeft size={17} aria-hidden="true" /> Voltar para a loja
             </Link>
-            <div className="mt-8 grid items-center gap-10 lg:grid-cols-12">
+            <div className="mt-8 grid items-start gap-10 lg:grid-cols-12">
               <div className="min-w-0 border-l-2 border-violet pl-4 sm:pl-5 lg:col-span-7">
                 <div className={`rank-badge ${rank.featured ? "rank-badge-featured" : ""}`}>
                   {rank.featured ? <Sparkles size={13} aria-hidden="true" /> : <Diamond size={13} aria-hidden="true" />}
@@ -308,6 +318,24 @@ export function RankPageClient({ rank }: RankPageClientProps) {
           </div>
         </section>
 
+        <section className="relative border-b border-white/10 bg-gradient-to-b from-black/30 to-black" aria-labelledby="rank-artwork-heading">
+          <div className="site-container py-10 sm:py-16">
+            <div className="aspect-[4/3] max-w-4xl mx-auto overflow-hidden rounded-2xl border border-white/10">
+              <Image
+                src={artworkSrc}
+                alt={`Arte do rank ${rank.name}`}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 80vw"
+                priority
+                placeholder="blur"
+                blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+              />
+            </div>
+            <p id="rank-artwork-heading" className="sr-only">Arte do rank {rank.name}</p>
+          </div>
+        </section>
+
         <OverviewSection rank={rank} />
         <VantagensSection rank={rank} />
         <KitsSection rank={rank} />
@@ -325,7 +353,7 @@ export function RankPageClient({ rank }: RankPageClientProps) {
 
         <ComoFuncionaSection />
 
-        <section className="page-section" aria-labelledby="faq-heading">
+        <section className="page-section border-t border-white/10" aria-labelledby="faq-heading">
           <div className="site-container grid gap-8 lg:grid-cols-12">
             <div className="lg:col-span-4">
               <p id="faq-heading" className="eyebrow">Perguntas frequentes</p>

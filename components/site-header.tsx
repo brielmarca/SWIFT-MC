@@ -50,6 +50,11 @@ function NavDropdown({
         setOpen(false);
       }
     }
+    function handleFocusOut(event: FocusEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.relatedTarget as Node | null)) {
+        setOpen(false);
+      }
+    }
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setOpen(false);
@@ -58,10 +63,12 @@ function NavDropdown({
     }
     if (open) {
       document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("focusout", handleFocusOut);
       document.addEventListener("keydown", handleKeyDown);
     }
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("focusout", handleFocusOut);
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [open]);
@@ -70,9 +77,7 @@ function NavDropdown({
   const groupActive = allLinks.some((href) => isActive === href || isActive.startsWith(`${href}/`));
 
   return (
-    <div className="relative" ref={dropdownRef} onBlur={(event) => {
-      if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false);
-    }}>
+    <div className="relative" ref={dropdownRef}>
       <button
         ref={triggerRef}
         type="button"

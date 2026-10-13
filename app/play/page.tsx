@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import { publicPageMetadata } from "@/lib/seo";
 import Link from "next/link";
 import { HelpCircle, MessageCircle, Shield, Server, Wrench } from "lucide-react";
 import { CopyIpButton } from "@/components/copy-ip-button";
@@ -17,10 +17,7 @@ const firstStepsGuides = [
   { slug: "como-funciona-a-economia", title: "Como funciona a economia", description: "Moedas, negociações e leilões sem cair em golpes" },
 ] as const;
 
-export const metadata: Metadata = {
-  title: "Como jogar | SWIFT MC",
-  description: "Endereço, status e instruções para entrar no servidor Minecraft Java SWIFT MC.",
-};
+export const metadata = publicPageMetadata("/play");
 
 function ServerInfoWithCopy() {
   return (

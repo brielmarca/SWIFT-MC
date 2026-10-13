@@ -1,4 +1,5 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
+import { createPageMetadata, SITE_DESCRIPTION } from "@/lib/seo";
 import { getRank, ranks } from "@/data/ranks";
 import { RankPageClient } from "./rank-page-client";
 
@@ -16,12 +17,13 @@ export async function generateMetadata({ params }: RankPageProps): Promise<Metad
   const { slug } = await params;
   const rank = getRank(slug);
 
-  if (!rank) return {};
+  if (!rank) return createPageMetadata({ title: "Rank não encontrado", description: SITE_DESCRIPTION, index: false });
 
-  return {
-    title: `${rank.name} | Ranks SWIFT MC`,
-    description: `${rank.description} Consulte todos os benefícios, kits e comparação do rank ${rank.name}.`,
-  };
+  return createPageMetadata({
+    title: `Rank ${rank.name}`,
+    description: rank.description,
+    path: `/ranks/${encodeURIComponent(rank.slug)}`,
+  });
 }
 
 export default async function RankPage({ params }: RankPageProps) {

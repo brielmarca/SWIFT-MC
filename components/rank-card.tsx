@@ -1,6 +1,7 @@
 "use client";
 
 import { Crown, Diamond, ShieldCheck, Sparkles, Star, ShoppingBag, ImageIcon } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import type { Rank } from "@/data/ranks";
 import { useCart } from "./cart-provider";
@@ -8,13 +9,14 @@ import { useRouter } from "next/navigation";
 
 type RankCardProps = {
   rank: Rank;
+  variant?: "full" | "preview";
 };
 
 const rankArtworkPaths: Record<string, string> = {
   swift: "/brand/ranks/swift.png",
   eclipse: "/brand/ranks/eclipse.png",
   cosmic: "/brand/ranks/cosmic.png",
-  overdrive: "/brand/ranks/overdrive.png",
+  overdrive: "/brand/ranks/overdrive.jpeg",
 };
 
 function getRankIcon(rank: Rank) {
@@ -23,7 +25,7 @@ function getRankIcon(rank: Rank) {
   return <ShieldCheck className="text-muted" aria-hidden="true" />;
 }
 
-export function RankCard({ rank }: RankCardProps) {
+export function RankCard({ rank, variant = "full" }: RankCardProps) {
   const { hasItem, addItem, openCart } = useCart();
   const router = useRouter();
   const isAdded = hasItem(rank.slug);
@@ -31,8 +33,13 @@ export function RankCard({ rank }: RankCardProps) {
   const artworkSrc = rankArtworkPaths[rank.slug];
 
   const handleAddToCart = () => {
-    if (isAdded) openCart();
-    else addItem(rank.slug);
+    if (variant === "preview") {
+      if (isAdded) return;
+      addItem(rank.slug);
+    } else {
+      if (isAdded) openCart();
+      else addItem(rank.slug);
+    }
   };
 
   const handleBuyNow = () => {
@@ -51,22 +58,14 @@ export function RankCard({ rank }: RankCardProps) {
       )}
 
       <div className="relative aspect-[4/3] shrink-0 overflow-hidden rounded-t-xl">
-        <img
-          ref={(image) => {
-            // A local image can fail before React attaches its error handler.
-            if (image?.complete && image.naturalWidth === 0) {
-              image.style.display = "none";
-              image.nextElementSibling?.classList.remove("hidden");
-            }
-          }}
+        <Image
           src={artworkSrc}
           alt={`Arte do rank ${rank.name}`}
-          className="h-full w-full object-cover"
-          loading="lazy"
-          onError={(e) => {
-            e.currentTarget.style.display = "none";
-            e.currentTarget.nextElementSibling?.classList.remove("hidden");
-          }}
+          fill
+          className="object-cover"
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+          placeholder="blur"
+          blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
         />
         <div className="absolute inset-0 hidden flex items-center justify-center bg-gradient-to-br from-void via-card to-deep">
           <ImageIcon size={48} className="text-muted/30" aria-hidden="true" />
@@ -110,7 +109,7 @@ export function RankCard({ rank }: RankCardProps) {
             disabled={!hasPrice}
             className="button-secondary w-full px-4"
           >
-            {isAdded ? "Ver carrinho" : "Adicionar ao carrinho"}
+            {isAdded ? (variant === "preview" ? "Adicionado" : "Ver carrinho") : "Adicionar ao carrinho"}
           </button>
           <Link
             href={`/ranks/${rank.slug}`}

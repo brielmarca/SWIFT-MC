@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import { publicPageMetadata } from "@/lib/seo";
 import { connection } from "next/server";
 import { EventCard } from "@/components/content/event-card";
 import { ContentPage } from "@/components/content/content-page";
@@ -10,10 +10,7 @@ import { getEventPhase } from "@/lib/event-display";
 // Upcoming/past classification depends on the current date and time.
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "Eventos | SWIFT MC",
-  description: "Próximos eventos e atividades da comunidade do servidor SWIFT MC, com data, horário e local.",
-};
+export const metadata = publicPageMetadata("/events");
 
 // Read the clock once while loading request-scoped data, then render that snapshot.
 async function loadEventSnapshot() {

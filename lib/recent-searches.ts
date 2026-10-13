@@ -26,8 +26,10 @@ export function parseRecentSearches(value: string | null): string[] {
 
 export function addRecentSearch(current: readonly string[], query: string): string[] {
   const trimmed = query.trim().slice(0, MAX_QUERY_LENGTH);
-  if (!trimmed) return parseRecentSearches(JSON.stringify(current));
-  return parseRecentSearches(JSON.stringify([trimmed, ...current.filter((item) => item.toLowerCase() !== trimmed.toLowerCase())]));
+  if (!trimmed) return [...current];
+  const filtered = current.filter((item) => item.toLowerCase() !== trimmed.toLowerCase());
+  const next = [trimmed, ...filtered].slice(0, MAX_RECENT_SEARCHES);
+  return next;
 }
 
 export function subscribeRecentSearches(callback: () => void) {

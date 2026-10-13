@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import { publicPageMetadata } from "@/lib/seo";
 import Link from "next/link";
 import { DiscordLink } from "@/components/discord-link";
 import { BookOpen, MessageCircle } from "lucide-react";
@@ -6,7 +6,7 @@ import { ContentPage } from "@/components/content/content-page";
 import { SearchableGuide } from "@/components/searchable-guide";
 import { faqs } from "@/data/player-guides";
 
-export const metadata: Metadata = { title: "Perguntas frequentes | SWIFT MC", description: "Tire suas dúvidas sobre o servidor, sua conta, VIPs e suporte." };
+export const metadata = publicPageMetadata("/faq");
 
 export default function FaqPage() {
   return <ContentPage active="/faq" title="Perguntas frequentes" description="Encontre respostas sobre o servidor, conta, VIPs e suporte. Busque um assunto ou escolha uma categoria.">

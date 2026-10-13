@@ -6,6 +6,7 @@ import { ContentPage } from "@/components/content/content-page";
 import { GuideCard } from "@/components/wiki/guide-card";
 import { WikiBody } from "@/components/wiki/wiki-body";
 import { getAdjacentGuides, getGuideBySlug, getPublishedGuides, getRelatedGuides } from "@/data/wiki";
+import { createPageMetadata, SITE_DESCRIPTION } from "@/lib/seo";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -16,12 +17,13 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const guide = getGuideBySlug(slug);
-  if (!guide) return { title: "Guia não encontrado | Wiki | SWIFT MC" };
-  return {
-    title: `${guide.title} | Wiki | SWIFT MC`,
+  if (!guide) return createPageMetadata({ title: "Guia não encontrado", description: SITE_DESCRIPTION, index: false });
+  return createPageMetadata({
+    title: guide.title,
     description: guide.description,
-    openGraph: { type: "article", title: guide.title, description: guide.description },
-  };
+    path: `/wiki/${encodeURIComponent(guide.slug)}`,
+    type: "article",
+  });
 }
 
 const tocLink = "rounded-lg border border-white/10 bg-card px-3 py-2 text-xs font-bold text-muted transition hover:border-violet/40 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet lg:border-transparent lg:border-l-2 lg:bg-transparent lg:px-3 lg:py-2 lg:text-sm lg:hover:border-violet lg:hover:bg-violet/10";

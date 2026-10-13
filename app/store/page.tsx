@@ -1,13 +1,10 @@
-import type { Metadata } from "next";
+import { publicPageMetadata } from "@/lib/seo";
 import { ShieldCheck, Sparkles, Zap } from "lucide-react";
 import { Footer } from "@/components/footer";
 import { SiteHeader } from "@/components/site-header";
 import { StoreCatalog } from "@/components/store-catalog";
 
-export const metadata: Metadata = {
-  title: "Loja de Ranks | SWIFT MC",
-  description: "Compare os ranks Swift, Eclipse, Cosmic e Overdrive da rede SWIFT MC.",
-};
+export const metadata = publicPageMetadata("/store");
 
 const assurances = [
   { icon: Zap, title: "Escolha rápida", text: "Compare os níveis e salve sua seleção no carrinho deste dispositivo." },

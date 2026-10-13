@@ -9,13 +9,21 @@ import { PlayerProfileActions, RetryPlayerProfile } from "@/components/player-pr
 import { isJavaUsername } from "@/lib/minecraft-profile";
 import { lookupMinecraftProfile } from "@/lib/minecraft-profile-server";
 import { PlayerServerStats } from "@/components/player-server-stats";
+import { createPageMetadata } from "@/lib/seo";
 
 type Props = { params: Promise<{ username: string }> };
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { username } = await params;
-  return { title: isJavaUsername(username) ? `${username} | Jogadores SWIFT MC` : "Perfil de jogador | SWIFT MC", description: "Perfil público do Minecraft Java. Consulte username, UUID e skin." };
+  const valid = isJavaUsername(username);
+  return createPageMetadata({
+    title: valid ? `${username} — Perfil do jogador` : "Perfil de jogador",
+    description: "Perfil público do Minecraft Java. Consulte username, UUID e skin.",
+    ...(valid ? { path: `/player/${encodeURIComponent(username)}` } : {}),
+    // An arbitrary account lookup is shareable, but not curated index content.
+    index: false,
+  });
 }
 
 export default async function PublicPlayerPage({ params }: Props) {

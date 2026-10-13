@@ -6,6 +6,9 @@ import { NewsTeaser } from "@/components/news-teaser";
 import { NetworkMetrics } from "@/components/network-metrics";
 import { SiteHeader } from "@/components/site-header";
 import { StoreSection } from "@/components/store-section";
+import { publicPageMetadata } from "@/lib/seo";
+
+export const metadata = publicPageMetadata("/");
 
 export default function Home() {
   return (

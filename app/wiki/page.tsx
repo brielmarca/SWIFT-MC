@@ -1,12 +1,9 @@
-import type { Metadata } from "next";
+import { publicPageMetadata } from "@/lib/seo";
 import { ContentPage } from "@/components/content/content-page";
 import { WikiListing } from "@/components/wiki/wiki-listing";
 import { getPublishedGuides } from "@/data/wiki";
 
-export const metadata: Metadata = {
-  title: "Wiki e guias | SWIFT MC",
-  description: "Guias do servidor SWIFT MC: primeiros passos, survival, economia, comandos, ranks, eventos e segurança.",
-};
+export const metadata = publicPageMetadata("/wiki");
 
 export default function WikiPage() {
   const guides = getPublishedGuides();

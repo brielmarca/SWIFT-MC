@@ -1,5 +1,8 @@
 import { Footer } from "@/components/footer";
 import { SiteHeader } from "@/components/site-header";
+import { createPageMetadata, SITE_DESCRIPTION } from "@/lib/seo";
+
+export const metadata = createPageMetadata({ title: "Página não encontrada", description: SITE_DESCRIPTION, index: false });
 
 export default function NotFound() {
   return <>

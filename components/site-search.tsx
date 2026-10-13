@@ -47,7 +47,7 @@ export function useSiteSearchHotkeys(enabled: boolean, onOpen: () => void) {
   const openFromEvent = useEffectEvent(onOpen);
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
-      if (enabled) return;
+      if (!enabled) return;
       if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === "k") {
         event.preventDefault();
         openFromEvent();
