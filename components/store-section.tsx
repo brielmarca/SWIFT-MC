@@ -11,8 +11,8 @@ export function StoreSection() {
         <SectionHeading
           icon={Diamond}
           eyebrow="VIPs"
-          title="Ranks permanentes"
-          description="Quatro níveis progressivos. Cada um inclui tudo do anterior + kits mais fortes."
+          title="Assinaturas VIP mensais"
+          description="Quatro níveis com cobrança mensal. Cada um inclui tudo do anterior + kits mais fortes enquanto a assinatura estiver ativa."
         />
         <div className="mt-10 grid items-stretch gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {ranks.map((rank) => <RankCard key={rank.slug} rank={rank} variant="preview" />)}

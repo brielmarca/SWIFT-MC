@@ -281,7 +281,7 @@ export const wikiGuides: readonly WikiGuide[] = [
           { type: "table", caption: "Perguntas rápidas", headers: ["Pergunta", "Resposta"], rows: [
             ["O carrinho ativa o rank?", "Não. Ele guarda a seleção neste navegador apenas."],
             ["Preciso de conta no site?", "Não para consultar a loja ou usar o carrinho."],
-            ["O rank expira?", "Todos os ranks atuais são vitalícios."],
+            ["O rank expira?", "Todos os ranks são assinaturas mensais, com cobrança a cada mês e benefícios disponíveis enquanto a assinatura estiver ativa."],
             ["Vantagem em PvP?", "Não. Ranks oferecem conveniência e cosméticos."],
           ] },
         ],

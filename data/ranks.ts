@@ -61,7 +61,7 @@ export function formatPrice(cents: number | null): string | null {
 const sharedFaq: readonly RankFaq[] = [
   {
     question: "O rank expira?",
-    answer: "Não. Todos os ranks desta página são vitalícios e permanecem vinculados à conta informada quando a compra estiver disponível.",
+    answer: "Sim. Todos os ranks são assinaturas mensais, com cobrança a cada mês. Os benefícios ficam disponíveis enquanto a assinatura estiver ativa. Os pagamentos estão pausados nesta etapa.",
   },
   {
     question: "Os benefícios funcionam no Java e no Bedrock?",
@@ -315,8 +315,8 @@ const rankCatalog: readonly Omit<Rank, "price">[] = [
     name: "Swift",
     badge: "Essencial",
     priceCents: null,
-    duration: "Vitalício",
-    description: "Vantagens vitais para expandir sua fazenda e sua sobrevivência no mapa. A porta de entrada para a experiência VIP.",
+    duration: "Mensal",
+    description: "Assinatura VIP mensal com vantagens para expandir sua fazenda e sua sobrevivência no mapa. A porta de entrada para a experiência VIP.",
     summaryBenefits: [
       "Tag [SWIFT] no Chat",
       "3 homes para teleporte",
@@ -352,8 +352,8 @@ const rankCatalog: readonly Omit<Rank, "price">[] = [
     name: "Eclipse",
     badge: "Intermediário",
     priceCents: null,
-    duration: "Vitalício",
-    description: "Tudo do Swift + utilidades remotas, mais homes e XP aumentado. Ideal para quem quer mais conveniência no Survival.",
+    duration: "Mensal",
+    description: "Assinatura VIP mensal com tudo do Swift + utilidades remotas, mais homes e XP aumentado. Ideal para quem quer mais conveniência no Survival.",
     summaryBenefits: [
       "Todas as vantagens do Swift",
       "5 homes para teleporte",
@@ -362,7 +362,7 @@ const rankCatalog: readonly Omit<Rank, "price">[] = [
       "+25% XP no mcMMO",
     ],
     benefits: [
-      "Todos os benefícios permanentes do rank Swift",
+      "Todos os benefícios do rank Swift enquanto a assinatura estiver ativa",
       "5 homes (casas) para se teleportar",
       "Baú do fim portátil: /enderchest",
       "Bigorna portátil: /anvil",
@@ -395,8 +395,8 @@ const rankCatalog: readonly Omit<Rank, "price">[] = [
     name: "Cosmic",
     badge: "Avançado",
     priceCents: null,
-    duration: "Vitalício",
-    description: "Tudo do Eclipse + bancadas portáteis completas, nick colorido, teleporte sem espera. Para jogadores dedicados.",
+    duration: "Mensal",
+    description: "Assinatura VIP mensal com tudo do Eclipse + bancadas portáteis completas, nick colorido, teleporte sem espera. Para jogadores dedicados.",
     summaryBenefits: [
       "Todas as vantagens do Eclipse",
       "8 homes para teleporte",
@@ -406,7 +406,7 @@ const rankCatalog: readonly Omit<Rank, "price">[] = [
       "+50% XP no mcMMO",
     ],
     benefits: [
-      "Todos os benefícios permanentes do rank Eclipse",
+      "Todos os benefícios do rank Eclipse enquanto a assinatura estiver ativa",
       "8 homes (casas) para se teleportar",
       "Bancadas portáteis: mesa de ferreiro, cortador de pedra, tear, pedra de amolar e mesa de cartografia",
       "/nick: escolha seu apelido com cores",
@@ -438,8 +438,8 @@ const rankCatalog: readonly Omit<Rank, "price">[] = [
     name: "Overdrive",
     badge: "Máximo",
     priceCents: null,
-    duration: "Vitalício",
-    description: "O ápice da experiência VIP. Tudo do Cosmic + cura, teleporte sem cooldown, 2x mcMMO, kits de netherite, elytra e beacon.",
+    duration: "Mensal",
+    description: "O ápice da experiência VIP em uma assinatura mensal. Tudo do Cosmic + cura, teleporte sem cooldown, 2x mcMMO, kits de netherite, elytra e beacon.",
     summaryBenefits: [
       "Todas as vantagens do Cosmic",
       "12 homes para teleporte",
@@ -449,7 +449,7 @@ const rankCatalog: readonly Omit<Rank, "price">[] = [
       "Kits com netherite, elytra e beacon",
     ],
     benefits: [
-      "Todos os benefícios permanentes do rank Cosmic",
+      "Todos os benefícios do rank Cosmic enquanto a assinatura estiver ativa",
       "12 homes (casas) para se teleportar",
       "/heal: recupera toda a vida (1 vez por hora)",
       "Teleporte sem tempo de espera e sem cooldown",

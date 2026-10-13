@@ -7,7 +7,7 @@ import { ServerAddress, ServerStatusChip } from "./server-status-provider";
 const trustStats = [
   { value: "Survival", label: "Modo de jogo" },
   { value: "mcMMO", label: "Habilidades", accent: true },
-  { value: "Vitalícios", label: "Ranks da loja" },
+  { value: "Mensais", label: "Assinaturas VIP" },
 ];
 
 export function Hero() {

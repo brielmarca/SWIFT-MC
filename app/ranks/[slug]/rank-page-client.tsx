@@ -132,7 +132,7 @@ function OverviewSection({ rank }: { rank: Rank }) {
                 <dd className="font-bold text-ink">{rank.duration}</dd>
               </div>
               <div className="flex items-center justify-between gap-4 border-b border-white/[0.07] pb-4">
-                <dt className="text-sm text-muted">Valor</dt>
+                <dt className="text-sm text-muted">Valor mensal</dt>
                 <dd className="font-bold text-ink">{rank.price ?? "TBD (a definir)"}</dd>
               </div>
               <div className="flex items-center justify-between gap-4 border-b border-white/[0.07] pb-4">
@@ -294,14 +294,14 @@ export function RankPageClient({ rank }: RankPageClientProps) {
                 <p className="page-description">{rank.description}</p>
               </div>
               <aside className={`glass-panel p-6 sm:p-8 lg:col-span-5 ${rank.featured ? "border-violet/45" : ""}`} aria-label={`Resumo do rank ${rank.name}`}>
-                <p className="micro-label">Valor do rank</p>
+                <p className="micro-label">Assinatura mensal</p>
                 <div className="mt-2 flex flex-wrap items-end gap-2">
                   {rank.price ? (
                     <span className="text-4xl font-extrabold tabular-nums text-ink">{rank.price}</span>
                   ) : (
                     <span className="text-4xl font-extrabold tabular-nums text-muted">TBD</span>
                   )}
-                  <span className="micro-label pb-1">Valor total</span>
+                  <span className="micro-label pb-1">/mês</span>
                 </div>
                 <div className="mt-5 flex items-center gap-3 rounded-lg border border-white/[0.07] bg-white/[0.03] p-4">
                   <Clock3 size={20} className="text-ultraviolet" aria-hidden="true" />
@@ -320,13 +320,13 @@ export function RankPageClient({ rank }: RankPageClientProps) {
 
         <section className="relative border-b border-white/10 bg-gradient-to-b from-black/30 to-black" aria-labelledby="rank-artwork-heading">
           <div className="site-container py-10 sm:py-16">
-            <div className="aspect-[4/3] max-w-4xl mx-auto overflow-hidden rounded-2xl border border-white/10">
+            <div className="relative aspect-[4/3] max-w-4xl mx-auto overflow-hidden rounded-2xl border border-white/10 bg-black/30">
               <Image
                 src={artworkSrc}
                 alt={`Arte do rank ${rank.name}`}
                 fill
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw, 80vw"
+                className="object-contain p-3 sm:p-6"
+                sizes="(max-width: 960px) 100vw, 896px"
                 priority
                 placeholder="blur"
                 blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="

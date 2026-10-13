@@ -32,7 +32,7 @@ export const newsPosts: readonly NewsPost[] = [
     category: "Atualizações",
     tags: ["economia", "mercado"],
     featured: false,
-    image: { src: "/brand/enderman.png", alt: "Ilustração de um enderman" },
+    image: { src: "/brand/emblem.png", alt: "Emblema do SWIFT MC — atualização da economia" },
     content: [
       { type: "paragraph", text: "A economia do servidor recebeu a maior revisão desde o lançamento. O objetivo é manter a progressão saudável sem tornar o acúmulo de moedas irrelevante." },
       { type: "heading", text: "Leilões no spawn" },

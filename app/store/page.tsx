@@ -8,7 +8,7 @@ export const metadata = publicPageMetadata("/store");
 
 const assurances = [
   { icon: Zap, title: "Escolha rápida", text: "Compare os níveis e salve sua seleção no carrinho deste dispositivo." },
-  { icon: ShieldCheck, title: "Benefícios permanentes", text: "Todos os ranks apresentados possuem duração vitalícia." },
+  { icon: ShieldCheck, title: "Assinatura mensal", text: "Cobrança a cada mês, com benefícios disponíveis enquanto a assinatura estiver ativa." },
   { icon: Sparkles, title: "Progressão preservada", text: "Cada nível inclui vantagens que ampliam sua experiência Survival." },
 ];
 
@@ -23,10 +23,10 @@ export default function StorePage() {
             <header className="border-l-2 border-violet pl-4 sm:pl-5">
               <p className="eyebrow">Loja oficial</p>
               <h1 className="page-title mt-2">
-                Escolha seu <span className="gradient-text">rank permanente</span>
+                Escolha seu <span className="gradient-text">VIP mensal</span>
               </h1>
               <p className="page-description">
-                Compare preços, duração e vantagens para encontrar o nível ideal para sua jornada no SWIFT Survival.
+                Compare os valores mensais e as vantagens para encontrar o nível ideal para sua jornada no SWIFT Survival.
               </p>
             </header>
             <div className="mt-6 grid gap-4 lg:grid-cols-3">

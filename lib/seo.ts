@@ -82,7 +82,7 @@ export function createPageMetadata({ title, description, path, image = BRAND_IMA
 export const PUBLIC_PAGES = {
   "/": { title: "Survival Minecraft", description: SITE_DESCRIPTION },
   "/play": { title: "Como jogar", description: "Endereço, status e instruções para entrar no servidor Minecraft Java SwiftMC." },
-  "/store": { title: "Loja de ranks", description: "Compare os ranks Swift, Eclipse, Cosmic e Overdrive da rede SwiftMC." },
+  "/store": { title: "Loja de ranks", description: "Compare as assinaturas VIP mensais Swift, Eclipse, Cosmic e Overdrive da rede SwiftMC." },
   "/status": { title: "Status do servidor", description: "Consulte o status, jogadores e versão atual do servidor Minecraft SwiftMC." },
   "/online": { title: "Jogadores online", description: "Veja quem está jogando na SwiftMC com a lista de jogadores online informada pelo servidor." },
   "/leaderboards": { title: "Ranking do servidor", description: "Confira o ranking de tempo de jogo, abates e coins do servidor SwiftMC." },

@@ -84,13 +84,13 @@ export function RankCard({ rank, variant = "full" }: RankCardProps) {
             {hasPrice ? (
               <>
                 <span className="text-xl font-extrabold tabular-nums text-ink">{rank.price}</span>
-                <span className="micro-label pb-1">total</span>
+                <span className="micro-label pb-1">/mês</span>
               </>
             ) : (
-              <span className="text-xl font-extrabold tabular-nums text-muted">Preço em breve</span>
+              <span className="text-xl font-extrabold tabular-nums text-muted">Preço mensal em breve</span>
             )}
           </div>
-          <p className="mt-2 text-xs leading-5 text-muted">Pagamentos pausados — seleção local</p>
+          <p className="mt-2 text-xs leading-5 text-muted">Assinatura mensal · Pagamentos pausados — seleção local</p>
         </div>
 
         <div className="mt-4 grid gap-2">
