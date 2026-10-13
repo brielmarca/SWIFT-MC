@@ -26,7 +26,7 @@ test("avatar proxy supports only fixed head/body providers and retains limits an
   const urls: string[] = [];
   context.mock.method(globalThis, "fetch", async (url: string, init: RequestInit) => {
     urls.push(url);
-    assert.equal(init.redirect, "error");
+    assert.equal(init.redirect, "manual");
     assert.ok(init.signal);
     return new Response(png, { headers: { "Content-Type": "image/png" } });
   });
@@ -48,9 +48,10 @@ test("skin render errors never expose raw responses", async (context) => {
     new Response("private provider error", { status: 502 }),
     new Response("not a png", { headers: { "Content-Type": "image/png" } }),
     new Response(new Uint8Array(65537), { headers: { "Content-Type": "image/png" } }),
+    new Response(null, { status: 302, headers: { Location: "https://other.example/avatar" } }),
   ];
   context.mock.method(globalThis, "fetch", async () => responses.shift()!);
-  for (let index = 0; index < 3; index++) {
+  for (let index = 0; index < 4; index++) {
     const response = await getAvatar(new Request(`http://localhost/api/minecraft/avatar/${uuid}?view=body`), { params: Promise.resolve({ uuid }) });
     assert.equal(response.status, 503);
     assert.equal(await response.text(), "");

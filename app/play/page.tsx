@@ -25,7 +25,7 @@ export const metadata: Metadata = {
 function ServerInfoWithCopy() {
   return (
     <ServerStatusProvider publicAddress={serverInfo.defaultHost}>
-      <section className="glass-panel p-6 sm:p-8" aria-label="Endereço e status do servidor">
+      <section className="glass-panel mt-6 p-5 text-left sm:p-6" aria-label="Endereço e status do servidor">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 items-center gap-4">
             <span className="icon-well shrink-0"><Server size={24} aria-hidden="true" /></span>
@@ -56,11 +56,11 @@ function HowToJoin() {
   ];
 
   return (
-    <section aria-labelledby="howto-title" className="section-shell">
+    <section aria-labelledby="howto-title" className="page-section">
       <div className="site-container">
-        <h2 id="howto-title" className="text-3xl font-extrabold uppercase tracking-tight text-ink sm:text-4xl">Como entrar no SwiftMC</h2>
+        <h2 id="howto-title" className="page-heading">Como entrar no SwiftMC</h2>
         <p className="mt-3 max-w-2xl text-base leading-7 text-muted">Quatro passos rápidos do launcher ao Survival.</p>
-        <ol className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <ol className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {steps.map((step, index) => (
             <li key={step.title} className="glass-panel flex flex-col gap-4 p-6">
               <div className="flex items-center gap-3">
@@ -78,9 +78,9 @@ function HowToJoin() {
 
 function ServerInfo() {
   return (
-    <section className="border-y border-white/[0.06] bg-black/25 py-16 sm:py-20" aria-labelledby="serverinfo-title">
+    <section className="page-section border-y border-white/10 bg-black/25" aria-labelledby="serverinfo-title">
       <div className="site-container">
-        <h2 id="serverinfo-title" className="text-3xl font-extrabold uppercase tracking-tight text-ink sm:text-4xl">Informações do servidor</h2>
+        <h2 id="serverinfo-title" className="page-heading">Informações do servidor</h2>
         <p className="mt-3 max-w-2xl text-base leading-7 text-muted">Detalhes técnicos para conexão e compatibilidade.</p>
 
         <dl className="mt-10 grid gap-6 md:grid-cols-3">
@@ -116,12 +116,12 @@ function FirstSteps() {
   const guides = firstStepsGuides.map((g) => getGuideBySlug(g.slug)).filter((g): g is NonNullable<typeof g> => Boolean(g));
 
   return (
-    <section aria-labelledby="firststeps-title" className="section-shell">
+    <section aria-labelledby="firststeps-title" className="page-section">
       <div className="site-container">
-        <h2 id="firststeps-title" className="text-3xl font-extrabold uppercase tracking-tight text-ink sm:text-4xl">Primeiros passos após entrar</h2>
+        <h2 id="firststeps-title" className="page-heading">Primeiros passos após entrar</h2>
         <p className="mt-3 max-w-2xl text-base leading-7 text-muted">Guias essenciais para começar bem no Survival.</p>
 
-        <div className="mt-8 grid gap-5 sm:grid-cols-3">
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {guides.map((guide) => (
             <Link key={guide.slug} href={`/wiki/${guide.slug}`} className="feature-card">
               <span className="icon-well"><Wrench size={23} aria-hidden="true" /></span>
@@ -146,12 +146,12 @@ function FirstSteps() {
 
 function NeedHelp() {
   return (
-    <section id="ajuda" className="section-shell border-t border-white/[0.04]" aria-labelledby="help-title">
+    <section id="ajuda" className="page-section border-t border-white/10" aria-labelledby="help-title">
       <div className="site-container">
-        <div className="community-card">
+        <div className="content-panel p-6 sm:p-8">
           <div className="relative z-10 max-w-2xl">
             <div className="status-chip"><span className="status-dot" /> Precisa de ajuda?</div>
-            <h2 id="help-title" className="mt-6 text-3xl font-extrabold uppercase tracking-[-0.04em] text-ink sm:text-4xl lg:text-5xl">
+            <h2 id="help-title" className="page-heading mt-4">
               Fale com a <span className="gradient-text">comunidade</span>
             </h2>
             <p className="mt-4 text-base leading-7 text-muted">
@@ -173,20 +173,20 @@ export default function PlayPage() {
     <>
       <SiteHeader />
       <main id="main-content">
-        <section className="relative overflow-hidden py-16 sm:py-24">
+        <section className="relative overflow-hidden py-8 sm:py-12">
           <div className="ambient ambient-left" />
           <div className="ambient ambient-right" />
           <div className="site-container relative z-10">
-            <div className="mx-auto max-w-3xl text-center">
-              <div className="status-chip !text-ultraviolet"><Server size={15} aria-hidden="true" /> Jogar no SwiftMC</div>
-              <h1 className="mt-6 text-4xl font-extrabold uppercase leading-[1.05] tracking-[-0.04em] text-ink sm:text-5xl lg:text-[56px]">
+            <header className="border-l-2 border-violet pl-4 sm:pl-5">
+              <p className="eyebrow">Jogar no SwiftMC</p>
+              <h1 className="page-title mt-2">
                 Entre no <span className="gradient-text">SwiftMC</span>
               </h1>
-              <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-muted">
+              <p className="page-description">
                 Endereço copiado em um clique. Status ao vivo. Passo a passo para entrar em segundos.
               </p>
-              <ServerInfoWithCopy />
-            </div>
+            </header>
+            <ServerInfoWithCopy />
           </div>
         </section>
 

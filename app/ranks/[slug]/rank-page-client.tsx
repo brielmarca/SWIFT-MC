@@ -33,9 +33,9 @@ function KitAccordion({ kit, initiallyOpen = false }: { kit: KitDisplay; initial
   const [open] = useState(initiallyOpen);
 
   return (
-    <details className={`group rounded-xl border border-white/[0.07] bg-card/75 ${open ? "open:border-violet/35 open:bg-elevated/70" : ""}`}>
+    <details open={open} className="content-panel group open:border-violet/40 open:bg-violet/[0.04]">
       <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 font-bold text-ink marker:hidden">
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 flex-wrap items-center gap-3">
           {kit.icon}
           <span>{kit.title}</span>
           <span className="micro-label px-2 py-0.5 rounded border border-white/[0.1]">{kit.cooldown}</span>
@@ -99,11 +99,11 @@ function InheritanceNotice({ rank }: { rank: Rank }) {
 
 function OverviewSection({ rank }: { rank: Rank }) {
   return (
-    <section className="section-shell" aria-labelledby="overview-heading">
+    <section className="page-section" aria-labelledby="overview-heading">
       <div className="site-container grid gap-10 lg:grid-cols-12">
         <div className="lg:col-span-7">
           <p id="overview-heading" className="eyebrow">Visão geral</p>
-          <h2 className="mt-3 text-[26px] font-bold uppercase leading-[34px] tracking-[-0.015em] text-ink sm:text-[32px] sm:leading-10">Rank <span className="gradient-text">{rank.name}</span></h2>
+          <h2 className="page-heading mt-3">Rank <span className="gradient-text">{rank.name}</span></h2>
           <p className="mt-5 max-w-2xl text-base leading-7 text-muted sm:text-lg">{rank.description}</p>
           <InheritanceNotice rank={rank} />
           <div className="mt-8 grid gap-4 sm:grid-cols-2">
@@ -118,7 +118,7 @@ function OverviewSection({ rank }: { rank: Rank }) {
         <aside className="lg:col-span-5">
           <div className="glass-panel sticky top-24 p-6">
             <p className="micro-label !text-ultraviolet">Resumo do rank</p>
-            <div className="mt-5 space-y-4">
+            <dl className="mt-5 space-y-4">
               <div className="flex items-center justify-between gap-4 border-b border-white/[0.07] pb-4">
                 <dt className="text-sm text-muted">Duração</dt>
                 <dd className="font-bold text-ink">{rank.duration}</dd>
@@ -143,7 +143,7 @@ function OverviewSection({ rank }: { rank: Rank }) {
                 <dt className="text-sm text-muted">Dinheiro/mês</dt>
                 <dd className="font-bold text-ink">${rank.comparison.monthlyMoney.toLocaleString("pt-BR")}</dd>
               </div>
-            </div>
+            </dl>
             <AddToCartButton slug={rank.slug} className="button-primary mt-6 w-full" disabled={!rank.price} />
             <Link href="/store#store-search" className="mt-2 inline-flex min-h-11 w-full items-center justify-center text-xs font-bold uppercase tracking-wider text-muted hover:text-ink">Continuar na loja</Link>
             <p className="mt-2 text-center text-xs leading-5 text-muted">Sua seleção fica salva localmente neste dispositivo.</p>
@@ -156,11 +156,11 @@ function OverviewSection({ rank }: { rank: Rank }) {
 
 function VantagensSection({ rank }: { rank: Rank }) {
   return (
-    <section className="border-y border-white/[0.06] bg-black/20 py-20 sm:py-24" aria-labelledby="vantagens-heading">
+    <section className="page-section border-y border-white/10 bg-black/20" aria-labelledby="vantagens-heading">
       <div className="site-container">
         <div className="max-w-3xl">
           <p id="vantagens-heading" className="eyebrow">Vantagens</p>
-          <h2 className="mt-3 text-[26px] font-bold uppercase leading-[34px] tracking-[-0.015em] text-ink sm:text-[32px] sm:leading-10">Todas as vantagens do {rank.name}</h2>
+          <h2 className="page-heading mt-3">Todas as vantagens do {rank.name}</h2>
         </div>
         <InheritanceNotice rank={rank} />
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -217,10 +217,10 @@ function KitsSection({ rank }: { rank: Rank }) {
   ];
 
   return (
-    <section className="section-shell" aria-labelledby="kits-heading">
+    <section className="page-section" aria-labelledby="kits-heading">
       <div className="site-container">
         <p id="kits-heading" className="eyebrow">Kits</p>
-        <h2 className="mt-3 text-[26px] font-bold uppercase leading-[34px] tracking-[-0.015em] text-ink sm:text-[32px] sm:leading-10">Kits do {rank.name}</h2>
+        <h2 className="page-heading mt-3">Kits do {rank.name}</h2>
         <p className="mt-4 max-w-2xl text-base leading-7 text-muted">Clique em cada kit para ver os itens completos, encantamentos e recompensas.</p>
         <InheritanceNotice rank={rank} />
         <div className="mt-8 space-y-4">
@@ -235,11 +235,11 @@ function KitsSection({ rank }: { rank: Rank }) {
 
 function ComoFuncionaSection() {
   return (
-    <section className="border-y border-white/[0.06] bg-black/20 py-20 sm:py-24" aria-labelledby="como-funciona-heading">
+    <section className="page-section border-y border-white/10 bg-black/20" aria-labelledby="como-funciona-heading">
       <div className="site-container">
         <div className="mx-auto max-w-3xl text-center">
           <p id="como-funciona-heading" className="eyebrow">Como funciona</p>
-          <h2 className="mt-3 text-[26px] font-bold uppercase leading-[34px] tracking-[-0.015em] text-ink sm:text-[32px] sm:leading-10">Ativação e resgate dos kits</h2>
+          <h2 className="page-heading mt-3">Ativação e resgate dos kits</h2>
         </div>
         <div className="mt-12 grid gap-6 md:grid-cols-3">
           <div className="glass-panel flex flex-col items-center text-center p-6">
@@ -268,22 +268,22 @@ export function RankPageClient({ rank }: RankPageClientProps) {
     <>
       <SiteHeader />
       <main id="main-content">
-        <section className="relative overflow-hidden border-b border-white/[0.06] py-12 sm:py-20">
+        <section className="relative overflow-hidden border-b border-white/10 py-8 sm:py-12">
           <div className="ambient ambient-right" />
           <div className="site-container relative z-10">
             <Link href="/store" className="inline-flex min-h-11 items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted hover:text-ink">
               <ArrowLeft size={17} aria-hidden="true" /> Voltar para a loja
             </Link>
             <div className="mt-8 grid items-center gap-10 lg:grid-cols-12">
-              <div className="lg:col-span-7">
+              <div className="min-w-0 border-l-2 border-violet pl-4 sm:pl-5 lg:col-span-7">
                 <div className={`rank-badge ${rank.featured ? "rank-badge-featured" : ""}`}>
                   {rank.featured ? <Sparkles size={13} aria-hidden="true" /> : <Diamond size={13} aria-hidden="true" />}
                   {rank.featured ? "Mais popular" : rank.badge}
                 </div>
-                <h1 className="mt-6 text-5xl font-extrabold uppercase tracking-[-0.04em] text-ink sm:text-6xl lg:text-7xl">Rank <span className="gradient-text">{rank.name}</span></h1>
-                <p className="mt-5 max-w-2xl text-base leading-7 text-muted sm:text-lg">{rank.description}</p>
+                <h1 className="page-title mt-3">Rank <span className="gradient-text">{rank.name}</span></h1>
+                <p className="page-description">{rank.description}</p>
               </div>
-              <aside className={`glass-panel p-6 sm:p-8 lg:col-span-5 ${rank.featured ? "border-violet/45 shadow-violet" : ""}`} aria-label={`Resumo do rank ${rank.name}`}>
+              <aside className={`glass-panel p-6 sm:p-8 lg:col-span-5 ${rank.featured ? "border-violet/45" : ""}`} aria-label={`Resumo do rank ${rank.name}`}>
                 <p className="micro-label">Valor do rank</p>
                 <div className="mt-2 flex flex-wrap items-end gap-2">
                   {rank.price ? (
@@ -312,11 +312,11 @@ export function RankPageClient({ rank }: RankPageClientProps) {
         <VantagensSection rank={rank} />
         <KitsSection rank={rank} />
 
-        <section className="border-y border-white/[0.06] bg-black/20 py-20 sm:py-24" aria-labelledby="comparison-heading">
+        <section className="page-section border-y border-white/10 bg-black/20" aria-labelledby="comparison-heading">
           <div className="site-container">
             <div className="max-w-2xl">
               <p id="comparison-heading" className="eyebrow">Compare os níveis</p>
-              <h2 className="mt-3 text-[26px] font-bold uppercase leading-[34px] tracking-[-0.015em] text-ink sm:text-[32px] sm:leading-10">Encontre o rank ideal</h2>
+              <h2 className="page-heading mt-3">Encontre o rank ideal</h2>
               <p className="mt-4 text-base leading-7 text-muted">Veja como os quatro níveis se diferenciam nos benefícios principais.</p>
             </div>
             <div className="mt-8"><RankComparison /></div>
@@ -325,17 +325,17 @@ export function RankPageClient({ rank }: RankPageClientProps) {
 
         <ComoFuncionaSection />
 
-        <section className="section-shell" aria-labelledby="faq-heading">
+        <section className="page-section" aria-labelledby="faq-heading">
           <div className="site-container grid gap-8 lg:grid-cols-12">
             <div className="lg:col-span-4">
               <p id="faq-heading" className="eyebrow">Perguntas frequentes</p>
-              <h2 className="mt-3 text-[26px] font-bold uppercase leading-[34px] tracking-[-0.015em] text-ink sm:text-[32px] sm:leading-10">Antes de escolher</h2>
+              <h2 className="page-heading mt-3">Antes de escolher</h2>
               <p className="mt-4 text-sm leading-6 text-muted">Informações importantes sobre duração, plataformas e disponibilidade.</p>
             </div>
             <div className="space-y-3 lg:col-span-8">
               {rank.faq.map((item) => (
-                <details key={item.question} className="group rounded-xl border border-white/[0.07] bg-card/75 p-5 open:border-violet/35 open:bg-elevated/70">
-                  <summary className="flex min-h-7 cursor-pointer list-none items-center justify-between gap-4 font-bold text-ink marker:hidden">
+                <details key={item.question} className="content-panel group p-5 open:border-violet/40 open:bg-violet/[0.04]">
+                  <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 text-sm font-bold text-ink marker:hidden">
                     {item.question}
                     <span className="text-xl text-ultraviolet transition-transform group-open:rotate-45" aria-hidden="true">+</span>
                   </summary>

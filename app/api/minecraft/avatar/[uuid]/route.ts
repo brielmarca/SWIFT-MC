@@ -13,7 +13,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ uuid
     : `https://crafatar.com/avatars/${uuid}?size=64&overlay`;
   try {
     const response = await fetch(imageUrl, {
-      signal: AbortSignal.timeout(4000), redirect: "error", next: { revalidate: 3600 },
+      signal: AbortSignal.timeout(4000), redirect: "manual", next: { revalidate: 3600 },
     });
     if (!response.ok || !response.headers.get("content-type")?.startsWith("image/png")) throw new Error("Unavailable avatar");
     const bytes = await readLimitedResponse(response, 65536);

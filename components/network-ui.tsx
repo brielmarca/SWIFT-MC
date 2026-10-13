@@ -17,8 +17,8 @@ export function NetworkRefresh({ loading, onRefresh }: { loading: boolean; onRef
 
 export function NetworkState({ kind, title, description, children }: { kind: "loading" | "empty" | "error"; title: string; description: string; children?: ReactNode }) {
   const Icon = kind === "loading" ? RefreshCw : kind === "error" ? Unplug : Radio;
-  return <div className="network-panel flex min-h-60 flex-col items-center justify-center px-5 py-10 text-center">
-    <div className="mb-4 grid h-12 w-12 place-items-center rounded-xl border border-violet/25 bg-violet/10 text-ultraviolet">
+  return <div className="feedback-panel">
+    <div className="icon-well mb-4">
       <Icon size={22} aria-hidden="true" className={kind === "loading" ? "animate-spin" : ""} />
     </div>
     <div role="status">

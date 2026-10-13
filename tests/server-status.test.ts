@@ -59,6 +59,15 @@ test("connection refusal returns offline", async () => {
   assert.equal((await queryServer(config(closedPort))).online, false);
 });
 
+test("a synchronous runtime socket rejection returns unknown counts, not an API error", async () => {
+  const result = await queryServer(config(25565), 30, () => {
+    throw new Error("Runtime blocked a private target; internal details must stay private");
+  });
+  assert.deepEqual(result, {
+    online: false, players: null, maxPlayers: null, version: null, publicAddress: "play.example.com",
+  });
+});
+
 test("cache shares concurrent requests, caches offline responses and expires", async () => {
   let calls = 0;
   const offline: ServerStatus = { online: false, players: null, maxPlayers: null, version: null, publicAddress: "play.example.com" };

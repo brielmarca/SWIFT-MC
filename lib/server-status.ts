@@ -50,12 +50,12 @@ const responseSchema = z.object({
 });
 
 // Java Server List Ping over TCP. No player samples, MOTD or favicon are exposed.
-export function queryServer(config: ReturnType<typeof getServerConfig>, timeoutMs = 3000): Promise<ServerStatus> {
+export function queryServer(config: ReturnType<typeof getServerConfig>, timeoutMs = 3000, connect = createConnection): Promise<ServerStatus> {
   const offline: ServerStatus = { online: false, players: null, maxPlayers: null, version: null, publicAddress: config.publicAddress };
   if (!Number.isInteger(config.port) || config.port < 1 || config.port > 65535 || config.host.length > 253) return Promise.resolve(offline);
 
-  return new Promise((resolve) => {
-    const socket = createConnection({ host: config.host, port: config.port });
+  return new Promise<ServerStatus>((resolve) => {
+    const socket = connect({ host: config.host, port: config.port });
     let buffer = Buffer.alloc(0);
     let settled = false;
     const timer = setTimeout(() => finish(offline), timeoutMs);
@@ -94,7 +94,9 @@ export function queryServer(config: ReturnType<typeof getServerConfig>, timeoutM
         finish(offline);
       }
     });
-  });
+  // Workers can reject a socket synchronously (for example, a blocked target).
+  // Keep the same public offline shape without disclosing runtime errors.
+  }).catch(() => offline);
 }
 
 export function createStatusCache(load: () => Promise<ServerStatus>, ttl = 15000) {

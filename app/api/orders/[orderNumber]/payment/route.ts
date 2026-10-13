@@ -7,7 +7,7 @@ import {
   OrderNotPayableError,
   startOrderPayment,
 } from "@/lib/payments/start-payment";
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 import { getDatabaseUrl, getMercadoPagoConfig } from "@/lib/server-env";
 
 export const runtime = "nodejs";
@@ -44,7 +44,7 @@ export async function POST(
     getDatabaseUrl();
     const config = getMercadoPagoConfig();
     const checkout = await startOrderPayment(
-      prisma,
+      getPrisma(),
       createMercadoPagoOrdersClient(config.accessToken),
       { orderNumber, orderToken },
       { appUrl: config.appUrl },

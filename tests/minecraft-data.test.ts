@@ -34,7 +34,7 @@ test("transport validates path segments and sends only server credentials", asyn
   assert.equal(ok.status, "ok");
   assert.equal(calls[0].url, "https://data.example.com/v1/players/abc-123/stats");
   assert.equal(calls[0].auth, "Bearer secret-token");
-  assert.equal(calls[0].redirect, "error");
+  assert.equal(calls[0].redirect, "manual");
   for (const bad of [[], [".."], ["../etc"], ["a/b"], ["a b"]]) {
     assert.deepEqual(await fetchMinecraftData(config, bad as string[], fetcher), { status: "unavailable" });
   }
@@ -46,6 +46,7 @@ test("transport normalizes not-found, non-JSON, errors and timeouts without expo
     assert.deepEqual(await fetchMinecraftData(config, ["p"], async () => response), { status: "not_found" });
   }
   for (const response of [
+    new Response(null, { status: 302, headers: { Location: "https://other.example/private" } }),
     new Response("secret detail", { status: 500 }),
     new Response("{}", { headers: { "Content-Type": "text/plain" } }),
     new Response("{broken", { headers: { "Content-Type": "application/json" } }),

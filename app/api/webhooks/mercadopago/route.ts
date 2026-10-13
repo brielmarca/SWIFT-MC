@@ -7,7 +7,7 @@ import {
   verifyMercadoPagoSignature,
 } from "@/lib/payments/mercado-pago-webhook";
 import { createMercadoPagoOrdersClient } from "@/lib/payments/mercado-pago";
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 import { getDatabaseUrl, getMercadoPagoWebhookConfig } from "@/lib/server-env";
 
 export const runtime = "nodejs";
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
 
     getDatabaseUrl();
     await reconcileMercadoPagoWebhook(
-      prisma,
+      getPrisma(),
       createMercadoPagoOrdersClient(config.accessToken),
       envelope,
       { providerOrderId, requestId: providerRequestId, signature },

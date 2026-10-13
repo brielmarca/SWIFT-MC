@@ -1,9 +1,10 @@
 "use client";
 
-import { Search, SearchX, X } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { useDeferredValue, useEffect, useState } from "react";
 import { ranks } from "@/data/ranks";
 import { RankCard } from "./rank-card";
+import { ContentEmpty } from "./content/content-empty";
 
 function normalize(value: string) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR");
@@ -25,13 +26,14 @@ export function StoreCatalog() {
 
   return (
     <div>
-      <div className="mx-auto max-w-6xl">
-        <div className="flex items-center justify-between gap-4 mb-8">
+      <div>
+        <div className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <h2 className="text-2xl font-extrabold uppercase text-ink tracking-wide">VIPs</h2>
           <div className="relative w-full max-w-md">
             <Search size={19} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted" aria-hidden="true" />
             <input
               id="store-search"
+              aria-label="Busque por nome ou benefício"
               type="search"
               value={query}
               onChange={(event) => setQuery(event.currentTarget.value)}
@@ -59,20 +61,17 @@ export function StoreCatalog() {
         </p>
 
         {filteredRanks.length > 0 ? (
-          <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
             {filteredRanks.map((rank) => (
               <RankCard key={rank.slug} rank={rank} />
             ))}
           </div>
         ) : (
-          <div className="glass-panel mx-auto mt-10 max-w-2xl px-6 py-12 text-center">
-            <SearchX size={32} className="mx-auto text-ultraviolet" aria-hidden="true" />
-            <h2 className="mt-4 text-lg font-bold uppercase text-ink">Nenhum rank encontrado</h2>
-            <p className="mt-2 text-sm leading-6 text-muted">Não encontramos ranks para "{deferredQuery.trim()}". Tente outro nome ou benefício.</p>
-            <button type="button" onClick={() => setQuery("")} className="button-secondary mt-6">
+          <ContentEmpty title="Nenhum rank encontrado" description={`Não encontramos ranks para "${deferredQuery.trim()}". Tente outro nome ou benefício.`}>
+            <button type="button" onClick={() => setQuery("")} className="network-action">
               Limpar busca
             </button>
-          </div>
+          </ContentEmpty>
         )}
       </div>
     </div>

@@ -17,7 +17,7 @@ test("Java names reject whitespace, control characters, paths and invalid length
 test("lookup exposes only canonical name, UUID and same-origin avatar", async () => {
   const result = await queryMinecraftProfile("steve", async (url, init) => {
     assert.equal(url, "https://api.mojang.com/users/profiles/minecraft/steve");
-    assert.equal(init?.redirect, "error");
+    assert.equal(init?.redirect, "manual");
     assert.ok(init?.signal);
     return Response.json({ id: "0123456789abcdef0123456789abcdef", name: "Steve", secret: "not exposed" });
   });
@@ -39,6 +39,17 @@ test("lookup times out and returns unavailable", async () => {
     }), 10);
     assert.deepEqual(result, { status: "unavailable" });
   } finally { clearTimeout(keepAlive); }
+});
+
+test("profile redirects are rejected without following another origin", async () => {
+  let calls = 0;
+  const result = await queryMinecraftProfile("Steve", async (_url, init) => {
+    calls++;
+    assert.equal(init?.redirect, "manual");
+    return new Response(null, { status: 302, headers: { Location: "https://other.example/profile" } });
+  });
+  assert.deepEqual(result, { status: "unavailable" });
+  assert.equal(calls, 1);
 });
 
 test("cache coalesces case-insensitive requests and expires negative entries", async () => {

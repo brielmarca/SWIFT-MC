@@ -35,7 +35,7 @@ function CommandBlock({ block, onCopy }: { block: Extract<WikiBlock, { type: "co
           {copied ? "Copiado" : "Copiar"}
         </button>
       </div>
-      <pre className="overflow-x-auto px-4 py-3"><code className="whitespace-pre font-mono text-sm text-ultraviolet">{block.command}</code></pre>
+      <pre tabIndex={0} aria-label="Comando Minecraft" className="overflow-x-auto px-4 py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ultraviolet"><code className="whitespace-pre font-mono text-sm text-ultraviolet">{block.command}</code></pre>
       {block.note && <p className="border-t border-white/[0.06] px-4 py-2 text-xs leading-5 text-muted">{block.note}</p>}
     </div>
   );
@@ -56,13 +56,13 @@ function Callout({ block }: { block: Extract<WikiBlock, { type: "callout" }> }) 
 }
 
 function BlockView({ block, onCopy }: { block: WikiBlock; onCopy: (command: string, ok: boolean) => void }) {
-  if (block.type === "paragraph") return <p className="max-w-3xl text-base leading-7 text-muted">{block.text}</p>;
+  if (block.type === "paragraph") return <p className="content-prose">{block.text}</p>;
 
   if (block.type === "bullets") {
     return (
       <ul className="max-w-3xl space-y-3">
         {block.items.map((item) => (
-          <li key={item} className="flex gap-3 text-base leading-7 text-muted">
+          <li key={item} className="content-prose flex gap-3">
             <span aria-hidden="true" className="mt-3 h-1.5 w-1.5 shrink-0 rounded-full bg-ultraviolet" />
             <span>{item}</span>
           </li>
@@ -75,7 +75,7 @@ function BlockView({ block, onCopy }: { block: WikiBlock; onCopy: (command: stri
     return (
       <ol className="max-w-3xl space-y-3">
         {block.items.map((item, index) => (
-          <li key={item} className="flex gap-3 text-base leading-7 text-muted">
+          <li key={item} className="content-prose flex gap-3">
             <span aria-hidden="true" className="mt-1 grid h-7 w-7 shrink-0 place-items-center rounded-full border border-violet/35 bg-violet/15 text-xs font-extrabold text-ultraviolet">{index + 1}</span>
             <span>{item}</span>
           </li>
@@ -89,7 +89,7 @@ function BlockView({ block, onCopy }: { block: WikiBlock; onCopy: (command: stri
 
   if (block.type === "table") {
     return (
-      <div className="max-w-3xl overflow-x-auto rounded-xl border border-white/[0.08]">
+      <div tabIndex={0} role="region" aria-label={block.caption || "Tabela do guia"} className="max-w-3xl overflow-x-auto rounded-xl border border-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet">
         <table className="w-full min-w-[480px] border-collapse text-sm">
           {block.caption && <caption className="micro-label border-b border-white/[0.06] px-4 py-3 text-left">{block.caption}</caption>}
           <thead>
@@ -99,7 +99,7 @@ function BlockView({ block, onCopy }: { block: WikiBlock; onCopy: (command: stri
           </thead>
           <tbody>
             {block.rows.map((row, rowIndex) => (
-              <tr key={rowIndex} className="border-t border-white/[0.06]">
+              <tr key={rowIndex} className="border-t border-white/10 even:bg-white/[0.02]">
                 {row.map((cell, cellIndex) => <td key={cellIndex} className="px-4 py-3 leading-6 text-muted">{cell}</td>)}
               </tr>
             ))}
@@ -144,10 +144,10 @@ export function WikiBody({ sections }: { sections: readonly WikiSection[] }) {
 
   return (
     <div>
-      <div className="space-y-12">
+      <div className="mx-auto max-w-[68ch] space-y-8">
         {sections.map((section) => (
-          <section key={section.id} id={section.id} aria-labelledby={`wiki-${section.id}-title`} className="scroll-mt-28">
-            <h2 id={`wiki-${section.id}-title`} className="text-2xl font-bold leading-8 text-ink">{section.title}</h2>
+          <section key={section.id} id={section.id} aria-labelledby={`wiki-${section.id}-title`} className="scroll-mt-28 border-t border-white/10 pt-8 first:border-0 first:pt-0">
+            <h2 id={`wiki-${section.id}-title`} className="content-heading">{section.title}</h2>
             <div className="mt-5 space-y-5">
               {section.blocks.map((block, index) => <BlockView key={index} block={block} onCopy={handleCopy} />)}
             </div>

@@ -3,7 +3,7 @@
 import { ChevronDown, Menu, Search, ShoppingBag, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useRef, useState, useEffect } from "react";
+import { useId, useRef, useState, useEffect } from "react";
 import { useCart } from "./cart-provider";
 import { Logo } from "./logo";
 import { SiteSearchDialog, useSiteSearchHotkeys } from "./site-search";
@@ -42,6 +42,7 @@ function NavDropdown({
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelId = useId();
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -69,25 +70,25 @@ function NavDropdown({
   const groupActive = allLinks.some((href) => isActive === href || isActive.startsWith(`${href}/`));
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative" ref={dropdownRef} onBlur={(event) => {
+      if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false);
+    }}>
       <button
         ref={triggerRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
-        onMouseEnter={() => setOpen(true)}
-        onMouseLeave={() => setOpen(false)}
-        className={`nav-link dropdown-trigger ${groupActive ? "text-ultraviolet" : ""}`}
-        aria-haspopup="true"
+        className={`nav-link ${groupActive ? "text-ultraviolet" : ""}`}
         aria-expanded={open}
+        aria-controls={panelId}
         aria-label={label}
       >
         <span>{label}</span>
-        <ChevronDown size={14} className="ml-1 transition-transform" aria-hidden="true" style={{ transform: open ? "rotate(180deg)" : "rotate(0)" }} />
+        <ChevronDown size={14} className="shrink-0 transition-transform" aria-hidden="true" style={{ transform: open ? "rotate(180deg)" : "rotate(0)" }} />
       </button>
       {open && (
         <div
-          className="absolute top-full left-0 z-50 mt-2 w-56 origin-top rounded-xl border border-white/[0.07] bg-void/95 backdrop-blur-xl shadow-lg p-2 animate-dropdown-enter"
-          role="menu"
+          id={panelId}
+          className="absolute left-0 top-full z-50 mt-2 w-56 origin-top rounded-xl border border-white/10 bg-void/95 p-2 shadow-lg backdrop-blur-xl animate-dropdown-enter"
         >
           {items.map((item) => (
             <a
@@ -96,8 +97,8 @@ function NavDropdown({
               target={item.external ? "_blank" : undefined}
               rel={item.external ? "noopener noreferrer" : undefined}
               onClick={() => setOpen(false)}
-              className={`block px-3 py-2 text-sm font-medium text-muted hover:bg-white/5 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet rounded-lg ${isActive === item.href || isActive.startsWith(`${item.href}/`) ? "text-ultraviolet" : ""}`}
-              role="menuitem"
+              className={`flex min-h-11 items-center rounded-lg px-3 py-2 text-sm font-medium hover:bg-white/5 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet ${isActive === item.href || isActive.startsWith(`${item.href}/`) ? "bg-violet/10 text-ultraviolet" : "text-muted"}`}
+              aria-current={isActive === item.href ? "page" : undefined}
             >
               {item.label}
             </a>
@@ -134,6 +135,7 @@ function MobileNav({
 
       <Link
         href="/play"
+        aria-current={pathname === "/play" ? "page" : undefined}
         onClick={onClose}
         className={`rounded-lg px-3 py-3 text-sm font-bold uppercase tracking-wider ${pathname === "/play" ? "text-ultraviolet" : "text-muted"} hover:bg-white/5 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet`}
       >
@@ -150,8 +152,9 @@ function MobileNav({
 
       <Link
         href="/store"
+        aria-current={pathname === "/store" ? "page" : undefined}
         onClick={onClose}
-        className={`rounded-lg px-3 py-3 text-sm font-bold uppercase tracking-wider ${pathname === "/store" ? "text-ultraviolet" : "text-muted"} hover:bg-white/5 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet`}
+        className={`rounded-lg px-3 py-3 text-sm font-bold uppercase tracking-wider ${pathname === "/store" || pathname.startsWith("/ranks/") ? "text-ultraviolet" : "text-muted"} hover:bg-white/5 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet`}
       >
         Loja
       </Link>
@@ -168,21 +171,24 @@ function MobileNavGroup({
   pathname: string;
   onClose: () => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const groupActive = items.some((item) => pathname === item.href || pathname.startsWith(`${item.href}/`));
+  const [open, setOpen] = useState(groupActive);
+  const panelId = useId();
 
   return (
     <div>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-3 py-3 text-sm font-bold uppercase tracking-wider text-muted hover:bg-white/5 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet"
+        className={`flex min-h-11 w-full items-center justify-between rounded-lg px-3 py-3 text-sm font-bold uppercase tracking-wider hover:bg-white/5 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet ${groupActive ? "text-ultraviolet" : "text-muted"}`}
         aria-expanded={open}
+        aria-controls={panelId}
       >
         <span>{items[0].label === "Jogadores" ? "Comunidade" : "Recursos"}</span>
         <ChevronDown size={16} className="transition-transform" aria-hidden="true" style={{ transform: open ? "rotate(180deg)" : "rotate(0)" }} />
       </button>
       {open && (
-        <div className="pl-3 py-2 space-y-1 animate-dropdown-enter">
+        <div id={panelId} className="space-y-1 py-2 pl-3 animate-dropdown-enter">
           {items.map((item) => (
             <a
               key={item.href}
@@ -190,7 +196,8 @@ function MobileNavGroup({
               target={item.external ? "_blank" : undefined}
               rel={item.external ? "noopener noreferrer" : undefined}
               onClick={onClose}
-              className={`block px-3 py-2 text-sm font-medium ${pathname === item.href || pathname.startsWith(`${item.href}/`) ? "text-ultraviolet" : "text-muted"} hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet rounded-lg`}
+              aria-current={pathname === item.href ? "page" : undefined}
+              className={`flex min-h-11 items-center rounded-lg px-3 py-2 text-sm font-medium ${pathname === item.href || pathname.startsWith(`${item.href}/`) ? "bg-violet/10 text-ultraviolet" : "text-muted"} hover:bg-white/5 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet`}
             >
               {item.label}
             </a>
@@ -237,7 +244,7 @@ export function SiteHeader() {
               key={link.href}
               href={link.href}
               aria-current={pathname === link.href || pathname.startsWith(`${link.href}/`) ? "page" : undefined}
-              className={`nav-link ${pathname === link.href || pathname.startsWith(`${link.href}/`) ? "text-ultraviolet" : ""}`}
+              className={`nav-link ${pathname === link.href || pathname.startsWith(`${link.href}/`) || (link.href === "/store" && pathname.startsWith("/ranks/")) ? "text-ultraviolet" : ""}`}
             >
               {link.label}
             </Link>
@@ -260,7 +267,7 @@ export function SiteHeader() {
             type="button"
             data-search-trigger
             onClick={openSearch}
-            className="icon-button hidden md:grid"
+            className="icon-button hidden xl:grid"
             aria-label="Buscar no site (Ctrl+K)"
             aria-keyshortcuts="Control+K Meta+K"
           >

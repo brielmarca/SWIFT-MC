@@ -41,14 +41,14 @@ export function Footer() {
 
         <div>
           <h2 className="micro-label !text-ultraviolet">Jogar</h2>
-          <div className="mt-4 grid gap-2 text-sm text-muted">
+          <div className="mt-3 grid">
             {footerLinks.jogar.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
                 target={link.external ? "_blank" : undefined}
                 rel={link.external ? "noopener noreferrer" : undefined}
-                className="hover:text-ink transition-colors"
+                className="footer-link"
               >
                 {link.label}
               </a>
@@ -58,14 +58,14 @@ export function Footer() {
 
         <div>
           <h2 className="micro-label !text-ultraviolet">Comunidade</h2>
-          <div className="mt-4 grid gap-2 text-sm text-muted">
+          <div className="mt-3 grid">
             {footerLinks.comunidade.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
                 target={link.external ? "_blank" : undefined}
                 rel={link.external ? "noopener noreferrer" : undefined}
-                className="hover:text-ink transition-colors"
+                className="footer-link"
               >
                 {link.label}
               </a>
@@ -75,9 +75,9 @@ export function Footer() {
 
         <div>
           <h2 className="micro-label !text-ultraviolet">Recursos</h2>
-          <div className="mt-4 grid gap-2 text-sm text-muted">
+          <div className="mt-3 grid">
             {footerLinks.recursos.map((link) => (
-              <Link key={link.href} href={link.href} className="hover:text-ink transition-colors">
+              <Link key={link.href} href={link.href} className="footer-link">
                 {link.label}
               </Link>
             ))}
@@ -85,7 +85,7 @@ export function Footer() {
         </div>
       </div>
 
-      <div className="site-container mt-10 border-t border-white/[0.06] pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs leading-5 text-muted">
+      <div className="site-container mt-10 flex flex-col items-start justify-between gap-4 border-t border-white/10 pt-6 text-xs leading-5 text-muted lg:flex-row">
         <p>SWIFT MC não é afiliada a Mojang Studios ou Microsoft. Minecraft é uma marca registrada da Microsoft Corporation.</p>
         <p>&copy; {new Date().getFullYear()} SWIFT MC. Todos os direitos reservados.</p>
       </div>

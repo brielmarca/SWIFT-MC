@@ -29,7 +29,7 @@ function ComparisonValue({ value }: { value: string | number | boolean }) {
 
 export function RankComparison() {
   return (
-    <div className="overflow-x-auto rounded-2xl border border-white/[0.07] bg-card/80 shadow-card">
+    <div tabIndex={0} role="region" aria-label="Comparação de ranks" className="content-panel overflow-x-auto">
       <table className="w-full min-w-[720px] border-collapse text-left">
         <thead>
           <tr className="border-b border-white/[0.08] bg-white/[0.025]">

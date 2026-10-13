@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Diamond, ShieldCheck, Sparkles, Zap } from "lucide-react";
+import { ShieldCheck, Sparkles, Zap } from "lucide-react";
 import { Footer } from "@/components/footer";
 import { SiteHeader } from "@/components/site-header";
 import { StoreCatalog } from "@/components/store-catalog";
@@ -20,19 +20,19 @@ export default function StorePage() {
     <>
       <SiteHeader />
       <main id="main-content">
-        <section className="relative overflow-hidden border-b border-white/[0.06] py-16 sm:py-20">
+        <section className="relative overflow-hidden border-b border-white/10 py-8 sm:py-12">
           <div className="ambient ambient-left" />
           <div className="site-container relative z-10">
-            <div className="mx-auto max-w-3xl text-center">
-              <div className="status-chip !text-ultraviolet"><Diamond size={15} aria-hidden="true" /> Loja oficial</div>
-              <h1 className="mt-6 text-4xl font-extrabold uppercase leading-[1.05] tracking-[-0.04em] text-ink sm:text-5xl lg:text-[56px]">
+            <header className="border-l-2 border-violet pl-4 sm:pl-5">
+              <p className="eyebrow">Loja oficial</p>
+              <h1 className="page-title mt-2">
                 Escolha seu <span className="gradient-text">rank permanente</span>
               </h1>
-              <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-muted">
+              <p className="page-description">
                 Compare preços, duração e vantagens para encontrar o nível ideal para sua jornada no SWIFT Survival.
               </p>
-            </div>
-            <div className="mt-10 grid gap-4 md:grid-cols-3">
+            </header>
+            <div className="mt-6 grid gap-4 lg:grid-cols-3">
               {assurances.map(({ icon: Icon, title, text }) => (
                 <div key={title} className="glass-panel flex items-start gap-4 p-5 text-left">
                   <span className="icon-well !h-10 !w-10 shrink-0"><Icon size={19} aria-hidden="true" /></span>
@@ -46,7 +46,7 @@ export default function StorePage() {
           </div>
         </section>
 
-        <section className="relative min-h-[70vh] flex items-center">
+        <section className="relative flex items-center">
           <div className="absolute inset-0 z-0">
             <img
               src="/brand/enderman.png"
@@ -56,7 +56,7 @@ export default function StorePage() {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/60 to-black/40" />
           </div>
-          <div className="site-container relative z-10 w-full py-20 sm:py-32">
+          <div className="site-container page-section relative z-10">
             <StoreCatalog />
             <p className="mx-auto mt-8 max-w-2xl text-center text-xs leading-5 text-muted">
               Seu carrinho fica salvo apenas neste dispositivo. Nenhuma cobrança será realizada nesta fase.

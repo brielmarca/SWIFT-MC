@@ -23,12 +23,6 @@ function getRankIcon(rank: Rank) {
   return <ShieldCheck className="text-muted" aria-hidden="true" />;
 }
 
-function getRankGlowClass(rank: Rank) {
-  if (rank.slug === "overdrive") return "hover:ring-2 hover:ring-ultraviolet/60 hover:shadow-[0_0_30px_rgba(139,92,246,0.4)]";
-  if (rank.featured) return "hover:ring-1 hover:ring-ultraviolet/40 hover:shadow-[0_0_20px_rgba(139,92,246,0.25)]";
-  return "hover:ring-1 hover:ring-ultraviolet/20 hover:shadow-[0_0_14px_rgba(139,92,246,0.15)]";
-}
-
 export function RankCard({ rank }: RankCardProps) {
   const { hasItem, addItem, openCart } = useCart();
   const router = useRouter();
@@ -48,8 +42,7 @@ export function RankCard({ rank }: RankCardProps) {
 
   return (
     <article
-      className={`rank-card-tall ${rank.featured ? "rank-card-featured" : ""} ${getRankGlowClass(rank)}`}
-      style={{ willChange: "transform, box-shadow" }}
+      className={`rank-card-tall ${rank.featured ? "rank-card-featured" : ""}`}
     >
       {rank.featured && (
         <div className="absolute -top-2 left-1/2 -translate-x-1/2 z-10 popular-ribbon">
@@ -57,18 +50,25 @@ export function RankCard({ rank }: RankCardProps) {
         </div>
       )}
 
-      <div className="relative h-[65%] overflow-hidden rounded-t-xl">
+      <div className="relative aspect-[4/3] shrink-0 overflow-hidden rounded-t-xl">
         <img
+          ref={(image) => {
+            // A local image can fail before React attaches its error handler.
+            if (image?.complete && image.naturalWidth === 0) {
+              image.style.display = "none";
+              image.nextElementSibling?.classList.remove("hidden");
+            }
+          }}
           src={artworkSrc}
           alt={`Arte do rank ${rank.name}`}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          className="h-full w-full object-cover"
           loading="lazy"
           onError={(e) => {
             e.currentTarget.style.display = "none";
             e.currentTarget.nextElementSibling?.classList.remove("hidden");
           }}
         />
-        <div className="placeholder-art absolute inset-0 hidden flex items-center justify-center bg-gradient-to-br from-void via-card to-deep">
+        <div className="absolute inset-0 hidden flex items-center justify-center bg-gradient-to-br from-void via-card to-deep">
           <ImageIcon size={48} className="text-muted/30" aria-hidden="true" />
         </div>
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
@@ -85,13 +85,13 @@ export function RankCard({ rank }: RankCardProps) {
             {hasPrice ? (
               <>
                 <span className="text-xl font-extrabold tabular-nums text-ink">{rank.price}</span>
-                <span className="micro-label pb-1 text-muted/60">total</span>
+                <span className="micro-label pb-1">total</span>
               </>
             ) : (
               <span className="text-xl font-extrabold tabular-nums text-muted">Preço em breve</span>
             )}
           </div>
-          <p className="mt-2 text-xs text-muted/60">Pagamentos pausados — seleção local</p>
+          <p className="mt-2 text-xs leading-5 text-muted">Pagamentos pausados — seleção local</p>
         </div>
 
         <div className="mt-4 grid gap-2">
@@ -99,30 +99,22 @@ export function RankCard({ rank }: RankCardProps) {
             type="button"
             onClick={handleBuyNow}
             disabled={!hasPrice}
-            className={`button-primary w-full py-3.5 text-sm font-bold uppercase tracking-wider transition-all ${
-              !hasPrice
-                ? "cursor-not-allowed opacity-50 hover:opacity-50"
-                : "hover:shadow-[0_0_18px_rgba(139,92,246,0.35)]"
-            }`}
+            className="button-primary w-full px-4"
           >
-            <ShoppingBag size={16} className="inline-block mr-2" aria-hidden="true" />
+            <ShoppingBag size={16} aria-hidden="true" />
             {hasPrice ? "Comprar agora" : "Indisponível"}
           </button>
           <button
             type="button"
             onClick={handleAddToCart}
             disabled={!hasPrice}
-            className={`button-secondary w-full py-2.5 text-sm font-bold uppercase tracking-wider transition-all ${
-              !hasPrice
-                ? "cursor-not-allowed opacity-50 hover:opacity-50"
-                : ""
-            }`}
+            className="button-secondary w-full px-4"
           >
             {isAdded ? "Ver carrinho" : "Adicionar ao carrinho"}
           </button>
           <Link
             href={`/ranks/${rank.slug}`}
-            className="inline-flex min-h-10 w-full items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider text-muted hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet"
+            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg text-xs font-bold uppercase tracking-wider text-muted hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet"
           >
             <Diamond size={15} className="text-ultraviolet" aria-hidden="true" /> Ver benefícios
           </Link>

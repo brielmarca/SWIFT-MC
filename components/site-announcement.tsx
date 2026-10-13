@@ -52,7 +52,7 @@ export function SiteAnnouncement({ announcement }: { announcement: SiteAnnouncem
         <p className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-sm">
           <span className="status-chip !min-h-6 !text-ultraviolet">Aviso</span>
           <strong className="font-bold text-ink">{announcement.title}</strong>
-          <span className="text-muted">{announcement.message}</span>
+          <span className="text-slate-200">{announcement.message}</span>
           {announcement.href && announcement.linkLabel && (
             <Link href={announcement.href} className="inline-flex min-h-11 items-center font-bold text-ultraviolet underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet">
               {announcement.linkLabel}
@@ -63,7 +63,7 @@ export function SiteAnnouncement({ announcement }: { announcement: SiteAnnouncem
           type="button"
           onClick={dismiss}
           aria-label="Dispensar este aviso"
-          className="icon-button !h-9 !w-9 shrink-0"
+          className="icon-button"
         >
           <X size={16} aria-hidden="true" />
         </button>

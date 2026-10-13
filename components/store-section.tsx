@@ -14,7 +14,7 @@ export function StoreSection() {
           title="Ranks permanentes"
           description="Quatro níveis progressivos. Cada um inclui tudo do anterior + kits mais fortes."
         />
-        <div className="mt-10 grid items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-10 grid items-stretch gap-5 sm:grid-cols-2 xl:grid-cols-4">
           {ranks.map((rank) => <RankCardPreview key={rank.slug} rank={rank} />)}
         </div>
         <div className="mt-8 flex justify-center">

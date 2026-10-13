@@ -7,7 +7,7 @@ export async function queryMinecraftProfile(username: string, fetcher: typeof fe
   if (!isJavaUsername(username)) return { status: "invalid" };
   try {
     const response = await fetcher(`https://api.mojang.com/users/profiles/minecraft/${encodeURIComponent(username)}`, {
-      signal: AbortSignal.timeout(timeoutMs), redirect: "error", cache: "no-store",
+      signal: AbortSignal.timeout(timeoutMs), redirect: "manual", cache: "no-store",
     });
     if (response.status === 404 || response.status === 204) return { status: "not_found" };
     if (!response.ok) return { status: "unavailable" };

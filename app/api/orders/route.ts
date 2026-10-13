@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 import { createOrder, IdempotencyConflictError } from "@/lib/orders/create-order";
 import { validateOrderInput } from "@/lib/orders/order-input";
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 import { getDatabaseUrl } from "@/lib/server-env";
 
 export const runtime = "nodejs";
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
 
   try {
     getDatabaseUrl();
-    const order = await createOrder(prisma, validated.data, { idempotencyKey });
+    const order = await createOrder(getPrisma(), validated.data, { idempotencyKey });
 
     return NextResponse.json(order, {
       status: 201,

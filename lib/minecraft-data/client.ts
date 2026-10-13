@@ -35,7 +35,8 @@ export async function fetchMinecraftData(
     for (const [key, value] of entries) url.searchParams.set(key, value);
     const response = await fetcher(url.toString(), {
       method: "GET", headers: { Authorization: `Bearer ${config.token}`, Accept: "application/json" },
-      cache: "no-store", redirect: "error", signal: AbortSignal.timeout(timeoutMs),
+      // Workers does not support redirect: "error". Manual + !ok below rejects 3xx.
+      cache: "no-store", redirect: "manual", signal: AbortSignal.timeout(timeoutMs),
     });
     if (response.status === 404 || response.status === 204) return { status: "not_found" };
     if (!response.ok || response.headers.get("content-type")?.split(";")[0].trim().toLowerCase() !== "application/json") return { status: "unavailable" };

@@ -21,11 +21,11 @@ export function NetworkPage({ active, title, description, children }: {
   return <>
     <SiteHeader />
     <main id="main-content" className="site-container min-h-[70vh] py-8 sm:py-12">
-      <div className="mx-auto max-w-6xl">
+      <div>
         <header className="mb-6 border-l-2 border-violet pl-4 sm:pl-5">
           <p className="eyebrow">{active === "/player" ? "Jogadores SwiftMC" : "Rede SwiftMC"}</p>
-          <h1 className="mt-2 text-2xl font-extrabold uppercase tracking-tight text-ink sm:text-3xl">{title}</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">{description}</p>
+          <h1 className="page-title mt-2">{title}</h1>
+          <p className="page-description">{description}</p>
         </header>
         <nav aria-label="Rede SwiftMC" className="mb-6 grid grid-cols-3 gap-1 rounded-xl border border-white/10 bg-void/80 p-1.5 sm:mb-8 sm:flex sm:gap-2">
           {(active === "/player" ? playerSections : sections).map(({ href, label, icon: Icon }) => <Link key={href} href={href} aria-current={active === href ? "page" : undefined}
