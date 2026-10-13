@@ -1,0 +1,53 @@
+{
+  "name": "nexus-mc-website",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "test": "NODE_OPTIONS='--conditions=react-server' tsx --test tests/*.test.ts",
+    "test:db": "NODE_OPTIONS='--conditions=react-server' tsx --test tests/integration/*.test.ts",
+    "dev:vinext": "vite dev --port 3001",
+    "build:vinext": "vite build",
+    "start:vinext": "vite preview",
+    "deploy:vinext": "vinext-cloudflare deploy"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^6.19.3",
+    "@prisma/client": "^6.19.0",
+    "@vinext/cloudflare": "^1.0.1",
+    "lucide-react": "^0.468.0",
+    "next": "^16.3.8",
+    "pg": "^8.23.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-server-dom-webpack": "^19.3.0",
+    "server-only": "^0.0.1",
+    "vinext": "^1.0.1",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "^2.0.0-beta.sha-52b0dc0e9",
+    "@eslint/js": "^9.39.5",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^22.10.2",
+    "@types/pg": "^8.23.1",
+    "@types/react": "^19.0.3",
+    "@types/react-dom": "^19.0.2",
+    "@vitejs/plugin-react": "^6.1.2",
+    "@vitejs/plugin-rsc": "^0.5.35",
+    "cf": "^1.0.0-beta.12",
+    "eslint": "^9.17.0",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "postcss": "^8.5.28",
+    "prisma": "^6.19.0",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.20.6",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.57.1",
+    "vite": "^8.3.0"
+  },
+  "type": "module"
+}
