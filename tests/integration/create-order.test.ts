@@ -23,7 +23,7 @@ after(async () => {
 
 const databaseOptions = { skip: !hasDatabase ? "DATABASE_URL is not configured" : false };
 
-test("POST /api/orders rejects order for unpriced rank", databaseOptions, async () => {
+test("POST /api/orders blocks demo orders", databaseOptions, async () => {
   assert.ok(db);
 
   const request = new Request("http://localhost/api/orders", {
@@ -41,8 +41,8 @@ test("POST /api/orders rejects order for unpriced rank", databaseOptions, async 
   const response = await POST(request);
   const body = await response.json();
 
-  assert.equal(response.status, 400);
-  assert.equal(body.error, "Rank not available for purchase.");
+  assert.equal(response.status, 503);
+  assert.equal(body.error, "DEMO_ONLY");
 });
 
 test("rejects an unknown rank", databaseOptions, async () => {
@@ -63,8 +63,8 @@ test("rejects an unknown rank", databaseOptions, async () => {
   const response = await POST(request);
   const body = await response.json();
 
-  assert.equal(response.status, 404);
-  assert.equal(body.error, "Rank not found.");
+  assert.equal(response.status, 503);
+  assert.equal(body.error, "DEMO_ONLY");
 });
 
 test("rejects an invalid Minecraft username", databaseOptions, async () => {
@@ -85,8 +85,8 @@ test("rejects an invalid Minecraft username", databaseOptions, async () => {
   const response = await POST(request);
   const body = await response.json();
 
-  assert.equal(response.status, 400);
-  assert.equal(body.error, "Invalid order details.");
+  assert.equal(response.status, 503);
+  assert.equal(body.error, "DEMO_ONLY");
 });
 
 test("rejects an invalid email", databaseOptions, async () => {
@@ -107,11 +107,11 @@ test("rejects an invalid email", databaseOptions, async () => {
   const response = await POST(request);
   const body = await response.json();
 
-  assert.equal(response.status, 400);
-  assert.equal(body.error, "Invalid order details.");
+  assert.equal(response.status, 503);
+  assert.equal(body.error, "DEMO_ONLY");
 });
 
-test("validateOrderInput rejects unpriced rank before database call", () => {
+test("unpriced ranks cannot enable the order endpoint", async () => {
   const result = validateOrderInput({
     rankSlug: "swift",
     minecraftUsername: "ValidPlayer",
@@ -119,9 +119,10 @@ test("validateOrderInput rejects unpriced rank before database call", () => {
   });
 
   assert.deepEqual(result, { error: "UNPRICED_RANK" });
+  assert.equal(POST().status, 503);
 });
 
-test("createOrder is not called for unpriced ranks", databaseOptions, async () => {
+test("demo requests do not create database orders", databaseOptions, async () => {
   assert.ok(db);
 
   const validated = validateOrderInput({
@@ -131,5 +132,7 @@ test("createOrder is not called for unpriced ranks", databaseOptions, async () =
   });
 
   assert.deepEqual(validated, { error: "UNPRICED_RANK" });
-  assert.ok(!validated.data);
+  const before = await db.order.count();
+  assert.equal(POST().status, 503);
+  assert.equal(await db.order.count(), before);
 });

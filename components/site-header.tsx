@@ -10,11 +10,12 @@ import { SiteSearchDialog, useSiteSearchHotkeys } from "./site-search";
 
 const navGroups = {
   comunidade: [
+    { href: "/community", label: "Notícias & Eventos" },
+    { href: "/news", label: "Notícias" },
+    { href: "/events", label: "Eventos" },
     { href: "/player", label: "Jogadores" },
     { href: "/online", label: "Online" },
     { href: "/leaderboards", label: "Ranking" },
-    { href: "/news", label: "Notícias" },
-    { href: "/events", label: "Eventos" },
     { href: "https://discord.gg/Bupp8tWvpu", label: "Discord", external: true },
   ],
   recursos: [
@@ -150,7 +151,7 @@ function MobileNav({
       <div className="border-t border-white/[0.06] my-1" />
 
       {Object.entries(navGroups).map(([key, items]) => (
-        <MobileNavGroup key={key} items={items} pathname={pathname} onClose={onClose} />
+        <MobileNavGroup key={key} label={key === "comunidade" ? "Comunidade" : "Recursos"} items={items} pathname={pathname} onClose={onClose} />
       ))}
 
       <div className="border-t border-white/[0.06] my-1" />
@@ -168,10 +169,12 @@ function MobileNav({
 }
 
 function MobileNavGroup({
+  label,
   items,
   pathname,
   onClose,
 }: {
+  label: string;
   items: Array<{ href: string; label: string; external?: boolean }>;
   pathname: string;
   onClose: () => void;
@@ -189,7 +192,7 @@ function MobileNavGroup({
         aria-expanded={open}
         aria-controls={panelId}
       >
-        <span>{items[0].label === "Jogadores" ? "Comunidade" : "Recursos"}</span>
+        <span>{label}</span>
         <ChevronDown size={16} className="transition-transform" aria-hidden="true" style={{ transform: open ? "rotate(180deg)" : "rotate(0)" }} />
       </button>
       {open && (

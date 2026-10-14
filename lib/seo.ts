@@ -89,6 +89,7 @@ export const PUBLIC_PAGES = {
   "/player": { title: "Jogadores", description: "Busque perfis públicos do Minecraft Java pelo nome do jogador." },
   "/wiki": { title: "Wiki e guias", description: "Guias do servidor SwiftMC: primeiros passos, Survival, economia, comandos e ranks." },
   "/news": { title: "Notícias", description: "Notícias, atualizações e avisos da comunidade do servidor SwiftMC." },
+  "/community": { title: "Notícias & Eventos", description: "Todas as notícias, atualizações e eventos da comunidade SwiftMC em um só lugar." },
   "/events": { title: "Eventos", description: "Eventos e atividades da comunidade do servidor SwiftMC, com data, horário e local." },
   "/rules": { title: "Regras do servidor", description: "Consulte as regras de convivência, jogo justo e segurança da comunidade SwiftMC." },
   "/faq": { title: "Perguntas frequentes", description: "Tire suas dúvidas sobre o servidor, sua conta, VIPs e suporte." },

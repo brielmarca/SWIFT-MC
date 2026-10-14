@@ -23,7 +23,7 @@ let memoryCart: string | undefined;
 type CartContextValue = {
   items: Rank[];
   itemCount: number;
-  subtotalCents: number;
+  subtotalCents: number | null;
   isOpen: boolean;
   ready: boolean;
   addItem: (slug: RankSlug) => boolean;
@@ -202,7 +202,7 @@ function CartDrawer() {
             <h3 className="mt-5 text-lg font-bold uppercase text-ink">Seu carrinho está vazio</h3>
             <p className="mt-2 max-w-xs text-sm leading-6 text-muted">Explore os ranks e escolha as vantagens ideais para sua jornada.</p>
             <Link href="/store#store-search" onClick={closeCart} className="button-primary mt-6">Explorar ranks</Link>
-            <button type="button" disabled className="button-secondary mt-3 cursor-not-allowed opacity-50">Finalizar compra</button>
+            <button type="button" disabled className="button-secondary mt-3 cursor-not-allowed opacity-50">Abrir prévia demo</button>
           </div>
         ) : (
           <>
@@ -213,7 +213,7 @@ function CartDrawer() {
                     <div>
                       <span className={`rank-badge ${rank.featured ? "rank-badge-featured" : ""}`}>{rank.badge}</span>
                       <h3 className="mt-3 text-lg font-extrabold uppercase text-ink">{rank.name}</h3>
-                      <p className="mt-1 text-sm font-bold tabular-nums text-ultraviolet">{rank.price}</p>
+                      <p className="mt-1 text-sm font-bold tabular-nums text-ultraviolet">{rank.price ?? "Preço em breve"}</p>
                     </div>
                     <button type="button" onClick={() => removeItem(rank.slug)} className="icon-button text-muted hover:!border-red-400/40 hover:!text-red-300" aria-label={`Remover ${rank.name} do carrinho`}>
                       <Trash2 size={18} aria-hidden="true" />
@@ -226,10 +226,10 @@ function CartDrawer() {
             <div className="border-t border-white/[0.08] bg-black/20 px-5 py-5 sm:px-6">
               <div className="flex items-end justify-between gap-4">
                 <span className="micro-label">Subtotal</span>
-                <strong className="text-2xl font-extrabold tabular-nums text-ink">{formatPrice(subtotalCents)}</strong>
+                <strong className="text-2xl font-extrabold tabular-nums text-ink">{formatPrice(subtotalCents) ?? "Preço em breve"}</strong>
               </div>
               <p className="mt-2 text-xs leading-5 text-muted">Carrinho local. Nenhum dado será enviado ou cobrado nesta etapa.</p>
-              <Link href="/checkout" onClick={closeCart} className="button-primary mt-5 w-full">Finalizar compra</Link>
+              <Link href="/checkout" onClick={closeCart} className="button-primary mt-5 w-full">Abrir prévia demo</Link>
               <Link href="/store#store-search" onClick={closeCart} className="button-secondary mt-2 w-full">Continuar na loja</Link>
               <button type="button" onClick={clearCart} className="mt-2 min-h-11 w-full text-xs font-bold uppercase tracking-wider text-muted hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet">Limpar carrinho</button>
             </div>

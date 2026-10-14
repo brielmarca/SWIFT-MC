@@ -1,8 +1,8 @@
-import { Server, ShieldCheck, ShoppingBag, Zap } from "lucide-react";
+import { ShieldCheck, ShoppingBag, Zap } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { CopyIpButton } from "./copy-ip-button";
-import { ServerAddress, ServerStatusChip } from "./server-status-provider";
+import { PlayServerCard } from "./play-server-card";
+import { ServerStatusChip } from "./server-status-provider";
 
 const trustStats = [
   { value: "Survival", label: "Modo de jogo" },
@@ -29,19 +29,7 @@ export function Hero() {
             </p>
           </div>
 
-          <div className="glass-panel flex w-full max-w-xl flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex min-w-0 items-center gap-4">
-              <span className="icon-well shrink-0"><Server size={22} aria-hidden="true" /></span>
-              <div className="min-w-0">
-                <span className="micro-label">Direct connect host</span>
-                <p className="truncate font-mono text-lg font-bold tracking-wide text-ink"><ServerAddress /></p>
-                <p className="mt-0.5 text-xs text-muted">
-                  Copie o endereço e adicione à lista de servidores Java.
-                </p>
-              </div>
-            </div>
-            <CopyIpButton />
-          </div>
+          <div className="w-full max-w-xl"><PlayServerCard /></div>
 
           <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
             <Link href="/play" className="button-primary">Como jogar</Link>

@@ -1,10 +1,10 @@
 import { publicPageMetadata } from "@/lib/seo";
 import Link from "next/link";
-import { HelpCircle, MessageCircle, Shield, Server, Wrench } from "lucide-react";
-import { CopyIpButton } from "@/components/copy-ip-button";
+import { HelpCircle, MessageCircle, Shield, Wrench } from "lucide-react";
+import { PlayServerCard } from "@/components/play-server-card";
 import { DiscordLink } from "@/components/discord-link";
 import { Footer } from "@/components/footer";
-import { ServerStatusChip, ServerAddress, ServerStatusProvider } from "@/components/server-status-provider";
+import { ServerAddress, ServerStatusProvider } from "@/components/server-status-provider";
 import { ServerInfoVersion } from "@/components/server-info-version";
 import { ServerInfoStatus } from "@/components/server-info-status";
 import { SiteHeader } from "@/components/site-header";
@@ -22,35 +22,13 @@ export const metadata = publicPageMetadata("/play");
 function ServerInfoWithCopy() {
   return (
     <ServerStatusProvider publicAddress={serverInfo.defaultHost}>
-      <section className="glass-panel mt-6 p-5 text-left sm:p-6" aria-label="Endereço e status do servidor">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex min-w-0 items-center gap-4">
-            <span className="icon-well shrink-0"><Server size={24} aria-hidden="true" /></span>
-            <div className="min-w-0">
-              <span className="micro-label">Direct connect host · {serverInfo.edition}</span>
-              <p className="truncate font-mono text-xl font-bold tracking-wide text-ink"><ServerAddress /></p>
-              <p className="mt-0.5 text-xs text-muted">Copie o endereço e adicione à lista de servidores Java.</p>
-            </div>
-          </div>
-          <CopyIpButton />
-        </div>
-
-        <div className="mt-6 flex flex-wrap items-center gap-3">
-          <ServerStatusChip />
-          <Link href="/status" className="button-secondary">Ver status completo</Link>
-        </div>
-      </section>
+      <div className="mt-6"><PlayServerCard showStatus /></div>
     </ServerStatusProvider>
   );
 }
 
 function HowToJoin() {
-  const steps = [
-    { title: "Abra o Minecraft Java", description: "No launcher, selecione Multijogador no menu principal." },
-    { title: "Adicione o servidor", description: "Clique em Adicionar servidor e escolha um nome de fácil identificação." },
-    { title: "Cole o endereço", description: "No campo Endereço do servidor, cole o IP do SWIFT MC." },
-    { title: "Entre no servidor", description: "Salve, selecione o servidor na lista e clique em Entrar no servidor." },
-  ];
+  const steps = serverInfo.connectionSteps;
 
   return (
     <section aria-labelledby="howto-title" className="page-section">

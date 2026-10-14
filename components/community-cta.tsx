@@ -1,5 +1,5 @@
 import { MessageCircle } from "lucide-react";
-import Image from "next/image";
+import { CommunityArtwork } from "./community-artwork";
 import { DiscordLink } from "./discord-link";
 
 export function CommunityCTA() {
@@ -17,15 +17,7 @@ export function CommunityCTA() {
             </p>
             <DiscordLink className="button-primary mt-6"><MessageCircle size={19} aria-hidden="true" /> Entrar no Discord</DiscordLink>
           </div>
-          <div className="pointer-events-none relative ml-auto mt-6 h-56 w-40 sm:h-64 sm:w-48 lg:absolute lg:inset-y-6 lg:right-8 lg:mt-0 lg:h-auto lg:w-60">
-            <Image
-              src="/brand/enderman.png"
-              alt="Enderman da SWIFT MC segurando um bloco de grama"
-              fill
-              sizes="(max-width: 640px) 160px, (max-width: 1024px) 192px, 240px"
-              className="object-contain object-right-bottom opacity-90 drop-shadow-[0_0_32px_rgba(168,85,247,0.28)]"
-            />
-          </div>
+          <CommunityArtwork />
         </div>
       </div>
     </section>

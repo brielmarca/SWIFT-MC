@@ -45,6 +45,12 @@ export type Rank = {
   comparison: RankComparison;
   faq: readonly RankFaq[];
   featured?: boolean;
+  color: {
+    primary: string;
+    secondary: string;
+    gradient: string;
+    glow: string;
+  };
 };
 
 export function formatPrice(cents: number | null): string | null {
@@ -69,7 +75,7 @@ const sharedFaq: readonly RankFaq[] = [
   },
   {
     question: "Já posso concluir a compra pelo site?",
-    answer: "Ainda não. Nesta etapa você pode comparar os ranks e salvar sua seleção no carrinho local, sem enviar dados ou processar cobranças.",
+    answer: "Você pode experimentar o checkout demonstrativo. Nenhum pedido, pagamento ou benefício real é criado ou ativado.",
   },
   {
     question: "Como resgato os kits?",
@@ -77,7 +83,7 @@ const sharedFaq: readonly RankFaq[] = [
   },
   {
     question: "Os kits e vantagens ativam automaticamente?",
-    answer: "Sim. Os kits e vantagens são ativados automaticamente após a compra.",
+    answer: "O checkout atual é demonstrativo e não ativa kits ou vantagens no servidor.",
   },
 ];
 
@@ -346,6 +352,12 @@ const rankCatalog: readonly Omit<Rank, "price">[] = [
       monthlyMoney: 3000,
     },
     faq: sharedFaq,
+    color: {
+      primary: "#00d4ff",
+      secondary: "#0099cc",
+      gradient: "from-cyan-500 via-cyan-400 to-blue-500",
+      glow: "rgba(0, 212, 255, 0.4)",
+    },
   },
   {
     slug: "eclipse",
@@ -389,6 +401,12 @@ const rankCatalog: readonly Omit<Rank, "price">[] = [
     },
     faq: sharedFaq,
     featured: true,
+    color: {
+      primary: "#cbd5e1",
+      secondary: "#64748b",
+      gradient: "from-slate-400 via-slate-200 to-gray-400",
+      glow: "rgba(203, 213, 225, 0.25)",
+    },
   },
   {
     slug: "cosmic",
@@ -432,6 +450,12 @@ const rankCatalog: readonly Omit<Rank, "price">[] = [
       monthlyMoney: 20000,
     },
     faq: sharedFaq,
+    color: {
+      primary: "#ec4899",
+      secondary: "#d946ef",
+      gradient: "from-pink-500 via-purple-500 to-blue-500",
+      glow: "rgba(236, 72, 153, 0.4)",
+    },
   },
   {
     slug: "overdrive",
@@ -474,6 +498,12 @@ const rankCatalog: readonly Omit<Rank, "price">[] = [
       monthlyMoney: 50000,
     },
     faq: sharedFaq,
+    color: {
+      primary: "#f97316",
+      secondary: "#ef4444",
+      gradient: "from-orange-500 via-red-500 to-amber-500",
+      glow: "rgba(249, 115, 22, 0.4)",
+    },
   },
 ] as const;
 

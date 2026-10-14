@@ -24,7 +24,7 @@ export function NewsTeaser() {
           <p className="mt-12 text-center text-sm text-muted">Nenhuma publicação ainda. Volte em breve.</p>
         )}
         <div className="mt-8 flex justify-center">
-          <Link href="/news" className="button-secondary">Ver todas as novidades</Link>
+          <Link href="/community" className="button-secondary">Ver notícias e eventos</Link>
         </div>
       </div>
     </section>

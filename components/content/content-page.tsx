@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { ArrowLeft, BookOpen, CalendarDays, CircleHelp, Newspaper, ShieldCheck } from "lucide-react";
+import { ArrowLeft, BookOpen, CalendarDays, CircleHelp, Newspaper, ShieldCheck, Users } from "lucide-react";
 import type { ReactNode } from "react";
 import { Footer } from "../footer";
 import { SiteHeader } from "../site-header";
 
 const sections = [
   { href: "/wiki", label: "Wiki", icon: BookOpen },
+  { href: "/community", label: "Comunidade", icon: Users },
   { href: "/news", label: "Notícias", icon: Newspaper },
   { href: "/events", label: "Eventos", icon: CalendarDays },
 ] as const;
@@ -28,7 +29,7 @@ export function ContentPage({ active, title, description, backLabel, metadata, c
     <SiteHeader />
     <main id="main-content" className="site-container min-h-[70vh] py-8 sm:py-12">
       <div>
-        <nav aria-label={isHelp ? "Ajuda SwiftMC" : "Conteúdo SwiftMC"} className="mb-6 flex gap-1 border-b border-white/10 sm:gap-4">
+        <nav aria-label={isHelp ? "Ajuda SwiftMC" : "Conteúdo SwiftMC"} className="mb-6 flex flex-wrap gap-1 border-b border-white/10 sm:gap-4">
           {(isHelp ? helpSections : sections).map(({ href, label, icon: Icon }) => <Link key={href} href={href} aria-current={active === href ? "page" : undefined} className={`inline-flex min-h-11 flex-1 items-center justify-center gap-2 border-b-2 px-2 text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet sm:flex-none sm:px-4 sm:text-sm ${active === href ? "border-ultraviolet text-ultraviolet" : "border-transparent text-muted hover:border-violet/30 hover:text-ink"}`}>
             <Icon size={16} aria-hidden="true" className="hidden shrink-0 sm:block" />{label}
           </Link>)}

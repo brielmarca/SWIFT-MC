@@ -15,6 +15,7 @@ const footerLinks = {
     { href: "/player", label: "Jogadores" },
     { href: "/online", label: "Online" },
     { href: "/leaderboards", label: "Ranking" },
+    { href: "/community", label: "Notícias & Eventos" },
     { href: "/news", label: "Notícias" },
     { href: "/events", label: "Eventos" },
     { href: "https://discord.gg/Bupp8tWvpu", label: "Discord", external: true },

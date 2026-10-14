@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-export function getDiscordUrl(value = process.env.NEXT_PUBLIC_DISCORD_URL): string | null {
+export function getDiscordUrl(value = process.env.NEXT_PUBLIC_DISCORD_URL || "https://discord.gg/Bupp8tWvpu"): string | null {
   try {
     const url = new URL(value || "");
     if (url.protocol !== "https:" || url.username || url.password || url.port) return null;

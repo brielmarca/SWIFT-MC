@@ -18,7 +18,7 @@ const rows: readonly ComparisonRow[] = [
 function ComparisonValue({ value }: { value: string | number | boolean }) {
   if (typeof value === "boolean") {
     return value ? (
-      <span className="inline-flex items-center gap-1.5 text-ultraviolet"><Check size={17} aria-hidden="true" /> Sim</span>
+      <span className="inline-flex items-center gap-1.5"><Check size={17} aria-hidden="true" /> Sim</span>
     ) : (
       <span className="inline-flex items-center gap-1.5 text-muted"><Minus size={17} aria-hidden="true" /> Não</span>
     );
@@ -35,9 +35,9 @@ export function RankComparison() {
           <tr className="border-b border-white/[0.08] bg-white/[0.025]">
             <th scope="col" className="p-5 text-xs font-bold uppercase tracking-wider text-muted">Benefício</th>
             {ranks.map((rank) => (
-              <th key={rank.slug} scope="col" className={`p-5 text-lg font-extrabold uppercase ${rank.featured ? "text-ultraviolet" : "text-ink"}`}>
+              <th key={rank.slug} scope="col" className={`p-5 text-lg font-extrabold uppercase`} style={{ color: rank.color.primary }}>
                 {rank.name}
-                {rank.featured && <span className="micro-label mt-1 !text-ultraviolet">Mais popular</span>}
+                {rank.featured && <span className="micro-label mt-1" style={{ color: rank.color.primary }}>Mais popular</span>}
               </th>
             ))}
           </tr>
@@ -47,7 +47,7 @@ export function RankComparison() {
             <tr key={row.label} className="border-b border-white/[0.06] last:border-0">
               <th scope="row" className="p-5 text-sm font-semibold text-ink">{row.label}</th>
               {ranks.map((rank) => (
-                <td key={rank.slug} className={`p-5 text-sm font-semibold ${rank.featured ? "bg-violet/[0.04] text-ink" : "text-muted"}`}>
+                <td key={rank.slug} className="p-5 text-sm font-semibold text-muted" style={{ color: rank.featured ? rank.color.primary : undefined, backgroundColor: rank.featured ? `${rank.color.primary}0a` : undefined }}>
                   <ComparisonValue value={row.value(rank)} />
                 </td>
               ))}

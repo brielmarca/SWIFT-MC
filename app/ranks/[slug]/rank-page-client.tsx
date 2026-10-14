@@ -37,24 +37,24 @@ type RankPageClientProps = {
   rank: Rank;
 };
 
-function KitAccordion({ kit, initiallyOpen = false }: { kit: KitDisplay; initiallyOpen?: boolean }) {
+function KitAccordion({ kit, initiallyOpen = false, rankColor }: { kit: KitDisplay; initiallyOpen?: boolean; rankColor: Rank["color"] }) {
   const [open] = useState(initiallyOpen);
 
   return (
-    <details open={open} className="content-panel group open:border-violet/40 open:bg-violet/[0.04]">
+    <details open={open} className="content-panel group" style={{ borderColor: `${rankColor.primary}66` }}>
       <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 font-bold text-ink marker:hidden">
         <div className="flex min-w-0 flex-wrap items-center gap-3">
           {kit.icon}
           <span>{kit.title}</span>
           <span className="micro-label px-2 py-0.5 rounded border border-white/[0.1]">{kit.cooldown}</span>
         </div>
-        <span className="text-xl text-ultraviolet transition-transform group-open:rotate-45" aria-hidden="true">+</span>
+        <span className="text-xl transition-transform group-open:rotate-45" style={{ color: rankColor.primary }} aria-hidden="true">+</span>
       </summary>
       <div className="px-5 pb-5 pt-2 border-t border-white/[0.07]">
         <ul className="space-y-3">
           {kit.items.map((item, index) => (
             <li key={`${kit.title}-${index}`} className="flex items-start gap-3 text-sm leading-5 text-ink/90">
-              <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-ultraviolet" aria-hidden="true" />
+              <CheckCircle2 size={18} className="mt-0.5 shrink-0" aria-hidden="true" style={{ color: rankColor.primary }} />
               <span>
                 <strong>{item.quantity}x</strong> {item.name}
                 {item.enchantments && item.enchantments.length > 0 && (
@@ -65,19 +65,19 @@ function KitAccordion({ kit, initiallyOpen = false }: { kit: KitDisplay; initial
           ))}
           {kit.money && (
             <li className="flex items-center gap-3 text-sm leading-5 text-ink/90">
-              <Zap size={18} className="mt-0.5 shrink-0 text-ultraviolet" aria-hidden="true" />
+              <Zap size={18} className="mt-0.5 shrink-0" aria-hidden="true" style={{ color: rankColor.primary }} />
               <span>{kit.money.toLocaleString("pt-BR")} moedas do jogo</span>
             </li>
           )}
           {kit.claimBlocks && (
             <li className="flex items-center gap-3 text-sm leading-5 text-ink/90">
-              <Shield size={18} className="mt-0.5 shrink-0 text-ultraviolet" aria-hidden="true" />
+              <Shield size={18} className="mt-0.5 shrink-0" aria-hidden="true" style={{ color: rankColor.primary }} />
               <span>{kit.claimBlocks.toLocaleString("pt-BR")} blocos de claim</span>
             </li>
           )}
           {kit.mcmmoXp && (
             <li className="flex items-center gap-3 text-sm leading-5 text-ink/90">
-              <Star size={18} className="mt-0.5 shrink-0 text-ultraviolet" aria-hidden="true" />
+              <Star size={18} className="mt-0.5 shrink-0" aria-hidden="true" style={{ color: rankColor.primary }} />
               <span>{kit.mcmmoXp.toLocaleString("pt-BR")} de XP no mcMMO</span>
             </li>
           )}
@@ -93,9 +93,9 @@ function InheritanceNotice({ rank }: { rank: Rank }) {
   if (!parent) return null;
 
   return (
-    <div className="mb-8 rounded-xl border border-violet/30 bg-violet/[0.05] p-5">
+    <div className="mb-8 rounded-xl border p-5" style={{ borderColor: `${rank.color.primary}4d`, backgroundColor: `${rank.color.primary}0d` }}>
       <div className="flex items-center gap-3">
-        <Sparkles size={20} className="text-ultraviolet" aria-hidden="true" />
+        <Sparkles size={20} aria-hidden="true" style={{ color: rank.color.primary }} />
         <div>
           <p className="font-bold text-ink">Inclui todos os benefícios do <span className="gradient-text">{parent.name}</span></p>
           <p className="mt-1 text-sm text-muted">Este rank herda automaticamente todas as vantagens, kits e comandos do rank anterior.</p>
@@ -106,6 +106,7 @@ function InheritanceNotice({ rank }: { rank: Rank }) {
 }
 
 function OverviewSection({ rank }: { rank: Rank }) {
+  const color = rank.color;
   return (
     <section className="page-section" aria-labelledby="overview-heading">
       <div className="site-container grid gap-10 lg:grid-cols-12">
@@ -117,15 +118,15 @@ function OverviewSection({ rank }: { rank: Rank }) {
           <div className="mt-8 grid gap-4 sm:grid-cols-2">
             {rank.summaryBenefits.map((benefit) => (
               <div key={benefit} className="feature-card flex items-start gap-3 !p-5">
-                <CheckCircle2 size={19} className="mt-0.5 shrink-0 text-ultraviolet" aria-hidden="true" />
+                <CheckCircle2 size={19} className="mt-0.5 shrink-0" aria-hidden="true" style={{ color: color.primary }} />
                 <p className="text-sm leading-6 text-ink/90">{benefit}</p>
               </div>
             ))}
           </div>
         </div>
         <aside className="lg:col-span-5">
-          <div className="glass-panel sticky top-24 p-6">
-            <p className="micro-label !text-ultraviolet">Resumo do rank</p>
+          <div className="glass-panel sticky top-24 p-6" style={{ borderColor: `${color.primary}4d` }}>
+            <p className="micro-label" style={{ color: color.primary }}>Resumo do rank</p>
             <dl className="mt-5 space-y-4">
               <div className="flex items-center justify-between gap-4 border-b border-white/[0.07] pb-4">
                 <dt className="text-sm text-muted">Duração</dt>
@@ -133,7 +134,7 @@ function OverviewSection({ rank }: { rank: Rank }) {
               </div>
               <div className="flex items-center justify-between gap-4 border-b border-white/[0.07] pb-4">
                 <dt className="text-sm text-muted">Valor mensal</dt>
-                <dd className="font-bold text-ink">{rank.price ?? "TBD (a definir)"}</dd>
+                <dd className="font-bold text-ink">{rank.price ?? "Preço em breve"}</dd>
               </div>
               <div className="flex items-center justify-between gap-4 border-b border-white/[0.07] pb-4">
                 <dt className="text-sm text-muted">Homes</dt>
@@ -152,7 +153,7 @@ function OverviewSection({ rank }: { rank: Rank }) {
                 <dd className="font-bold text-ink">${rank.comparison.monthlyMoney.toLocaleString("pt-BR")}</dd>
               </div>
             </dl>
-            <AddToCartButton slug={rank.slug} className="button-primary mt-6 w-full" disabled={!rank.price} />
+            <AddToCartButton slug={rank.slug} className={`button-primary mt-6 w-full bg-gradient-to-r ${color.gradient} hover:opacity-90 text-black`} />
             <Link href="/store#store-search" className="mt-2 inline-flex min-h-11 w-full items-center justify-center text-xs font-bold uppercase tracking-wider text-muted hover:text-ink">Continuar na loja</Link>
             <p className="mt-2 text-center text-xs leading-5 text-muted">Sua seleção fica salva localmente neste dispositivo.</p>
           </div>
@@ -174,7 +175,7 @@ function VantagensSection({ rank }: { rank: Rank }) {
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {rank.benefits.map((benefit) => (
             <div key={benefit} className="feature-card flex items-start gap-3 !p-5">
-              <CheckCircle2 size={19} className="mt-0.5 shrink-0 text-ultraviolet" aria-hidden="true" />
+              <CheckCircle2 size={19} className="mt-0.5 shrink-0" aria-hidden="true" style={{ color: rank.color.primary }} />
               <p className="text-sm leading-6 text-ink/90">{benefit}</p>
             </div>
           ))}
@@ -185,11 +186,12 @@ function VantagensSection({ rank }: { rank: Rank }) {
 }
 
 function KitsSection({ rank }: { rank: Rank }) {
+  const color = rank.color;
   const kits: KitDisplay[] = [
     {
       title: "Kit Diário",
       cooldown: "24 horas",
-      icon: <Sword size={20} className="text-ultraviolet" aria-hidden="true" />,
+      icon: <Sword size={20} aria-hidden="true" style={{ color: color.primary }} />,
       items: rank.dailyKit.items,
       money: rank.dailyKit.money,
       claimBlocks: rank.dailyKit.claimBlocks,
@@ -198,7 +200,7 @@ function KitsSection({ rank }: { rank: Rank }) {
     {
       title: "Kit Semanal",
       cooldown: "7 dias",
-      icon: <Package size={20} className="text-ultraviolet" aria-hidden="true" />,
+      icon: <Package size={20} aria-hidden="true" style={{ color: color.primary }} />,
       items: rank.weeklyKit.items,
       money: rank.weeklyKit.money,
       claimBlocks: rank.weeklyKit.claimBlocks,
@@ -207,7 +209,7 @@ function KitsSection({ rank }: { rank: Rank }) {
     {
       title: "Kit Mensal",
       cooldown: "30 dias",
-      icon: <Star size={20} className="text-ultraviolet" aria-hidden="true" />,
+      icon: <Star size={20} aria-hidden="true" style={{ color: color.primary }} />,
       items: rank.monthlyKit.items,
       money: rank.monthlyKit.money,
       claimBlocks: rank.monthlyKit.claimBlocks,
@@ -216,7 +218,7 @@ function KitsSection({ rank }: { rank: Rank }) {
     {
       title: "Kit de Boas-vindas",
       cooldown: "Resgate único",
-      icon: <HeartPulse size={20} className="text-ultraviolet" aria-hidden="true" />,
+      icon: <HeartPulse size={20} aria-hidden="true" style={{ color: color.primary }} />,
       items: rank.welcomeKit.items,
       money: rank.welcomeKit.money,
       claimBlocks: rank.welcomeKit.claimBlocks,
@@ -233,7 +235,7 @@ function KitsSection({ rank }: { rank: Rank }) {
         <InheritanceNotice rank={rank} />
         <div className="mt-8 space-y-4">
           {kits.map((kit) => (
-            <KitAccordion key={kit.title} kit={kit} initiallyOpen={kit.title === "Kit Diário"} />
+            <KitAccordion key={kit.title} kit={kit} initiallyOpen={kit.title === "Kit Diário"} rankColor={color} />
           ))}
         </div>
       </div>
@@ -262,8 +264,8 @@ function ComoFuncionaSection() {
           </div>
           <div className="glass-panel flex flex-col items-center text-center p-6">
             <div className="icon-well !h-14 !w-14"><HeartPulse size={24} className="text-ultraviolet" aria-hidden="true" /></div>
-            <h3 className="mt-4 text-lg font-bold text-ink">Automático</h3>
-            <p className="mt-2 text-sm leading-6 text-muted">Kits e vantagens ativam automaticamente após a compra. Sem burocracia.</p>
+            <h3 className="mt-4 text-lg font-bold text-ink">Checkout demo</h3>
+            <p className="mt-2 text-sm leading-6 text-muted">Experimente o fluxo sem cobranças. Nenhum kit ou benefício será ativado.</p>
           </div>
         </div>
       </div>
@@ -273,6 +275,7 @@ function ComoFuncionaSection() {
 
 export function RankPageClient({ rank }: RankPageClientProps) {
   const artworkSrc = rankArtworkPaths[rank.slug];
+  const color = rank.color;
 
   return (
     <>
@@ -285,32 +288,32 @@ export function RankPageClient({ rank }: RankPageClientProps) {
               <ArrowLeft size={17} aria-hidden="true" /> Voltar para a loja
             </Link>
             <div className="mt-8 grid items-start gap-10 lg:grid-cols-12">
-              <div className="min-w-0 border-l-2 border-violet pl-4 sm:pl-5 lg:col-span-7">
-                <div className={`rank-badge ${rank.featured ? "rank-badge-featured" : ""}`}>
+              <div className="min-w-0 border-l-2 pl-4 sm:pl-5 lg:col-span-7" style={{ borderColor: color.primary }}>
+                <div className={`rank-badge bg-gradient-to-r ${color.gradient} text-black`}>
                   {rank.featured ? <Sparkles size={13} aria-hidden="true" /> : <Diamond size={13} aria-hidden="true" />}
                   {rank.featured ? "Mais popular" : rank.badge}
                 </div>
                 <h1 className="page-title mt-3">Rank <span className="gradient-text">{rank.name}</span></h1>
                 <p className="page-description">{rank.description}</p>
               </div>
-              <aside className={`glass-panel p-6 sm:p-8 lg:col-span-5 ${rank.featured ? "border-violet/45" : ""}`} aria-label={`Resumo do rank ${rank.name}`}>
+              <aside className="glass-panel p-6 sm:p-8 lg:col-span-5" style={{ borderColor: `${color.primary}4d` }} aria-label={`Resumo do rank ${rank.name}`}>
                 <p className="micro-label">Assinatura mensal</p>
                 <div className="mt-2 flex flex-wrap items-end gap-2">
                   {rank.price ? (
                     <span className="text-4xl font-extrabold tabular-nums text-ink">{rank.price}</span>
                   ) : (
-                    <span className="text-4xl font-extrabold tabular-nums text-muted">TBD</span>
+                    <span className="text-4xl font-extrabold tabular-nums text-muted">Preço em breve</span>
                   )}
                   <span className="micro-label pb-1">/mês</span>
                 </div>
                 <div className="mt-5 flex items-center gap-3 rounded-lg border border-white/[0.07] bg-white/[0.03] p-4">
-                  <Clock3 size={20} className="text-ultraviolet" aria-hidden="true" />
+                  <Clock3 size={20} aria-hidden="true" style={{ color: color.primary }} />
                   <div>
                     <p className="micro-label">Duração</p>
                     <p className="mt-0.5 font-bold text-ink">{rank.duration}</p>
                   </div>
                 </div>
-                <AddToCartButton slug={rank.slug} className="button-primary mt-6 w-full" disabled={!rank.price} />
+                <AddToCartButton slug={rank.slug} className={`button-primary mt-6 w-full bg-gradient-to-r ${color.gradient} hover:opacity-90 text-black`} />
                 <Link href="/store#store-search" className="mt-2 inline-flex min-h-11 w-full items-center justify-center text-xs font-bold uppercase tracking-wider text-muted hover:text-ink">Continuar na loja</Link>
                 <p className="mt-2 text-center text-xs leading-5 text-muted">Sua seleção fica salva localmente neste dispositivo.</p>
               </aside>
@@ -362,10 +365,10 @@ export function RankPageClient({ rank }: RankPageClientProps) {
             </div>
             <div className="space-y-3 lg:col-span-8">
               {rank.faq.map((item) => (
-                <details key={item.question} className="content-panel group p-5 open:border-violet/40 open:bg-violet/[0.04]">
+                <details key={item.question} className="content-panel group p-5" style={{ borderColor: `${color.primary}66` }}>
                   <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 text-sm font-bold text-ink marker:hidden">
                     {item.question}
-                    <span className="text-xl text-ultraviolet transition-transform group-open:rotate-45" aria-hidden="true">+</span>
+                    <span className="text-xl transition-transform group-open:rotate-45" aria-hidden="true" style={{ color: color.primary }}>+</span>
                   </summary>
                   <p className="mt-4 max-w-3xl border-t border-white/[0.07] pt-4 text-sm leading-6 text-muted">{item.answer}</p>
                 </details>

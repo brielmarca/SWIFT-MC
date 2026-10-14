@@ -4,11 +4,12 @@ import test from "node:test";
 import { validateOrderInput } from "@/lib/orders/order-input";
 
 for (const rankSlug of ["swift", "eclipse", "cosmic", "overdrive"] as const) {
-  test(`rejects ${rankSlug} order because rank has no configured price`, () => {
+  test(`rejects unpriced ${rankSlug} even when the client supplies a price`, () => {
     const result = validateOrderInput({
       rankSlug,
       minecraftUsername: "ValidPlayer",
       email: "player@example.com",
+      priceCents: 1,
     });
 
     assert.deepEqual(result, { error: "UNPRICED_RANK" });
@@ -48,14 +49,14 @@ test("rejects an invalid email", () => {
   );
 });
 
-test("trims Minecraft outer whitespace without changing casing or internal spacing", () => {
+test("valid whitespace-normalized details cannot bypass an unpriced rank", () => {
   const result = validateOrderInput({
     rankSlug: "eclipse",
     minecraftUsername: "  BedRock   Player  ",
     email: "  Player@Example.COM ",
   });
 
-  assert.equal(result.error, "UNPRICED_RANK");
+  assert.deepEqual(result, { error: "UNPRICED_RANK" });
 });
 
 for (const minecraftUsername of ["Player\nName", "Player\tName", "Player\0Name", "player;/op"]) {

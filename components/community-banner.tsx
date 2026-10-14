@@ -1,12 +1,12 @@
 import { Gift, Headphones, MessageCircle, Users } from "lucide-react";
-import Image from "next/image";
+import { CommunityArtwork } from "./community-artwork";
 import { DiscordLink } from "./discord-link";
 
 export function CommunityBanner() {
   return (
     <section id="comunidade" className="pb-20 pt-2 scroll-mt-24 sm:pb-24">
       <div className="site-container">
-        <div className="community-card">
+        <div className="community-card lg:!pr-80">
           <div className="relative z-10 max-w-2xl">
             <div className="status-chip"><span className="status-dot" /> Comunidade oficial</div>
             <h2 className="mt-6 text-3xl font-extrabold uppercase tracking-[-0.04em] text-ink sm:text-4xl lg:text-5xl">
@@ -22,14 +22,7 @@ export function CommunityBanner() {
             </div>
             <DiscordLink className="button-primary mt-8"><MessageCircle size={19} aria-hidden="true" /> Entrar no Discord</DiscordLink>
           </div>
-          <Image
-            src="/brand/enderman.png"
-            alt="Enderman da SWIFT MC segurando um bloco de grama"
-            width={982}
-            height={1602}
-            sizes="(max-width: 1024px) 0px, 320px"
-            className="pointer-events-none absolute -bottom-20 right-3 hidden h-[460px] w-auto object-contain opacity-80 drop-shadow-[0_0_32px_rgba(168,85,247,0.28)] lg:block"
-          />
+          <CommunityArtwork />
         </div>
       </div>
     </section>

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { formatPrice } from "@/data/ranks";
@@ -10,8 +11,9 @@ import { useCheckoutDraft } from "./checkout-draft-provider";
 import { MinecraftProfileLookup } from "./minecraft-profile-lookup";
 
 export function CartCheckout() {
-  const { items, subtotalCents, removeItem, openCart, ready } = useCart();
-  const { draft, updateDraft } = useCheckoutDraft();
+  const { items, subtotalCents, removeItem, openCart, ready, clearCart } = useCart();
+  const { draft, updateDraft, completeDemo } = useCheckoutDraft();
+  const router = useRouter();
   const [stage, setStage] = useState<"details" | "review">("details");
   const [errors, setErrors] = useState({ username: "", email: "" });
   const heading = useRef<HTMLHeadingElement>(null);
@@ -32,11 +34,19 @@ export function CartCheckout() {
     setStage("review");
   }
 
+  function finishDemo() {
+    const nextErrors = validateCheckoutPreview(draft.username, draft.email);
+    if (stage !== "review" || !items.length || nextErrors.username || nextErrors.email) return;
+    completeDemo({ items: [...items], totalCents: subtotalCents });
+    clearCart();
+    router.push("/checkout/success");
+  }
+
   if (!ready) return <p className="glass-panel min-h-48 p-8 text-muted" role="status">Carregando carrinho…</p>;
   if (!items.length) return <section className="glass-panel p-8 text-center">
     <h2 className="text-2xl font-bold text-ink">Seu carrinho está vazio</h2>
     <p className="mt-3 text-muted">Adicione um rank para revisar sua seleção. Seus dados preenchidos permanecem nesta sessão.</p>
-    <div className="mt-6 flex flex-wrap justify-center gap-3"><Link href="/store" className="button-primary">Explorar ranks</Link><button type="button" disabled className="button-secondary cursor-not-allowed opacity-50">Finalizar compra</button></div>
+    <div className="mt-6 flex flex-wrap justify-center gap-3"><Link href="/store" className="button-primary">Explorar ranks</Link><button type="button" disabled className="button-secondary cursor-not-allowed opacity-50">Concluir demonstração</button></div>
   </section>;
 
   return <div>
@@ -69,12 +79,12 @@ export function CartCheckout() {
       <aside className="glass-panel min-w-0 p-5 sm:p-8 lg:col-span-5" aria-labelledby="checkout-summary-title">
         <h2 id="checkout-summary-title" className="text-xl font-bold uppercase text-ink">Resumo da seleção</h2>
         <ul className="mt-5 divide-y divide-white/10">{items.map((rank) => <li key={rank.slug} className="flex items-center justify-between gap-3 py-4">
-          <div className="min-w-0"><Link className="rounded font-bold text-ink hover:text-ultraviolet focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet" href={`/ranks/${rank.slug}`}>{rank.name}</Link><p className="mt-1 text-xs text-muted">{rank.duration}</p><p className="mt-2 font-bold tabular-nums text-ultraviolet">{rank.price}</p></div>
+          <div className="min-w-0"><Link className="rounded font-bold text-ink hover:text-ultraviolet focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet" href={`/ranks/${rank.slug}`}>{rank.name}</Link><p className="mt-1 text-xs text-muted">{rank.duration}</p><p className="mt-2 font-bold tabular-nums text-ultraviolet">{rank.price ?? "Preço em breve"}</p></div>
           <button type="button" className="icon-button" onClick={() => removeItem(rank.slug)} aria-label={`Remover ${rank.name} do checkout`}><Trash2 size={18} aria-hidden="true" /></button>
         </li>)}</ul>
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-5"><span className="micro-label">Subtotal</span><strong className="text-2xl tabular-nums text-ink">{formatPrice(subtotalCents)}</strong></div>
-        <button type="button" disabled aria-describedby="checkout-unavailable" className="button-primary mt-6 w-full cursor-not-allowed opacity-50">Concluir compra — em breve</button>
-        <p id="checkout-unavailable" className="mt-3 text-sm leading-6 text-muted">A conclusão de compras ainda não está disponível. Você pode revisar os itens e seus dados sem realizar uma cobrança.</p>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-5"><span className="micro-label">Subtotal</span><strong className="text-2xl tabular-nums text-ink">{formatPrice(subtotalCents) ?? "Preço em breve"}</strong></div>
+        <button type="button" disabled={stage !== "review"} onClick={finishDemo} aria-describedby="checkout-demo" className="button-primary mt-6 w-full">Concluir demonstração</button>
+        <p id="checkout-demo" className="mt-3 text-sm leading-6 text-muted">Checkout demo: nenhuma cobrança, pedido real ou ativação de benefícios. Revise seus dados para concluir a simulação local.</p>
       </aside>
     </div>
   </div>;

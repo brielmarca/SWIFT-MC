@@ -6,11 +6,9 @@ import Link from "next/link";
 import type { Rank } from "@/data/ranks";
 import { useCart } from "./cart-provider";
 import { useRouter } from "next/navigation";
+import type { CSSProperties } from "react";
 
-type RankCardProps = {
-  rank: Rank;
-  variant?: "full" | "preview";
-};
+type RankCardProps = { rank: Rank; variant?: "full" | "preview" };
 
 const rankArtworkPaths: Record<string, string> = {
   swift: "/brand/ranks/swift.png",
@@ -25,12 +23,25 @@ function getRankIcon(rank: Rank) {
   return <ShieldCheck className="text-muted" aria-hidden="true" />;
 }
 
+function getRankColorStyles(rank: Rank) {
+  const color = rank.color;
+  return {
+    badge: `bg-gradient-to-r ${color.gradient} text-black`,
+    border: "border-[var(--rank-accent)]/30",
+    glow: "shadow-[0_0_20px_var(--rank-glow)]",
+    buttonPrimary: `bg-gradient-to-r ${color.gradient} hover:opacity-90 text-black`,
+    buttonSecondary: "border-[var(--rank-accent)]/30 hover:bg-[var(--rank-accent)]/10 text-[var(--rank-accent)]",
+    accent: "text-[var(--rank-accent)]",
+  };
+}
+
 export function RankCard({ rank, variant = "full" }: RankCardProps) {
   const { hasItem, addItem, openCart } = useCart();
   const router = useRouter();
   const isAdded = hasItem(rank.slug);
   const hasPrice = rank.price !== null;
   const artworkSrc = rankArtworkPaths[rank.slug];
+  const styles = getRankColorStyles(rank);
 
   const handleAddToCart = () => {
     if (variant === "preview") {
@@ -49,10 +60,11 @@ export function RankCard({ rank, variant = "full" }: RankCardProps) {
 
   return (
     <article
-      className={`rank-card-tall ${rank.featured ? "rank-card-featured" : ""}`}
+      style={{ "--rank-accent": rank.color.primary, "--rank-glow": rank.color.glow } as CSSProperties}
+      className={`rank-card-tall ${rank.featured ? "rank-card-featured" : ""} ${styles.border} ${rank.featured ? styles.glow : ""}`}
     >
       {rank.featured && (
-        <div className="absolute -top-2 left-1/2 -translate-x-1/2 z-10 popular-ribbon">
+        <div className={`absolute -top-2 left-1/2 -translate-x-1/2 z-10 popular-ribbon ${styles.badge}`}>
           <Star size={11} fill="currentColor" aria-hidden="true" /> Mais popular
         </div>
       )}
@@ -72,7 +84,7 @@ export function RankCard({ rank, variant = "full" }: RankCardProps) {
         </div>
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
         <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
-          <span className={`rank-badge ${rank.featured ? "rank-badge-featured" : ""}`}>{rank.badge}</span>
+          <span className={`rank-badge ${styles.badge}`}>{rank.badge}</span>
           {getRankIcon(rank)}
         </div>
       </div>
@@ -87,35 +99,33 @@ export function RankCard({ rank, variant = "full" }: RankCardProps) {
                 <span className="micro-label pb-1">/mês</span>
               </>
             ) : (
-              <span className="text-xl font-extrabold tabular-nums text-muted">Preço mensal em breve</span>
+              <span className="text-xl font-extrabold tabular-nums text-muted">Preço em breve</span>
             )}
           </div>
-          <p className="mt-2 text-xs leading-5 text-muted">Assinatura mensal · Pagamentos pausados — seleção local</p>
+          <p className="mt-2 text-xs leading-5 text-muted">Prévia demo · Preços oficiais ainda não definidos</p>
         </div>
 
         <div className="mt-4 grid gap-2">
           <button
             type="button"
             onClick={handleBuyNow}
-            disabled={!hasPrice}
-            className="button-primary w-full px-4"
+            className={`button-primary w-full px-4 ${styles.buttonPrimary}`}
           >
             <ShoppingBag size={16} aria-hidden="true" />
-            {hasPrice ? "Comprar agora" : "Indisponível"}
+            Ver prévia demo
           </button>
           <button
             type="button"
             onClick={handleAddToCart}
-            disabled={!hasPrice}
-            className="button-secondary w-full px-4"
+            className={`button-secondary w-full px-4 ${styles.buttonSecondary}`}
           >
             {isAdded ? (variant === "preview" ? "Adicionado" : "Ver carrinho") : "Adicionar ao carrinho"}
           </button>
           <Link
             href={`/ranks/${rank.slug}`}
-            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg text-xs font-bold uppercase tracking-wider text-muted hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet"
+            className={`inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg text-xs font-bold uppercase tracking-wider focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet ${styles.accent} hover:text-ink`}
           >
-            <Diamond size={15} className="text-ultraviolet" aria-hidden="true" /> Ver benefícios
+            <Diamond size={15} className={styles.accent} aria-hidden="true" /> Ver benefícios
           </Link>
         </div>
       </div>
