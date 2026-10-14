@@ -1,7 +1,6 @@
 "use client";
 
 import { ChevronDown, Menu, Search, ShoppingBag, X } from "lucide-react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useId, useRef, useState, useEffect } from "react";
 import { useCart } from "./cart-provider";
@@ -9,27 +8,25 @@ import { Logo } from "./logo";
 import { SiteSearchDialog, useSiteSearchHotkeys } from "./site-search";
 
 const navGroups = {
+  jogar: [
+    { href: "/play", label: "Como jogar" },
+    { href: "/status", label: "Status" },
+    { href: "/online", label: "Online" },
+    { href: "/leaderboards", label: "Ranking" },
+  ],
   comunidade: [
-    { href: "/community", label: "Notícias & Eventos" },
+    { href: "/community", label: "Visão geral" },
     { href: "/news", label: "Notícias" },
     { href: "/events", label: "Eventos" },
     { href: "/player", label: "Jogadores" },
-    { href: "/online", label: "Online" },
-    { href: "/leaderboards", label: "Ranking" },
     { href: "https://discord.gg/Bupp8tWvpu", label: "Discord", external: true },
   ],
   recursos: [
     { href: "/wiki", label: "Wiki" },
     { href: "/rules", label: "Regras" },
     { href: "/faq", label: "FAQ" },
-    { href: "/status", label: "Status do servidor" },
   ],
 };
-
-const topLinks = [
-  { href: "/play", label: "Jogar" },
-  { href: "/store", label: "Loja" },
-];
 
 function NavDropdown({
   label,
@@ -139,31 +136,39 @@ function MobileNav({
         <Search size={18} aria-hidden="true" /> Buscar
       </button>
 
-      <Link
-        href="/play"
-        aria-current={pathname === "/play" ? "page" : undefined}
-        onClick={onClose}
-        className={`rounded-lg px-3 py-3 text-sm font-bold uppercase tracking-wider ${pathname === "/play" ? "text-ultraviolet" : "text-muted"} hover:bg-white/5 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet`}
-      >
-        Jogar
-      </Link>
+      <MobileNavGroup
+        label="Jogar"
+        items={navGroups.jogar}
+        pathname={pathname}
+        onClose={onClose}
+      />
 
       <div className="border-t border-white/[0.06] my-1" />
 
-      {Object.entries(navGroups).map(([key, items]) => (
-        <MobileNavGroup key={key} label={key === "comunidade" ? "Comunidade" : "Recursos"} items={items} pathname={pathname} onClose={onClose} />
-      ))}
+<MobileNavGroup
+  label="Loja"
+  items={[{ href: "/store", label: "VIPs" }]}
+  pathname={pathname}
+  onClose={onClose}
+/>
 
       <div className="border-t border-white/[0.06] my-1" />
 
-      <Link
-        href="/store"
-        aria-current={pathname === "/store" ? "page" : undefined}
-        onClick={onClose}
-        className={`rounded-lg px-3 py-3 text-sm font-bold uppercase tracking-wider ${pathname === "/store" || pathname.startsWith("/ranks/") ? "text-ultraviolet" : "text-muted"} hover:bg-white/5 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet`}
-      >
-        Loja
-      </Link>
+      <MobileNavGroup
+        label="Comunidade"
+        items={navGroups.comunidade}
+        pathname={pathname}
+        onClose={onClose}
+      />
+
+      <div className="border-t border-white/[0.06] my-1" />
+
+      <MobileNavGroup
+        label="Recursos"
+        items={navGroups.recursos}
+        pathname={pathname}
+        onClose={onClose}
+      />
     </nav>
   );
 }
@@ -247,17 +252,16 @@ export function SiteHeader() {
         <Logo />
 
         <nav className="hidden items-center gap-6 xl:flex" aria-label="Navegação principal">
-          {topLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              aria-current={pathname === link.href || pathname.startsWith(`${link.href}/`) ? "page" : undefined}
-              className={`nav-link ${pathname === link.href || pathname.startsWith(`${link.href}/`) || (link.href === "/store" && pathname.startsWith("/ranks/")) ? "text-ultraviolet" : ""}`}
-            >
-              {link.label}
-            </Link>
-          ))}
-
+          <NavDropdown
+            label="Jogar"
+            items={navGroups.jogar}
+            isActive={pathname}
+          />
+<NavDropdown
+  label="Loja"
+  items={[{ href: "/store", label: "VIPs" }]}
+  isActive={pathname}
+/>
           <NavDropdown
             label="Comunidade"
             items={navGroups.comunidade}

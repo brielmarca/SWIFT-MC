@@ -7,17 +7,19 @@ type FooterLink = { href: string; label: string; external?: boolean };
 
 const footerLinks = {
   jogar: [
-    { href: "/play", label: "Jogar" },
-    { href: "/store", label: "Loja" },
+    { href: "/play", label: "Como jogar" },
     { href: "/status", label: "Status" },
-  ] as FooterLink[],
-  comunidade: [
-    { href: "/player", label: "Jogadores" },
     { href: "/online", label: "Online" },
     { href: "/leaderboards", label: "Ranking" },
-    { href: "/community", label: "Notícias & Eventos" },
+  ] as FooterLink[],
+  loja: [
+    { href: "/store", label: "VIPs" },
+  ] as FooterLink[],
+  comunidade: [
+    { href: "/community", label: "Visão geral" },
     { href: "/news", label: "Notícias" },
     { href: "/events", label: "Eventos" },
+    { href: "/player", label: "Jogadores" },
     { href: "https://discord.gg/Bupp8tWvpu", label: "Discord", external: true },
   ] as FooterLink[],
   recursos: [
@@ -30,7 +32,7 @@ const footerLinks = {
 export function Footer() {
   return (
     <footer className="border-t border-white/[0.06] bg-black/30 py-12">
-      <div className="site-container grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+      <div className="site-container grid gap-8 md:grid-cols-2 lg:grid-cols-5">
         <div className="lg:col-span-1">
           <Logo />
           <p className="mt-4 max-w-xs text-sm leading-6 text-muted">Rede brasileira de Minecraft Survival moderno, economia balanceada e comunidade ativa.</p>
@@ -41,9 +43,26 @@ export function Footer() {
         </div>
 
         <div>
-          <h2 className="micro-label !text-ultraviolet">Jogar</h2>
+          <h2 className="micro-label !text-ultraviolet">Jogar / Servidor</h2>
           <div className="mt-3 grid">
             {footerLinks.jogar.map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                target={link.external ? "_blank" : undefined}
+                rel={link.external ? "noopener noreferrer" : undefined}
+                className="footer-link"
+              >
+                {link.label}
+              </a>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <h2 className="micro-label !text-ultraviolet">Loja</h2>
+          <div className="mt-3 grid">
+            {footerLinks.loja.map((link) => (
               <a
                 key={link.href}
                 href={link.href}

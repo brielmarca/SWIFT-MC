@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, CheckCircle2, Clock3, Diamond, Package, Sparkles, Star, Shield, Sword, HeartPulse, Zap } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Clock3, Diamond, Package, Sparkles, Star, Shield, Sword, HeartPulse, Zap, Store } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { AddToCartButton } from "@/components/add-to-cart-button";
@@ -16,6 +16,10 @@ const rankArtworkPaths: Record<string, string> = {
   cosmic: "/brand/ranks/cosmic.png",
   overdrive: "/brand/ranks/overdrive.jpeg",
 };
+
+const storeSections = [
+  { href: "/store", label: "VIPs & Cosméticos", icon: Store },
+] as const;
 
 type KitDisplayItem = {
   quantity: number;
@@ -280,14 +284,20 @@ export function RankPageClient({ rank }: RankPageClientProps) {
   return (
     <>
       <SiteHeader />
-      <main id="main-content">
-        <section className="relative overflow-hidden border-b border-white/10 py-8 sm:py-12">
-          <div className="ambient ambient-right" />
-          <div className="site-container relative z-10">
-            <Link href="/store" className="inline-flex min-h-11 items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted hover:text-ink">
-              <ArrowLeft size={17} aria-hidden="true" /> Voltar para a loja
-            </Link>
-            <div className="mt-8 grid items-start gap-10 lg:grid-cols-12">
+      <main id="main-content" className="site-container min-h-[70vh] py-8 sm:py-12">
+        <div>
+          <nav aria-label="Loja" className="mb-6 flex flex-wrap gap-1 border-b border-white/10 sm:gap-4">
+            {storeSections.map(({ href, label, icon: Icon }) => <Link key={href} href={href} aria-current={false} className={`inline-flex min-h-11 flex-1 items-center justify-center gap-2 border-b-2 px-2 text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet sm:flex-none sm:px-4 sm:text-sm ${href === "/store" ? "border-violet/40 text-ultraviolet" : "border-transparent text-muted hover:border-violet/30 hover:text-ink"}`}>
+              <Icon size={16} aria-hidden="true" className="hidden shrink-0 sm:block" />{label}
+            </Link>)}
+          </nav>
+          <section className="relative overflow-hidden border-b border-white/10 py-8 sm:py-12">
+            <div className="ambient ambient-right" />
+            <div className="site-container relative z-10">
+              <Link href="/store" className="inline-flex min-h-11 items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted hover:text-ink">
+                <ArrowLeft size={17} aria-hidden="true" /> Voltar para a loja
+              </Link>
+              <div className="mt-8 grid items-start gap-10 lg:grid-cols-12">
               <div className="min-w-0 border-l-2 pl-4 sm:pl-5 lg:col-span-7" style={{ borderColor: color.primary }}>
                 <div className={`rank-badge bg-gradient-to-r ${color.gradient} text-black`}>
                   {rank.featured ? <Sparkles size={13} aria-hidden="true" /> : <Diamond size={13} aria-hidden="true" />}
@@ -376,8 +386,9 @@ export function RankPageClient({ rank }: RankPageClientProps) {
             </div>
           </div>
         </section>
-      </main>
-      <Footer />
+      </div>
+    </main>
+    <Footer />
     </>
   );
 }
