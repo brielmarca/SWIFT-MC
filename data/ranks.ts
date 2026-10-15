@@ -61,7 +61,12 @@ export function formatPrice(cents: number | null): string | null {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
-  }).format(cents / 100);
+  }).format(cents / 100).replace(/\u00a0/g, " ");
+}
+
+export function formatMonthlyPrice(cents: number | null): string | null {
+  const price = formatPrice(cents);
+  return price === null ? null : `${price}/mês`;
 }
 
 const sharedFaq: readonly RankFaq[] = [
@@ -320,7 +325,7 @@ const rankCatalog: readonly Omit<Rank, "price">[] = [
     slug: "swift",
     name: "Swift",
     badge: "Essencial",
-    priceCents: null,
+    priceCents: 2000,
     duration: "Mensal",
     description: "Assinatura VIP mensal com vantagens para expandir sua fazenda e sua sobrevivência no mapa. A porta de entrada para a experiência VIP.",
     summaryBenefits: [
@@ -363,7 +368,7 @@ const rankCatalog: readonly Omit<Rank, "price">[] = [
     slug: "eclipse",
     name: "Eclipse",
     badge: "Intermediário",
-    priceCents: null,
+    priceCents: 3500,
     duration: "Mensal",
     description: "Assinatura VIP mensal com tudo do Swift + utilidades remotas, mais homes e XP aumentado. Ideal para quem quer mais conveniência no Survival.",
     summaryBenefits: [
@@ -412,7 +417,7 @@ const rankCatalog: readonly Omit<Rank, "price">[] = [
     slug: "cosmic",
     name: "Cosmic",
     badge: "Avançado",
-    priceCents: null,
+    priceCents: 6500,
     duration: "Mensal",
     description: "Assinatura VIP mensal com tudo do Eclipse + bancadas portáteis completas, nick colorido, teleporte sem espera. Para jogadores dedicados.",
     summaryBenefits: [
@@ -461,7 +466,7 @@ const rankCatalog: readonly Omit<Rank, "price">[] = [
     slug: "overdrive",
     name: "Overdrive",
     badge: "Máximo",
-    priceCents: null,
+    priceCents: 9500,
     duration: "Mensal",
     description: "O ápice da experiência VIP em uma assinatura mensal. Tudo do Cosmic + cura, teleporte sem cooldown, 2x mcMMO, kits de netherite, elytra e beacon.",
     summaryBenefits: [
@@ -509,7 +514,7 @@ const rankCatalog: readonly Omit<Rank, "price">[] = [
 
 export const ranks: readonly Rank[] = rankCatalog.map((rank) => ({
   ...rank,
-  price: formatPrice(rank.priceCents),
+  price: formatMonthlyPrice(rank.priceCents),
 }));
 
 export function getRank(slug: string): Rank | undefined {

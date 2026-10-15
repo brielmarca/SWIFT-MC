@@ -13,12 +13,19 @@ test("derives cart products and subtotal from the rank catalog", () => {
   const items = getCartRanks(["swift", "eclipse"]);
 
   assert.deepEqual(items.map((rank) => rank.name), ["Swift", "Eclipse"]);
-  assert.equal(getCartSubtotal(items), null);
-  assert.equal(getCartSubtotal(ranks), null);
-  for (const rank of ranks) {
-    assert.equal(rank.priceCents, null);
-    assert.equal(rank.price, null);
-  }
+  assert.equal(getCartSubtotal(items), 5500);
+  assert.equal(getCartSubtotal(ranks), 21500);
+  assert.equal(Number.isInteger(getCartSubtotal(ranks)), true);
+});
+
+test("persisted client prices cannot override canonical cart prices", () => {
+  const slugs = parseCart(JSON.stringify([
+    { slug: "swift", priceCents: 1, price: "R$ 0,01/mês" },
+    "swift",
+    "overdrive",
+  ]));
+  assert.deepEqual(slugs, ["swift", "overdrive"]);
+  assert.equal(getCartSubtotal(getCartRanks(slugs)), 11500);
 });
 
 test("an unpriced item never produces a misleading zero or partial total", () => {

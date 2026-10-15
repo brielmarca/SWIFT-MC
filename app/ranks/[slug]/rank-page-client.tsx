@@ -314,7 +314,6 @@ export function RankPageClient({ rank }: RankPageClientProps) {
                   ) : (
                     <span className="text-4xl font-extrabold tabular-nums text-muted">Preço em breve</span>
                   )}
-                  <span className="micro-label pb-1">/mês</span>
                 </div>
                 <div className="mt-5 flex items-center gap-3 rounded-lg border border-white/[0.07] bg-white/[0.03] p-4">
                   <Clock3 size={20} aria-hidden="true" style={{ color: color.primary }} />
