@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { execFileSync } from "node:child_process";
 import { formatMonthlyPrice, ranks } from "@/data/ranks";
 
 test("all four ranks have the official integer-cent monthly prices", () => {
@@ -17,4 +18,16 @@ test("monthly formatting preserves cents and does not invent unavailable prices"
   for (const cents of [null, -1, 1.5, NaN, Infinity]) {
     assert.equal(formatMonthlyPrice(cents), null);
   }
+});
+
+test("comparison renders every canonical monthly price without a coming-soon placeholder", () => {
+  const html = execFileSync(process.execPath, ["--import", "tsx", "--input-type=module", "-e",
+    'import React from "react"; import { renderToStaticMarkup } from "react-dom/server"; import { RankComparison } from "./components/rank-comparison.tsx"; process.stdout.write(renderToStaticMarkup(React.createElement(RankComparison)));',
+  ], { cwd: process.cwd(), env: { ...process.env, NODE_OPTIONS: "" }, encoding: "utf8" });
+  assert.ok(html.includes("Preço mensal"));
+  for (const rank of ranks) {
+    assert.ok(rank.price);
+    assert.ok(html.includes(rank.price), rank.slug);
+  }
+  assert.ok(!html.includes("Preço em breve"));
 });

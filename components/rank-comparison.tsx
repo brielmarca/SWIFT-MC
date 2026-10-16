@@ -7,6 +7,7 @@ type ComparisonRow = {
 };
 
 const rows: readonly ComparisonRow[] = [
+  { label: "Preço mensal", value: (rank) => rank.price ?? "Preço em breve" },
   { label: "Duração", value: (rank) => rank.duration },
   { label: "Homes", value: (rank) => rank.comparison.homes },
   { label: "XP mcMMO", value: (rank) => rank.comparison.mcmmoXpBonus },

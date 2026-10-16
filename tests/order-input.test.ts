@@ -18,7 +18,10 @@ for (const rankSlug of ["swift", "eclipse", "cosmic", "overdrive"] as const) {
 
     assert.ok(result.data);
     assert.deepEqual(result.data.rank, getRank(rankSlug));
+    assert.notEqual(result.data.rank.priceCents, 1);
     assert.equal("totalCents" in result.data, false);
+    assert.equal("priceCents" in result.data, false);
+    assert.equal("price" in result.data, false);
   });
 }
 

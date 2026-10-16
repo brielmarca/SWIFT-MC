@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { getCartRanks, getCartSubtotal, parseCart } from "@/lib/cart";
-import { ranks } from "@/data/ranks";
+import { formatMonthlyPrice, ranks } from "@/data/ranks";
 
 test("parses only unique rank slugs from persisted cart data", () => {
   assert.deepEqual(parseCart('["swift","swift","invalid","eclipse"]'), ["swift", "eclipse"]);
@@ -16,6 +16,18 @@ test("derives cart products and subtotal from the rank catalog", () => {
   assert.equal(getCartSubtotal(items), 5500);
   assert.equal(getCartSubtotal(ranks), 21500);
   assert.equal(Number.isInteger(getCartSubtotal(ranks)), true);
+  assert.equal(formatMonthlyPrice(getCartSubtotal(ranks)), "R$ 215,00/mês");
+  assert.equal(formatMonthlyPrice(getCartSubtotal(items)), "R$ 55,00/mês");
+});
+
+test("every cart combination sums canonical prices in integer cents", () => {
+  for (let mask = 0; mask < 1 << ranks.length; mask++) {
+    const selected = ranks.filter((_, index) => mask & (1 << index));
+    const items = getCartRanks(parseCart(JSON.stringify(selected.map((rank) => rank.slug))));
+    const total = getCartSubtotal(items);
+    assert.equal(total, selected.reduce((sum, rank) => sum + rank.priceCents!, 0));
+    assert.ok(Number.isInteger(total));
+  }
 });
 
 test("persisted client prices cannot override canonical cart prices", () => {

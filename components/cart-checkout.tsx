@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { formatPrice } from "@/data/ranks";
+import { formatMonthlyPrice } from "@/data/ranks";
 import { validateCheckoutPreview } from "@/lib/checkout-preview";
 import { useCart } from "./cart-provider";
 import { useCheckoutDraft } from "./checkout-draft-provider";
@@ -82,7 +82,7 @@ export function CartCheckout() {
           <div className="min-w-0"><Link className="rounded font-bold text-ink hover:text-ultraviolet focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet" href={`/ranks/${rank.slug}`}>{rank.name}</Link><p className="mt-1 text-xs text-muted">{rank.duration}</p><p className="mt-2 font-bold tabular-nums text-ultraviolet">{rank.price ?? "Preço em breve"}</p></div>
           <button type="button" className="icon-button" onClick={() => removeItem(rank.slug)} aria-label={`Remover ${rank.name} do checkout`}><Trash2 size={18} aria-hidden="true" /></button>
         </li>)}</ul>
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-5"><span className="micro-label">Subtotal</span><strong className="text-2xl tabular-nums text-ink">{formatPrice(subtotalCents) ?? "Preço em breve"}</strong></div>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-5"><span className="micro-label">Subtotal</span><strong className="text-2xl tabular-nums text-ink">{formatMonthlyPrice(subtotalCents) ?? "Preço em breve"}</strong></div>
         <button type="button" disabled={stage !== "review"} onClick={finishDemo} aria-describedby="checkout-demo" className="button-primary mt-6 w-full">Concluir demonstração</button>
         <p id="checkout-demo" className="mt-3 text-sm leading-6 text-muted">Checkout demo: nenhuma cobrança, pedido real ou ativação de benefícios. Revise seus dados para concluir a simulação local.</p>
       </aside>

@@ -13,7 +13,7 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from "react";
-import { formatPrice, type Rank, type RankSlug } from "@/data/ranks";
+import { formatMonthlyPrice, type Rank, type RankSlug } from "@/data/ranks";
 import { CART_STORAGE_KEY, getCartRanks, getCartSubtotal, parseCart } from "@/lib/cart";
 
 const EMPTY_CART = "[]";
@@ -226,7 +226,7 @@ function CartDrawer() {
             <div className="border-t border-white/[0.08] bg-black/20 px-5 py-5 sm:px-6">
               <div className="flex items-end justify-between gap-4">
                 <span className="micro-label">Subtotal</span>
-                <strong className="text-2xl font-extrabold tabular-nums text-ink">{formatPrice(subtotalCents) ?? "Preço em breve"}</strong>
+                <strong className="text-2xl font-extrabold tabular-nums text-ink">{formatMonthlyPrice(subtotalCents) ?? "Preço em breve"}</strong>
               </div>
               <p className="mt-2 text-xs leading-5 text-muted">Carrinho local. Nenhum dado será enviado ou cobrado nesta etapa.</p>
               <Link href="/checkout" onClick={closeCart} className="button-primary mt-5 w-full">Abrir prévia demo</Link>
