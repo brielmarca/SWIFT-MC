@@ -13,7 +13,7 @@ const storeSections = [
 
 const assurances = [
   { icon: Zap, title: "Escolha rápida", text: "Compare os níveis e salve sua seleção no carrinho deste dispositivo." },
-  { icon: ShieldCheck, title: "Assinatura mensal", text: "Cobrança a cada mês, com benefícios disponíveis enquanto a assinatura estiver ativa." },
+  { icon: ShieldCheck, title: "Valores mensais", text: "Todos os VIPs são mensais. O checkout é apenas uma demonstração, sem cobrança ou ativação de VIP." },
   { icon: Sparkles, title: "Progressão preservada", text: "Cada nível inclui vantagens que ampliam sua experiência Survival." },
 ];
 

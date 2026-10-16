@@ -45,3 +45,10 @@ test("an unpriced item never produces a misleading zero or partial total", () =>
   assert.equal(getCartSubtotal([{ priceCents: null }]), null);
   assert.equal(getCartSubtotal([]), 0);
 });
+
+test("invalid cents and overflowing totals never produce a payable-looking subtotal", () => {
+  for (const priceCents of [-1, 0.5, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1]) {
+    assert.equal(getCartSubtotal([{ priceCents: 2000 }, { priceCents }]), null);
+  }
+  assert.equal(getCartSubtotal([{ priceCents: Number.MAX_SAFE_INTEGER }, { priceCents: 1 }]), null);
+});

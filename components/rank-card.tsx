@@ -100,6 +100,7 @@ export function RankCard({ rank, variant = "full" }: RankCardProps) {
             )}
           </div>
           <p className="mt-2 text-xs leading-5 text-muted">Prévia demo · Assinatura mensal · Sem cobrança real</p>
+          {variant === "full" && <ul className="mt-4 space-y-2 text-xs leading-5 text-muted">{rank.summaryBenefits.slice(0, 2).map((benefit) => <li key={benefit}>{benefit}</li>)}</ul>}
         </div>
 
         <div className="mt-4 grid gap-2">

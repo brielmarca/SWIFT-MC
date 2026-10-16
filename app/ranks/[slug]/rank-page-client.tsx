@@ -18,7 +18,7 @@ const rankArtworkPaths: Record<string, string> = {
 };
 
 const storeSections = [
-  { href: "/store", label: "VIPs & Cosméticos", icon: Store },
+  { href: "/store", label: "VIPs", icon: Store },
 ] as const;
 
 type KitDisplayItem = {
@@ -159,7 +159,7 @@ function OverviewSection({ rank }: { rank: Rank }) {
             </dl>
             <AddToCartButton slug={rank.slug} className={`button-primary mt-6 w-full bg-gradient-to-r ${color.gradient} hover:opacity-90 text-black`} />
             <Link href="/store#store-search" className="mt-2 inline-flex min-h-11 w-full items-center justify-center text-xs font-bold uppercase tracking-wider text-muted hover:text-ink">Continuar na loja</Link>
-            <p className="mt-2 text-center text-xs leading-5 text-muted">Sua seleção fica salva localmente neste dispositivo.</p>
+            <p className="mt-2 text-center text-xs leading-5 text-muted">Prévia demo: nenhuma cobrança ou ativação de VIP. Sua seleção fica salva neste dispositivo.</p>
           </div>
         </aside>
       </div>
@@ -253,7 +253,8 @@ function ComoFuncionaSection() {
       <div className="site-container">
         <div className="mx-auto max-w-3xl text-center">
           <p id="como-funciona-heading" className="eyebrow">Como funciona</p>
-          <h2 className="page-heading mt-3">Ativação e resgate dos kits</h2>
+          <h2 className="page-heading mt-3">Resgate dos kits no servidor</h2>
+          <p className="mt-4 text-sm leading-6 text-muted">Informações para quem já possui um VIP ativo. A demonstração do site não ativa VIPs nem libera kits.</p>
         </div>
         <div className="mt-12 grid gap-6 md:grid-cols-3">
           <div className="glass-panel flex flex-col items-center text-center p-6">
@@ -310,7 +311,7 @@ export function RankPageClient({ rank }: RankPageClientProps) {
                 <p className="micro-label">Assinatura mensal</p>
                 <div className="mt-2 flex flex-wrap items-end gap-2">
                   {rank.price ? (
-                    <span className="text-4xl font-extrabold tabular-nums text-ink">{rank.price}</span>
+                    <span className="text-2xl font-extrabold tabular-nums text-ink sm:text-3xl xl:text-4xl">{rank.price}</span>
                   ) : (
                     <span className="text-4xl font-extrabold tabular-nums text-muted">Preço em breve</span>
                   )}
@@ -324,7 +325,7 @@ export function RankPageClient({ rank }: RankPageClientProps) {
                 </div>
                 <AddToCartButton slug={rank.slug} className={`button-primary mt-6 w-full bg-gradient-to-r ${color.gradient} hover:opacity-90 text-black`} />
                 <Link href="/store#store-search" className="mt-2 inline-flex min-h-11 w-full items-center justify-center text-xs font-bold uppercase tracking-wider text-muted hover:text-ink">Continuar na loja</Link>
-                <p className="mt-2 text-center text-xs leading-5 text-muted">Sua seleção fica salva localmente neste dispositivo.</p>
+                <p className="mt-2 text-center text-xs leading-5 text-muted">Prévia demo: nenhuma cobrança ou ativação de VIP. Sua seleção fica salva neste dispositivo.</p>
               </aside>
             </div>
           </div>

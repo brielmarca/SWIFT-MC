@@ -113,7 +113,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     <CartContext.Provider value={value}>
       {children}
       <CartDrawer />
-      <div className={`cart-toast ${toast ? "cart-toast-visible" : ""}`} role="status" aria-live="polite" aria-atomic="true">
+      <div className={`cart-toast ${toast && !isOpen ? "cart-toast-visible" : ""}`} role="status" aria-live="polite" aria-atomic="true">
         {toast && <><CheckCircle2 size={18} aria-hidden="true" /> {toast}</>}
       </div>
       {toast && <ToastTimer message={toast} onDone={() => setToast("")} />}
@@ -156,7 +156,7 @@ function CartDrawer() {
       if (!focusable.length) return;
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
+      if (event.shiftKey && (document.activeElement === first || document.activeElement === panelRef.current)) {
         event.preventDefault();
         last.focus();
       } else if (!event.shiftKey && document.activeElement === last) {
@@ -188,7 +188,7 @@ function CartDrawer() {
       >
         <div className="flex items-center justify-between gap-4 border-b border-white/[0.08] px-5 py-5 sm:px-6">
           <div>
-            <p className="eyebrow">Sua seleção</p>
+            <p className="eyebrow">Sua seleção · Demo</p>
             <h2 id="cart-title" className="mt-1 text-xl font-extrabold uppercase text-ink">Carrinho</h2>
           </div>
           <button type="button" onClick={closeCart} className="icon-button" aria-label="Fechar carrinho">
@@ -212,7 +212,7 @@ function CartDrawer() {
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <span className={`rank-badge ${rank.featured ? "rank-badge-featured" : ""}`}>{rank.badge}</span>
-                      <h3 className="mt-3 text-lg font-extrabold uppercase text-ink">{rank.name}</h3>
+                      <h3 className="mt-3 text-lg font-extrabold uppercase" style={{ color: rank.color.primary }}>{rank.name}</h3>
                       <p className="mt-1 text-sm font-bold tabular-nums text-ultraviolet">{rank.price ?? "Preço em breve"}</p>
                     </div>
                     <button type="button" onClick={() => removeItem(rank.slug)} className="icon-button text-muted hover:!border-red-400/40 hover:!text-red-300" aria-label={`Remover ${rank.name} do carrinho`}>
@@ -224,12 +224,12 @@ function CartDrawer() {
               ))}
             </div>
             <div className="border-t border-white/[0.08] bg-black/20 px-5 py-5 sm:px-6">
-              <div className="flex items-end justify-between gap-4">
-                <span className="micro-label">Subtotal</span>
-                <strong className="text-2xl font-extrabold tabular-nums text-ink">{formatMonthlyPrice(subtotalCents) ?? "Preço em breve"}</strong>
+              <div className="flex flex-wrap items-end justify-between gap-2">
+                <span className="micro-label">Subtotal · {items.length} {items.length === 1 ? "VIP" : "VIPs"}</span>
+                <strong className="text-2xl font-extrabold tabular-nums text-ink">{formatMonthlyPrice(subtotalCents) ?? "Total indisponível"}</strong>
               </div>
-              <p className="mt-2 text-xs leading-5 text-muted">Carrinho local. Nenhum dado será enviado ou cobrado nesta etapa.</p>
-              <Link href="/checkout" onClick={closeCart} className="button-primary mt-5 w-full">Abrir prévia demo</Link>
+              <p className="mt-2 text-xs leading-5 text-muted">Soma dos valores mensais selecionados. Simulação local, sem cobrança ou ativação de VIP.</p>
+              {subtotalCents === null ? <p role="status" className="mt-5 text-sm text-amber-200">Não foi possível calcular todos os valores. Revise sua seleção antes de continuar.</p> : <Link href="/checkout" onClick={closeCart} className="button-primary mt-5 w-full">Abrir prévia demo</Link>}
               <Link href="/store#store-search" onClick={closeCart} className="button-secondary mt-2 w-full">Continuar na loja</Link>
               <button type="button" onClick={clearCart} className="mt-2 min-h-11 w-full text-xs font-bold uppercase tracking-wider text-muted hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet">Limpar carrinho</button>
             </div>

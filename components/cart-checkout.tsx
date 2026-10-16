@@ -36,7 +36,7 @@ export function CartCheckout() {
 
   function finishDemo() {
     const nextErrors = validateCheckoutPreview(draft.username, draft.email);
-    if (stage !== "review" || !items.length || nextErrors.username || nextErrors.email) return;
+    if (stage !== "review" || !items.length || subtotalCents === null || nextErrors.username || nextErrors.email) return;
     completeDemo({ items: [...items], totalCents: subtotalCents });
     clearCart();
     router.push("/checkout/success");
@@ -51,10 +51,10 @@ export function CartCheckout() {
 
   return <div>
     <button type="button" onClick={openCart} className="button-secondary mb-6"><ArrowLeft size={17} aria-hidden="true" /> Voltar ao carrinho</button>
-    <ol aria-label="Etapas do checkout" className="mb-6 flex flex-wrap gap-4 text-sm font-bold"><li aria-current={stage === "details" ? "step" : undefined} className="text-muted aria-[current=step]:text-ultraviolet">1. Dados do jogador</li><li aria-current={stage === "review" ? "step" : undefined} className="text-muted aria-[current=step]:text-ultraviolet">2. Revisão</li></ol>
+    <ol aria-label="Etapas do checkout demo" className="mb-6 flex flex-wrap gap-4 text-sm font-bold"><li aria-current={stage === "details" ? "step" : undefined} className="text-muted aria-[current=step]:text-ultraviolet">1. Dados do jogador</li><li aria-current={stage === "review" ? "step" : undefined} className="text-muted aria-[current=step]:text-ultraviolet">2. Revisão</li><li className="text-muted">3. Confirmação demo</li></ol>
     <div className="grid items-start gap-6 lg:grid-cols-12">
       <section className="glass-panel min-w-0 p-5 sm:p-8 lg:col-span-7">
-        <h2 ref={heading} tabIndex={-1} className="text-2xl font-bold text-ink focus:outline-none">{stage === "details" ? "Dados do jogador" : "Revise seus dados"}</h2>
+        <h2 ref={heading} tabIndex={-1} className="scroll-mt-28 text-2xl font-bold text-ink focus:outline-none">{stage === "details" ? "Dados do jogador" : "Revise seus dados"}</h2>
         {stage === "details" ? <form onSubmit={review} noValidate className="mt-6 space-y-6">
           <div>
             <label htmlFor="preview-username" className="text-sm font-bold text-ink">Nome no Minecraft Java</label>
@@ -82,8 +82,10 @@ export function CartCheckout() {
           <div className="min-w-0"><Link className="rounded font-bold text-ink hover:text-ultraviolet focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet" href={`/ranks/${rank.slug}`}>{rank.name}</Link><p className="mt-1 text-xs text-muted">{rank.duration}</p><p className="mt-2 font-bold tabular-nums text-ultraviolet">{rank.price ?? "Preço em breve"}</p></div>
           <button type="button" className="icon-button" onClick={() => removeItem(rank.slug)} aria-label={`Remover ${rank.name} do checkout`}><Trash2 size={18} aria-hidden="true" /></button>
         </li>)}</ul>
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-5"><span className="micro-label">Subtotal</span><strong className="text-2xl tabular-nums text-ink">{formatMonthlyPrice(subtotalCents) ?? "Preço em breve"}</strong></div>
-        <button type="button" disabled={stage !== "review"} onClick={finishDemo} aria-describedby="checkout-demo" className="button-primary mt-6 w-full">Concluir demonstração</button>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-5"><span className="micro-label">Subtotal · {items.length} {items.length === 1 ? "VIP" : "VIPs"}</span><strong className="text-2xl tabular-nums text-ink">{formatMonthlyPrice(subtotalCents) ?? "Total indisponível"}</strong></div>
+        <p className="mt-2 text-xs leading-5 text-muted">Soma dos valores mensais selecionados. Nenhuma cobrança será feita.</p>
+        {subtotalCents === null && <p role="alert" className="mt-3 text-sm text-amber-200">Não foi possível calcular todos os valores. Revise sua seleção antes de concluir a demonstração.</p>}
+        <button type="button" disabled={stage !== "review" || subtotalCents === null} onClick={finishDemo} aria-describedby="checkout-demo" className="button-primary mt-6 w-full">Concluir demonstração</button>
         <p id="checkout-demo" className="mt-3 text-sm leading-6 text-muted">Checkout demo: nenhuma cobrança, pedido real ou ativação de benefícios. Revise seus dados para concluir a simulação local.</p>
       </aside>
     </div>
