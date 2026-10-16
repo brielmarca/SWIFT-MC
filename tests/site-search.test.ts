@@ -34,9 +34,11 @@ test("news search reuses published posts, newest best match first, drafts hidden
 
 test("rules and FAQ results deep-link to their anchors", () => {
   const rule = searchSite("trapaças", NOW).find((group) => group.id === "regras");
-  assert.ok(rule?.items.some((item) => item.href === "/rules#R03"));
-  const byId = searchSite("R01", NOW).find((group) => group.id === "regras");
-  assert.equal(byId?.items[0].href, "/rules#R01", "searching by rule ID works");
+  assert.ok(rule?.items.some((item) => item.href === "/rules#servidor-2.1"));
+  const byId = searchSite("servidor-1.1", NOW).find((group) => group.id === "regras");
+  assert.equal(byId?.items[0].href, "/rules#servidor-1.1", "searching by rule ID works");
+  const discord = searchSite("discord-7.4", NOW).find((group) => group.id === "regras");
+  assert.equal(discord?.items[0].href, "/rules#discord-7.4");
   const faq = searchSite("versão", NOW).find((group) => group.id === "faq");
   assert.ok(faq?.items.some((item) => item.href === "/faq#versao"));
 });

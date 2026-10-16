@@ -1,15 +1,13 @@
+import { regulations } from "./official-rules";
+
 export type GuideEntry = { id: string; category: string; title: string; body: string };
 
-export const rules: readonly GuideEntry[] = [
-  { id: "R01", category: "Convivência", title: "Respeite os outros jogadores", body: "Não pratique assédio, discriminação, ameaças ou ataques pessoais. Respeite a equipe e as diferenças entre os membros da comunidade." },
-  { id: "R02", category: "Convivência", title: "Cuide do chat", body: "Evite spam, flood e mensagens ofensivas. Não divulgue links maliciosos ou propaganda sem autorização da equipe." },
-  { id: "R03", category: "Jogo justo", title: "Não use trapaças", body: "Não utilize hacks, x-ray, bots ou modificações que ofereçam vantagem injusta. Em caso de dúvida sobre um mod, consulte a equipe antes de usá-lo." },
-  { id: "R04", category: "Jogo justo", title: "Reporte falhas", body: "Não explore bugs, duplicações ou falhas da economia. Informe o problema à equipe de forma privada e não compartilhe instruções para abusar dele." },
-  { id: "R05", category: "Terrenos e economia", title: "Respeite construções e recursos", body: "Não destrua construções de outros jogadores nem contorne proteções. Peça autorização antes de alterar um terreno compartilhado ou retirar recursos de outra pessoa." },
-  { id: "R06", category: "Terrenos e economia", title: "Negocie com transparência", body: "Cumpra os acordos feitos nas trocas. Não use informações falsas ou se passe por outra pessoa para obter itens, moedas ou acesso a terrenos." },
-  { id: "R07", category: "Segurança e suporte", title: "Proteja dados pessoais", body: "Não publique dados pessoais de terceiros. Nunca peça senhas, códigos de acesso ou informações privadas de outros jogadores." },
-  { id: "R08", category: "Segurança e suporte", title: "Use os canais de suporte", body: "Relate conflitos à equipe com contexto, nomes e evidências disponíveis. Não faça denúncias falsas nem tente resolver disputas com ameaças ou retaliações." },
-];
+export const rules: readonly GuideEntry[] = regulations.flatMap((regulation) => regulation.sections.flatMap((section) => section.blocks.map((block) => ({
+  id: block.id,
+  category: `${regulation.label} · ${section.title}`,
+  title: block.paragraphs[0],
+  body: block.paragraphs.slice(1).join("\n\n"),
+}))));
 
 export const faqs: readonly GuideEntry[] = [
   { id: "como-entrar", category: "Servidor", title: "Como entro no servidor?", body: "Na página Jogar, copie o endereço e confira a versão. No Minecraft Java, abra Multijogador → Adicionar servidor e cole o endereço completo." },

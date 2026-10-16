@@ -91,7 +91,7 @@ export const PUBLIC_PAGES = {
   "/news": { title: "Notícias", description: "Notícias, atualizações e avisos da comunidade do servidor SwiftMC." },
   "/community": { title: "Notícias & Eventos", description: "Todas as notícias, atualizações e eventos da comunidade SwiftMC em um só lugar." },
   "/events": { title: "Eventos", description: "Eventos e atividades da comunidade do servidor SwiftMC, com data, horário e local." },
-  "/rules": { title: "Regras do servidor", description: "Consulte as regras de convivência, jogo justo e segurança da comunidade SwiftMC." },
+  "/rules": { title: "Regras do servidor e Discord", description: "Consulte os regulamentos oficiais do servidor Minecraft e do Discord SwiftMC, com busca por assunto ou ID e navegação por seções." },
   "/faq": { title: "Perguntas frequentes", description: "Tire suas dúvidas sobre o servidor, sua conta, VIPs e suporte." },
 } as const;
 

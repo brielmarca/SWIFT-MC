@@ -5,13 +5,13 @@ import { faqs, filterGuides, rules } from "@/data/player-guides";
 test("rule anchors are unique and URL-safe", () => {
   for (const entries of [rules, faqs]) {
     assert.equal(new Set(entries.map((entry) => entry.id)).size, entries.length);
-    for (const entry of entries) assert.match(entry.id, /^[a-zA-Z0-9-]+$/);
+    for (const entry of entries) assert.match(entry.id, /^[a-zA-Z0-9.-]+$/);
   }
 });
 
 test("guides search IDs, body and accents without case sensitivity", () => {
-  assert.deepEqual(filterGuides(rules, " r01 ", "Todas").map((entry) => entry.id), ["R01"]);
-  assert.ok(filterGuides(rules, "DUPLICACOES", "Todas").some((entry) => entry.id === "R04"));
+  assert.deepEqual(filterGuides(rules, " servidor-1.1 ", "Todas").map((entry) => entry.id), ["servidor-1.1"]);
+  assert.ok(filterGuides(rules, "DUPLICACAO", "Todas").some((entry) => entry.id === "servidor-2.1"));
   assert.ok(filterGuides(faqs, "versao minecraft", "Todas").some((entry) => entry.id === "versao"));
 });
 
