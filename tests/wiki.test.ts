@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { regulations } from "@/data/official-rules";
 import {
   filterWikiGuides,
   getAdjacentGuides,
@@ -22,6 +23,17 @@ const sampleGuide = (overrides: Partial<WikiGuide> = {}): WikiGuide => ({
   description: "Descrição.",
   sections: [{ id: "unico", title: "Seção", blocks: [{ type: "paragraph", text: "Texto." }] }],
   ...overrides,
+});
+
+test("wiki rule links resolve to current official regulation anchors", () => {
+  const anchors = new Set(regulations.flatMap((regulation) => [regulation.id,
+    ...regulation.sections.flatMap((section) => [section.id, ...section.blocks.map((block) => block.id)]),
+  ]));
+  const ruleLinks = wikiGuides.flatMap((guide) => guide.sections.flatMap((section) => section.blocks.flatMap((block) =>
+    block.type === "links" ? block.items.filter((item) => item.href.startsWith("/rules#")) : [],
+  )));
+  assert.ok(ruleLinks.length > 0);
+  for (const { href } of ruleLinks) assert.ok(anchors.has(href.slice("/rules#".length)), href);
 });
 
 test("sample guides cover the required preview topics with stable structure", () => {

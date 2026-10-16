@@ -176,7 +176,7 @@ export const wikiGuides: readonly WikiGuide[] = [
           ] },
           { type: "links", items: [
             { href: "/leaderboards", label: "Ranking de moedas", description: "Posições de tempo de jogo, abates e economia" },
-            { href: "/rules#R06", label: "Regra: negocie com transparência", description: "O que a equipe considera golpe dentro do jogo" },
+            { href: "/rules#servidor-5.2", label: "Regra: negocie com transparência", description: "O que a equipe considera golpe dentro do jogo" },
             { href: "/wiki/como-funcionam-os-ranks", label: "Guia: Como funcionam os ranks", description: "O que muda para quem tem VIP — sem comprar moedas" },
           ] },
         ],
@@ -211,7 +211,7 @@ export const wikiGuides: readonly WikiGuide[] = [
           { type: "paragraph", text: "Construções e recursos só ficam seguros quando o terreno está delimitado e as permissões estão corretas. Delimite cedo, revise quem tem acesso e peça autorização antes de mexer em área de outra pessoa." },
           { type: "callout", kind: "info", title: "Regra de ouro", text: "Não destrua construções de outros jogadores nem contorne proteções. Na dúvida, pergunte no chat antes de agir." },
           { type: "links", items: [
-            { href: "/rules#R05", label: "Regra: respeite construções", description: "Delimitação, autorização e recursos compartilhados" },
+            { href: "/rules#servidor-4.1", label: "Regra: respeite construções", description: "Delimitação, autorização e recursos compartilhados" },
             { href: "/wiki", label: "Wiki do servidor", description: "Guias de comandos, economia e primeiros passos" },
           ] },
         ],
