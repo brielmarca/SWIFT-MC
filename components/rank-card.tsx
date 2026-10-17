@@ -1,21 +1,14 @@
 "use client";
 
-import { Crown, Diamond, ShieldCheck, Sparkles, Star, ShoppingBag, ImageIcon } from "lucide-react";
+import { Crown, Diamond, ShieldCheck, Sparkles, Star, ShoppingBag } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import type { Rank } from "@/data/ranks";
+import { rankArtworkPaths, type Rank } from "@/data/ranks";
 import { useCart } from "./cart-provider";
 import { useRouter } from "next/navigation";
 import type { CSSProperties } from "react";
 
 type RankCardProps = { rank: Rank; variant?: "full" | "preview" };
-
-const rankArtworkPaths: Record<string, string> = {
-  swift: "/brand/ranks/swift.png",
-  eclipse: "/brand/ranks/eclipse.png",
-  cosmic: "/brand/ranks/cosmic.png",
-  overdrive: "/brand/ranks/overdrive.jpeg",
-};
 
 function getRankIcon(rank: Rank) {
   if (rank.featured) return <Sparkles className="text-ultraviolet" aria-hidden="true" />;
@@ -79,9 +72,6 @@ export function RankCard({ rank, variant = "full" }: RankCardProps) {
           placeholder="blur"
           blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
         />
-        <div className="absolute inset-0 hidden flex items-center justify-center bg-gradient-to-br from-void via-card to-deep">
-          <ImageIcon size={48} className="text-muted/30" aria-hidden="true" />
-        </div>
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
         <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
           <span className={`rank-badge ${styles.badge}`}>{rank.badge}</span>

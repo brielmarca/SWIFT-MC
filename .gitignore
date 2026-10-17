@@ -13,3 +13,5 @@ yarn-error.log*
 .vinext/
 .cloudflare/
 *.tsbuildinfo
+/test-results/
+/playwright-report/

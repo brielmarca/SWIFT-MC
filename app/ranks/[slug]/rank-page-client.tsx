@@ -8,14 +8,7 @@ import { AddToCartButton } from "@/components/add-to-cart-button";
 import { Footer } from "@/components/footer";
 import { RankComparison } from "@/components/rank-comparison";
 import { SiteHeader } from "@/components/site-header";
-import { getRank, type Rank } from "@/data/ranks";
-
-const rankArtworkPaths: Record<string, string> = {
-  swift: "/brand/ranks/swift.png",
-  eclipse: "/brand/ranks/eclipse.png",
-  cosmic: "/brand/ranks/cosmic.png",
-  overdrive: "/brand/ranks/overdrive.jpeg",
-};
+import { getRank, rankArtworkPaths, type Rank } from "@/data/ranks";
 
 const storeSections = [
   { href: "/store", label: "VIPs", icon: Store },

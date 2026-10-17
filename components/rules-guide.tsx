@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { filterRuleSections, regulations } from "@/data/official-rules";
 
 const focusStyle = "rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet";
@@ -15,35 +15,58 @@ export function RulesGuide() {
   const [active, setActive] = useState("servidor");
   const [query, setQuery] = useState("");
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [navigation, setNavigation] = useState<{ id: string } | null>(null);
+
+  const revealAnchor = useCallback(() => {
+    let id: string;
+    try { id = decodeURIComponent(window.location.hash.slice(1)); } catch { return; }
+    const regulation = regulations.find((item) => item.id === id || item.sections.some((section) =>
+      section.id === id || section.id.replace("-section-", "-") === id || section.blocks.some((block) => block.id === id)));
+    if (!regulation) return;
+    setActive(regulation.id);
+    setQuery("");
+    setNavigation({ id });
+  }, []);
 
   useEffect(() => {
-    let timer: ReturnType<typeof setTimeout>;
-    function revealAnchor() {
-      const id = window.location.hash.slice(1);
-      const regulation = regulations.find((item) => item.id === id || item.sections.some((section) => section.id === id || section.blocks.some((block) => block.id === id)));
-      if (!regulation) return;
-      setActive(regulation.id);
-      setQuery("");
-      clearTimeout(timer);
-      timer = setTimeout(() => {
-        const target = document.getElementById(id);
-        target?.scrollIntoView({ block: "start" });
-        target?.focus({ preventScroll: true });
-      }, 0);
-    }
-    const initial = setTimeout(revealAnchor, 0);
+    const initial = requestAnimationFrame(revealAnchor);
     window.addEventListener("hashchange", revealAnchor);
-    return () => { clearTimeout(initial); clearTimeout(timer); window.removeEventListener("hashchange", revealAnchor); };
-  }, []);
+    window.addEventListener("popstate", revealAnchor);
+    return () => {
+      cancelAnimationFrame(initial);
+      window.removeEventListener("hashchange", revealAnchor);
+      window.removeEventListener("popstate", revealAnchor);
+    };
+  }, [revealAnchor]);
+
+  // Runs after React commits the selected panel and the cleared search results.
+  useEffect(() => {
+    if (!navigation) return;
+    const frame = requestAnimationFrame(() => {
+      const target = document.getElementById(navigation.id);
+      if (!target || target.closest("[hidden]")) return;
+      target.scrollIntoView({ block: "start", behavior: "instant" });
+      target.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [navigation]);
 
   function selectTab(index: number) {
     const id = regulations[index].id;
     setActive(id);
     setQuery("");
-    window.history.replaceState(null, "", `#${id}`);
+    setNavigation(null);
+    window.history.pushState(window.history.state, "", `#${id}`);
   }
 
-  return <div>
+  return <div onClick={(event) => {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    const link = (event.target as HTMLElement).closest<HTMLAnchorElement>("a[href^='#']");
+    if (!link) return;
+    event.preventDefault();
+    if (window.location.hash !== link.hash) window.history.pushState(window.history.state, "", link.hash);
+    revealAnchor();
+  }}>
     <div role="tablist" aria-label="Regulamentos SwiftMC" className="mb-6 flex gap-3">
       {regulations.map((regulation, index) => <button key={regulation.id} ref={(node) => { tabs.current[index] = node; }}
         type="button" role="tab" id={`${regulation.id}-tab`} aria-controls={regulation.id} aria-selected={active === regulation.id}
@@ -84,6 +107,7 @@ export function RulesGuide() {
           <div id={`${regulation.id}-results`} className="min-w-0 space-y-6">
             {!sections.length && <p className="content-panel p-6 text-slate-300">Nenhum resultado encontrado. Tente outro termo ou limpe a busca.</p>}
             {sections.map((section) => <section key={section.id} id={section.id} tabIndex={-1} aria-labelledby={`${section.id}-title`} className={`content-panel scroll-mt-28 p-5 target:border-ultraviolet sm:p-6 ${focusStyle}`}>
+              <span id={section.id.replace("-section-", "-")} tabIndex={-1} className={`block scroll-mt-28 ${focusStyle}`} aria-label={section.title} />
               <h3 id={`${section.id}-title`} className="mb-5 text-base font-extrabold leading-7 text-ink"><a href={`#${section.id}`} className={focusStyle}>{section.title}</a></h3>
               <div className="space-y-4">{section.blocks.map((block) => <div key={block.id} id={block.id} tabIndex={-1} className={`scroll-mt-28 space-y-3 border-t border-white/10 pt-4 text-sm leading-7 text-slate-300 target:rounded-lg target:bg-violet/10 ${focusStyle}`}>
                 <Paragraphs paragraphs={block.paragraphs} />
