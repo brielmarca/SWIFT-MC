@@ -111,7 +111,6 @@ export function RulesGuide() {
               <h3 id={`${section.id}-title`} className="mb-5 text-base font-extrabold leading-7 text-ink"><a href={`#${section.id}`} className={focusStyle}>{section.title}</a></h3>
               <div className="space-y-4">{section.blocks.map((block) => <div key={block.id} id={block.id} tabIndex={-1} className={`scroll-mt-28 space-y-3 border-t border-white/10 pt-4 text-sm leading-7 text-slate-300 target:rounded-lg target:bg-violet/10 ${focusStyle}`}>
                 <Paragraphs paragraphs={block.paragraphs} />
-                {block.ruleId && <a href={`#${block.id}`} aria-label={`Link direto: ${regulation.label}, regra ${block.ruleId}`} className={`inline-flex min-h-11 items-center text-xs font-bold text-ultraviolet ${focusStyle}`}>Link direto · {block.ruleId}</a>}
               </div>)}</div>
             </section>)}
             <footer className="content-panel space-y-4 p-5 text-sm leading-7 text-slate-300 sm:p-6"><Paragraphs paragraphs={regulation.closing} /></footer>

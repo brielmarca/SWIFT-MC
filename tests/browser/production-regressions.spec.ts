@@ -22,15 +22,14 @@ for (const id of ["servidor-1.1", "servidor-3.1", "servidor-5.2", "servidor-11.7
   });
 }
 
-test("filtered links, same hash, history and keyboard tabs", async ({ page }) => {
+test("filtered section links, hash history and keyboard tabs", async ({ page }) => {
   await page.goto("/rules#servidor-5.2");
   await expectTarget(page, "servidor-5.2");
   await page.getByRole("searchbox", { name: /Buscar em Servidor/ }).fill("respeito");
   await page.getByRole("navigation", { name: "Seções — Servidor" }).getByRole("link", { name: /§5/ }).click();
   await expect(page.getByRole("searchbox", { name: /Buscar em Servidor/ })).toHaveValue("");
-  await page.getByRole("link", { name: "Link direto: Servidor, regra 5.2", exact: true }).click();
-  await expectTarget(page, "servidor-5.2");
-  await page.getByRole("link", { name: "Link direto: Servidor, regra 5.2", exact: true }).click();
+  await expect(page.getByRole("link", { name: /Link direto/ })).toHaveCount(0);
+  await page.evaluate(() => { location.hash = "servidor-5.2"; });
   await expectTarget(page, "servidor-5.2");
   await page.evaluate(() => { location.hash = "discord-7.4"; });
   await expectTarget(page, "discord-7.4");
@@ -43,6 +42,29 @@ test("filtered links, same hash, history and keyboard tabs", async ({ page }) =>
   await expect(page.getByRole("tab", { name: "Servidor", exact: true })).toBeFocused();
   await expect(page.getByRole("tab", { name: "Servidor", exact: true })).toHaveAttribute("aria-selected", "true");
 });
+
+for (const [route, section, subtopic] of [
+  ["/play", "Jogar", "Como jogar"],
+  ["/ranks/swift", "Loja", "VIPs"],
+  ["/community", "Comunidade", "Visão geral"],
+  ["/rules", "Recursos", "Regras"],
+]) {
+  test(`contextual navigation: ${route}`, async ({ page }, testInfo) => {
+    await page.goto(route);
+    const subnav = page.getByRole("navigation", { name: `Subtópicos — ${section}` });
+    await expect(subnav.getByRole("link", { name: subtopic, exact: true })).toHaveAttribute("aria-current", "page");
+    if (testInfo.project.name === "desktop") {
+      const mainNav = page.getByRole("navigation", { name: "Navegação principal" });
+      await expect(mainNav.getByRole("link", { name: section, exact: true })).toHaveAttribute("aria-current", "true");
+      await expect(mainNav.locator("svg")).toHaveCount(0);
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    for (const link of await subnav.getByRole("link").all()) {
+      const bounds = await link.boundingBox();
+      expect(bounds?.height).toBeGreaterThanOrEqual(44);
+    }
+  });
+}
 
 for (const route of ["/", "/store", "/ranks/swift", "/ranks/eclipse", "/ranks/cosmic", "/ranks/overdrive"]) {
   test(`current artwork loads: ${route}`, async ({ page }) => {

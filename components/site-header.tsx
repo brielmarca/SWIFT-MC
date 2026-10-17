@@ -2,112 +2,31 @@
 
 import { ChevronDown, Menu, Search, ShoppingBag, X } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { useId, useRef, useState, useEffect } from "react";
+import { useId, useRef, useState } from "react";
+import { getNavigationGroup, isNavigationItemActive, navigationGroups, type NavigationItem } from "@/lib/navigation";
 import { useCart } from "./cart-provider";
 import { Logo } from "./logo";
 import { SiteSearchDialog, useSiteSearchHotkeys } from "./site-search";
 
-const navGroups = {
-  jogar: [
-    { href: "/play", label: "Como jogar" },
-    { href: "/status", label: "Status" },
-    { href: "/online", label: "Online" },
-    { href: "/leaderboards", label: "Ranking" },
-  ],
-  comunidade: [
-    { href: "/community", label: "Visão geral" },
-    { href: "/news", label: "Notícias" },
-    { href: "/events", label: "Eventos" },
-    { href: "/player", label: "Jogadores" },
-    { href: "https://discord.gg/Bupp8tWvpu", label: "Discord", external: true },
-  ],
-  recursos: [
-    { href: "/wiki", label: "Wiki" },
-    { href: "/rules", label: "Regras" },
-    { href: "/faq", label: "FAQ" },
-  ],
-};
-
-function NavDropdown({
-  label,
-  items,
-  isActive,
-}: {
-  label: string;
-  items: Array<{ href: string; label: string; external?: boolean }>;
-  isActive: string;
-}) {
-  const [open, setOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const panelId = useId();
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    }
-    function handleFocusOut(event: FocusEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.relatedTarget as Node | null)) {
-        setOpen(false);
-      }
-    }
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setOpen(false);
-        triggerRef.current?.focus();
-      }
-    }
-    if (open) {
-      document.addEventListener("mousedown", handleClickOutside);
-      document.addEventListener("focusout", handleFocusOut);
-      document.addEventListener("keydown", handleKeyDown);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("focusout", handleFocusOut);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [open]);
-
-  const allLinks = items.map((i) => i.href);
-  const groupActive = allLinks.some((href) => isActive === href || isActive.startsWith(`${href}/`));
+function ContextualNav({ pathname }: { pathname: string }) {
+  const group = getNavigationGroup(pathname);
+  if (!group) return null;
 
   return (
-    <div className="relative" ref={dropdownRef}>
-      <button
-        ref={triggerRef}
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className={`nav-link ${groupActive ? "text-ultraviolet" : ""}`}
-        aria-expanded={open}
-        aria-controls={panelId}
-        aria-label={label}
-      >
-        <span>{label}</span>
-        <ChevronDown size={14} className="shrink-0 transition-transform" aria-hidden="true" style={{ transform: open ? "rotate(180deg)" : "rotate(0)" }} />
-      </button>
-      {open && (
-        <div
-          id={panelId}
-          className="absolute left-0 top-full z-50 mt-2 w-56 origin-top rounded-xl border border-white/10 bg-void/95 p-2 shadow-lg backdrop-blur-xl animate-dropdown-enter"
-        >
-          {items.map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
+    <div className="border-t border-white/[0.06] bg-void/80">
+      <div className="site-container flex min-w-0 items-center gap-3">
+        <span className="shrink-0 text-xs font-bold uppercase tracking-wider text-ultraviolet xl:hidden">{group.label}</span>
+        <nav aria-label={`Subtópicos — ${group.label}`} className="flex min-w-0 gap-1 overflow-x-auto">
+          {group.items.map((item) => (
+            <a key={item.href} href={item.href}
               target={item.external ? "_blank" : undefined}
               rel={item.external ? "noopener noreferrer" : undefined}
-              onClick={() => setOpen(false)}
-              className={`flex min-h-11 items-center rounded-lg px-3 py-2 text-sm font-medium hover:bg-white/5 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet ${isActive === item.href || isActive.startsWith(`${item.href}/`) ? "bg-violet/10 text-ultraviolet" : "text-muted"}`}
-              aria-current={isActive === item.href ? "page" : undefined}
-            >
-              {item.label}
-            </a>
+              aria-current={isNavigationItemActive(item, pathname) ? "page" : undefined}
+              className={`flex min-h-11 shrink-0 items-center whitespace-nowrap border-b-2 px-3 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ultraviolet ${isNavigationItemActive(item, pathname) ? "border-ultraviolet bg-violet/10 text-ultraviolet" : "border-transparent text-muted hover:bg-white/5 hover:text-ink"}`}
+            >{item.label}</a>
           ))}
-        </div>
-      )}
+        </nav>
+      </div>
     </div>
   );
 }
@@ -136,39 +55,11 @@ function MobileNav({
         <Search size={18} aria-hidden="true" /> Buscar
       </button>
 
-      <MobileNavGroup
-        label="Jogar"
-        items={navGroups.jogar}
-        pathname={pathname}
-        onClose={onClose}
-      />
-
-      <div className="border-t border-white/[0.06] my-1" />
-
-<MobileNavGroup
-  label="Loja"
-  items={[{ href: "/store", label: "VIPs" }]}
-  pathname={pathname}
-  onClose={onClose}
-/>
-
-      <div className="border-t border-white/[0.06] my-1" />
-
-      <MobileNavGroup
-        label="Comunidade"
-        items={navGroups.comunidade}
-        pathname={pathname}
-        onClose={onClose}
-      />
-
-      <div className="border-t border-white/[0.06] my-1" />
-
-      <MobileNavGroup
-        label="Recursos"
-        items={navGroups.recursos}
-        pathname={pathname}
-        onClose={onClose}
-      />
+      {navigationGroups.map((group) => (
+        <div key={group.label} className="border-t border-white/[0.06] pt-1">
+          <MobileNavGroup label={group.label} items={group.items} pathname={pathname} onClose={onClose} />
+        </div>
+      ))}
     </nav>
   );
 }
@@ -180,11 +71,11 @@ function MobileNavGroup({
   onClose,
 }: {
   label: string;
-  items: Array<{ href: string; label: string; external?: boolean }>;
+  items: NavigationItem[];
   pathname: string;
   onClose: () => void;
 }) {
-  const groupActive = items.some((item) => pathname === item.href || pathname.startsWith(`${item.href}/`));
+  const groupActive = items.some((item) => isNavigationItemActive(item, pathname));
   const [open, setOpen] = useState(groupActive);
   const panelId = useId();
 
@@ -209,8 +100,8 @@ function MobileNavGroup({
               target={item.external ? "_blank" : undefined}
               rel={item.external ? "noopener noreferrer" : undefined}
               onClick={onClose}
-              aria-current={pathname === item.href ? "page" : undefined}
-              className={`flex min-h-11 items-center rounded-lg px-3 py-2 text-sm font-medium ${pathname === item.href || pathname.startsWith(`${item.href}/`) ? "bg-violet/10 text-ultraviolet" : "text-muted"} hover:bg-white/5 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet`}
+              aria-current={isNavigationItemActive(item, pathname) ? "page" : undefined}
+              className={`flex min-h-11 items-center rounded-lg px-3 py-2 text-sm font-medium ${isNavigationItemActive(item, pathname) ? "bg-violet/10 text-ultraviolet" : "text-muted"} hover:bg-white/5 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet`}
             >
               {item.label}
             </a>
@@ -226,6 +117,7 @@ export function SiteHeader() {
   const [searchOpen, setSearchOpen] = useState(false);
   const { itemCount, openCart, isOpen: cartOpen } = useCart();
   const pathname = usePathname();
+  const activeGroup = getNavigationGroup(pathname);
   const menuRef = useRef<HTMLButtonElement>(null);
 
   function openSearch() {
@@ -252,26 +144,12 @@ export function SiteHeader() {
         <Logo />
 
         <nav className="hidden items-center gap-6 xl:flex" aria-label="Navegação principal">
-          <NavDropdown
-            label="Jogar"
-            items={navGroups.jogar}
-            isActive={pathname}
-          />
-<NavDropdown
-  label="Loja"
-  items={[{ href: "/store", label: "VIPs" }]}
-  isActive={pathname}
-/>
-          <NavDropdown
-            label="Comunidade"
-            items={navGroups.comunidade}
-            isActive={pathname}
-          />
-          <NavDropdown
-            label="Recursos"
-            items={navGroups.recursos}
-            isActive={pathname}
-          />
+          {navigationGroups.map((group) => (
+            <a key={group.label} href={group.items[0].href}
+              className={`nav-link ${activeGroup === group ? "text-ultraviolet" : ""}`}
+              aria-current={activeGroup === group ? "true" : undefined}
+            >{group.label}</a>
+          ))}
         </nav>
 
         <div className="flex items-center gap-2">
@@ -309,6 +187,7 @@ export function SiteHeader() {
         </div>
       </div>
 
+      <ContextualNav pathname={pathname} />
       <MobileNav isOpen={open} onClose={() => setOpen(false)} pathname={pathname} openSearch={openSearch} />
 
       {searchOpen && <SiteSearchDialog onClose={() => setSearchOpen(false)} />}
