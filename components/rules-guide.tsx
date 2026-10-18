@@ -87,7 +87,7 @@ export function RulesGuide() {
     {regulations.map((regulation) => {
       const sections = filterRuleSections(regulation.sections, active === regulation.id ? query : "");
       return <div key={regulation.id} id={regulation.id} role="tabpanel" aria-labelledby={`${regulation.id}-tab`} hidden={active !== regulation.id} tabIndex={0} className={`scroll-mt-28 ${focusStyle}`}>
-        <header className="content-panel space-y-4 p-5 text-sm leading-7 text-slate-300 sm:p-6">
+        <header className="content-panel space-y-4 p-5 text-[15px] leading-7 text-slate-300 sm:p-6 [&>p]:max-w-[75ch]">
           <h2 className="text-xl font-extrabold text-ink">{regulation.title}</h2>
           <Paragraphs paragraphs={regulation.introduction} />
         </header>
@@ -100,20 +100,20 @@ export function RulesGuide() {
           </div>
         </div>
         <div className="grid items-start gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
-          <nav aria-label={`Seções — ${regulation.label}`} className="content-panel p-4 lg:sticky lg:top-28">
+          <nav aria-label={`Seções — ${regulation.label}`} className="content-panel min-w-0 p-4 lg:sticky lg:top-28">
             <p className="micro-label mb-3">Seções</p>
-            <ul className="space-y-1">{regulation.sections.map((section) => <li key={section.id}><a href={`#${section.id}`} onClick={() => setQuery("")} className={`block px-2 py-3 text-xs font-semibold leading-5 text-slate-300 hover:bg-violet/10 hover:text-ink ${focusStyle}`}>{section.title}</a></li>)}</ul>
+            <ul className="grid max-h-64 gap-1 overflow-y-auto overscroll-contain sm:grid-cols-2 lg:max-h-[calc(100dvh-12rem)] lg:grid-cols-1">{regulation.sections.map((section) => <li key={section.id}><a href={`#${section.id}`} onClick={() => setQuery("")} className={`block min-h-11 px-2 py-3 text-xs font-semibold leading-5 text-slate-300 hover:bg-violet/10 hover:text-ink focus-visible:ring-inset ${focusStyle}`}>{section.title}</a></li>)}</ul>
           </nav>
           <div id={`${regulation.id}-results`} className="min-w-0 space-y-6">
             {!sections.length && <p className="content-panel p-6 text-slate-300">Nenhum resultado encontrado. Tente outro termo ou limpe a busca.</p>}
             {sections.map((section) => <section key={section.id} id={section.id} tabIndex={-1} aria-labelledby={`${section.id}-title`} className={`content-panel scroll-mt-28 p-5 target:border-ultraviolet sm:p-6 ${focusStyle}`}>
               <span id={section.id.replace("-section-", "-")} tabIndex={-1} className={`block scroll-mt-28 ${focusStyle}`} aria-label={section.title} />
               <h3 id={`${section.id}-title`} className="mb-5 text-base font-extrabold leading-7 text-ink"><a href={`#${section.id}`} className={focusStyle}>{section.title}</a></h3>
-              <div className="space-y-4">{section.blocks.map((block) => <div key={block.id} id={block.id} tabIndex={-1} className={`scroll-mt-28 space-y-3 border-t border-white/10 pt-4 text-sm leading-7 text-slate-300 target:rounded-lg target:bg-violet/10 ${focusStyle}`}>
+              <div className="max-w-[75ch] space-y-5 text-[15px]">{section.blocks.map((block) => <div key={block.id} id={block.id} tabIndex={-1} className={`scroll-mt-28 space-y-3 border-t border-white/10 pt-5 leading-7 text-slate-300 target:rounded-lg target:bg-violet/10 ${focusStyle}`}>
                 <Paragraphs paragraphs={block.paragraphs} />
               </div>)}</div>
             </section>)}
-            <footer className="content-panel space-y-4 p-5 text-sm leading-7 text-slate-300 sm:p-6"><Paragraphs paragraphs={regulation.closing} /></footer>
+            <footer className="content-panel space-y-4 p-5 text-[15px] leading-7 text-slate-300 sm:p-6 [&>p]:max-w-[75ch]"><Paragraphs paragraphs={regulation.closing} /></footer>
           </div>
         </div>
       </div>;

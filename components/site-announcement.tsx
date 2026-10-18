@@ -48,8 +48,8 @@ export function SiteAnnouncement({ announcement }: { announcement: SiteAnnouncem
 
   return (
     <div role="region" aria-label={`Aviso: ${announcement.title}`} className="border-b border-violet/30 bg-gradient-to-r from-deep/50 via-violet/25 to-deep/50">
-      <div className="site-container flex min-h-12 flex-wrap items-center justify-between gap-x-4 gap-y-2 py-2.5">
-        <p className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+      <div className="site-container flex min-h-12 items-start justify-between gap-3 py-2.5 lg:items-center">
+        <p className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1 text-sm leading-6">
           <span className="status-chip !min-h-6 !text-ultraviolet">Aviso</span>
           <strong className="font-bold text-ink">{announcement.title}</strong>
           <span className="text-slate-200">{announcement.message}</span>

@@ -21,7 +21,7 @@ function getRankColorStyles(rank: Rank) {
   return {
     badge: `bg-gradient-to-r ${color.gradient} text-black`,
     border: "border-[var(--rank-accent)]/30",
-    glow: "shadow-[0_0_20px_var(--rank-glow)]",
+    glow: "shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]",
     buttonPrimary: `bg-gradient-to-r ${color.gradient} hover:opacity-90 text-black`,
     buttonSecondary: "border-[var(--rank-accent)]/30 hover:bg-[var(--rank-accent)]/10 text-[var(--rank-accent)]",
     accent: "text-[var(--rank-accent)]",
@@ -80,11 +80,11 @@ export function RankCard({ rank, variant = "full" }: RankCardProps) {
       </div>
 
       <div className="flex-1 flex flex-col p-5 pb-6">
-        <div className="flex-1 flex flex-col justify-end min-h-0">
+        <div className="flex-1 flex flex-col min-h-0">
           <h3 className="text-xl font-extrabold uppercase text-ink tracking-tight">{rank.name}</h3>
           <div className="mt-3 flex items-end gap-2">
             {hasPrice ? (
-              <span className="text-xl font-extrabold tabular-nums text-ink">{rank.price}</span>
+              <span className="whitespace-nowrap text-xl font-extrabold tabular-nums text-ink">{rank.price}</span>
             ) : (
               <span className="text-xl font-extrabold tabular-nums text-muted">Preço em breve</span>
             )}

@@ -29,9 +29,9 @@ export function NetworkPage({ active, title, description, children }: {
           <h1 className="page-title mt-2">{title}</h1>
           <p className="page-description">{description}</p>
         </header>
-        <nav aria-label={isPlayer ? "Jogadores SwiftMC" : "Jogar / Servidor"} className="mb-6 grid grid-cols-3 gap-1 rounded-xl border border-white/10 bg-void/80 p-1.5 sm:mb-8 sm:flex sm:gap-2">
+        <nav aria-label={isPlayer ? "Jogadores SwiftMC" : "Jogar / Servidor"} className={`mb-6 grid gap-1 rounded-xl border border-white/10 bg-void/80 p-1.5 sm:mb-8 sm:gap-2 ${isPlayer ? "grid-cols-3" : "grid-cols-2 sm:grid-cols-4"}`}>
           {(isPlayer ? playerSections : jogarSections).map(({ href, label, icon: Icon }) => <Link key={href} href={href} aria-current={active === href ? "page" : undefined}
-            className={`flex min-h-11 items-center justify-center gap-2 rounded-lg border px-3 text-xs font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet sm:min-w-36 sm:text-sm ${active === href ? "border-violet/40 bg-violet/15 text-ultraviolet" : "border-transparent text-muted hover:bg-white/5 hover:text-ink"}`}>
+            className={`flex min-h-11 items-center justify-center gap-2 rounded-lg border px-3 text-xs font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet sm:text-sm ${active === href ? "border-violet/40 bg-violet/15 text-ultraviolet" : "border-transparent text-muted hover:bg-white/5 hover:text-ink"}`}>
             <Icon size={16} aria-hidden="true" className="hidden shrink-0 sm:block" />{label}
           </Link>)}
         </nav>

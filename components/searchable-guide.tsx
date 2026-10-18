@@ -75,7 +75,7 @@ export function SearchableGuide({ entries, kind }: { entries: readonly GuideEntr
             <article id={entry.id} key={entry.id} tabIndex={-1} aria-labelledby={`${entry.id}-title`} className={`content-panel min-w-0 scroll-mt-28 p-5 transition target:border-ultraviolet focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet ${entry.id === "R07" ? "border-amber-300/25 bg-amber-300/[0.03]" : ""}`}>
               <div className="flex items-start gap-3"><span className="mt-0.5 font-mono text-sm font-bold text-ultraviolet">{entry.id}</span><h3 id={`${entry.id}-title`} className="text-base font-bold leading-6 text-ink">{entry.title}</h3>{entry.id === "R07" && <ShieldAlert size={19} aria-hidden="true" className="ml-auto shrink-0 text-amber-200" />}</div>
               <p className="mt-3 text-sm leading-7 text-slate-300">{entry.body}</p>
-              <a href={`#${entry.id}`} aria-label={`Link direto: ${entry.title}`} className="mt-3 inline-flex min-h-11 items-center gap-2 rounded text-xs font-bold text-ultraviolet focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet"><LinkIcon size={14} aria-hidden="true" />Link direto · {entry.id}</a>
+              <a href={`#${entry.id}`} aria-label={`Link direto: ${entry.title}`} className="mt-3 inline-flex h-11 w-11 items-center justify-center rounded-lg text-ultraviolet hover:bg-violet/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet"><LinkIcon size={16} aria-hidden="true" /></a>
             </article>
           ) : (
             <details id={entry.id} key={entry.id} className="content-panel group scroll-mt-28 overflow-hidden transition open:border-violet/40 open:bg-violet/[0.04] target:border-ultraviolet">
@@ -84,7 +84,7 @@ export function SearchableGuide({ entries, kind }: { entries: readonly GuideEntr
                 <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md border border-violet/20 bg-violet/10 text-ultraviolet"><ChevronDown size={16} aria-hidden="true" className="transition-transform group-open:rotate-180" /></span>
               </summary>
               <div className="mx-5 border-t border-white/10 pb-4 pt-4"><p className="max-w-[75ch] text-sm leading-7 text-slate-300">{entry.body}</p>
-                <a href={`#${entry.id}`} aria-label={`Link direto: ${entry.title}`} className="mt-3 inline-flex min-h-11 items-center gap-2 rounded text-xs font-bold text-ultraviolet focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet"><LinkIcon size={14} aria-hidden="true" />Link direto</a>
+                <a href={`#${entry.id}`} aria-label={`Link direto: ${entry.title}`} className="mt-3 inline-flex h-11 w-11 items-center justify-center rounded-lg text-ultraviolet hover:bg-violet/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet"><LinkIcon size={16} aria-hidden="true" /></a>
               </div>
             </details>
           ))}</div>

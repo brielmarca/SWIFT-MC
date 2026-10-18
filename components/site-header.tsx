@@ -125,7 +125,7 @@ export function SiteHeader() {
     setSearchOpen(true);
   }
 
-  useSiteSearchHotkeys(searchOpen || cartOpen, openSearch);
+  useSiteSearchHotkeys(!searchOpen && !cartOpen, openSearch);
 
   return (
     <header

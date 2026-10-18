@@ -180,7 +180,7 @@ export function SiteSearchDialog({ onClose }: { onClose: () => void }) {
               maxLength={64}
               className="h-14 min-w-0 flex-1 bg-transparent text-base text-ink placeholder:text-muted focus:outline-none"
             />
-            <button type="button" onClick={onClose} className="icon-button !h-9 !w-9 shrink-0" aria-label="Fechar busca">
+            <button type="button" onClick={onClose} className="icon-button shrink-0" aria-label="Fechar busca">
               <X size={16} aria-hidden="true" />
             </button>
           </div>
@@ -192,12 +192,12 @@ export function SiteSearchDialog({ onClose }: { onClose: () => void }) {
                   <section aria-labelledby="site-search-recents-title">
                     <div className="flex items-center justify-between gap-2 px-1">
                       <p id="site-search-recents-title" className="micro-label">Buscas recentes</p>
-                      <button type="button" onClick={() => clearRecentSearches()} className="min-h-9 rounded px-1 text-xs font-bold text-muted hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet">Limpar histórico</button>
+                      <button type="button" onClick={() => clearRecentSearches()} className="min-h-11 rounded px-2 text-xs font-bold text-muted hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet">Limpar histórico</button>
                     </div>
                     <ul className="mt-2 flex flex-wrap gap-2">
                       {recents.map((item) => (
                         <li key={item}>
-                          <button type="button" onClick={() => { setQuery(item); setActiveIndex(0); inputRef.current?.focus(); }} className="button-secondary !min-h-9 !px-3 !normal-case !tracking-normal !text-xs">
+                          <button type="button" onClick={() => { setQuery(item); setActiveIndex(0); inputRef.current?.focus(); }} className="button-secondary !min-h-11 !px-3 !normal-case !tracking-normal !text-xs">
                             {item}
                           </button>
                         </li>
@@ -210,7 +210,7 @@ export function SiteSearchDialog({ onClose }: { onClose: () => void }) {
                   <ul className="mt-2 flex flex-wrap gap-2">
                     {QUICK_LINKS.map((link) => (
                       <li key={link.href}>
-                        <Link href={link.href} onClick={onClose} className="button-secondary !min-h-9 !px-3 !normal-case !tracking-normal !text-xs">
+                        <Link href={link.href} onClick={onClose} className="button-secondary !min-h-11 !px-3 !normal-case !tracking-normal !text-xs">
                           {link.label}
                         </Link>
                       </li>
@@ -232,7 +232,7 @@ export function SiteSearchDialog({ onClose }: { onClose: () => void }) {
                 <ul className="mt-5 flex flex-wrap justify-center gap-2">
                   {QUICK_LINKS.map((link) => (
                     <li key={link.href}>
-                      <Link href={link.href} onClick={onClose} className="button-secondary !min-h-9 !px-3 !normal-case !tracking-normal !text-xs">
+                      <Link href={link.href} onClick={onClose} className="button-secondary !min-h-11 !px-3 !normal-case !tracking-normal !text-xs">
                         {link.label}
                       </Link>
                     </li>

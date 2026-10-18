@@ -90,7 +90,7 @@ function InheritanceNotice({ rank }: { rank: Rank }) {
   if (!parent) return null;
 
   return (
-    <div className="mb-8 rounded-xl border p-5" style={{ borderColor: `${rank.color.primary}4d`, backgroundColor: `${rank.color.primary}0d` }}>
+    <div className="mt-6 rounded-xl border p-5" style={{ borderColor: `${rank.color.primary}4d`, backgroundColor: `${rank.color.primary}0d` }}>
       <div className="flex items-center gap-3">
         <Sparkles size={20} aria-hidden="true" style={{ color: rank.color.primary }} />
         <div>
@@ -131,7 +131,7 @@ function OverviewSection({ rank }: { rank: Rank }) {
               </div>
               <div className="flex items-center justify-between gap-4 border-b border-white/[0.07] pb-4">
                 <dt className="text-sm text-muted">Valor mensal</dt>
-                <dd className="font-bold text-ink">{rank.price ?? "Preço em breve"}</dd>
+            <dd className="whitespace-nowrap font-bold tabular-nums text-ink">{rank.price ?? "Preço em breve"}</dd>
               </div>
               <div className="flex items-center justify-between gap-4 border-b border-white/[0.07] pb-4">
                 <dt className="text-sm text-muted">Homes</dt>
