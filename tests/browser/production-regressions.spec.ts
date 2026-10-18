@@ -1,5 +1,12 @@
 import { expect, test, type Page } from "@playwright/test";
 
+test.beforeEach(async ({ page }) => {
+  // Visual/navigation checks must not contact the Minecraft server in either runtime.
+  await page.route("**/api/server-status", (route) => route.fulfill({
+    json: { online: false, players: null, maxPlayers: null, version: null, publicAddress: "play.example.test" },
+  }));
+});
+
 async function expectTarget(page: Page, id: string) {
   const label = id.startsWith("discord") ? "Discord" : "Servidor";
   await expect(page.getByRole("tab", { name: label, exact: true })).toHaveAttribute("aria-selected", "true");

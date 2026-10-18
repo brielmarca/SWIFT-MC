@@ -6,7 +6,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-swiftmc}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-swiftmc_dev}
     ports:
-      - "${POSTGRES_PORT:-5433}:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"
     volumes:
       - swiftmc_postgres_data:/var/lib/postgresql/data
     healthcheck:
