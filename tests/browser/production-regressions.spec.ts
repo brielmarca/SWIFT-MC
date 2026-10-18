@@ -51,14 +51,32 @@ test("filtered section links, hash history and keyboard tabs", async ({ page }) 
 });
 
 for (const [route, section, subtopic] of [
+  // JOGAR
   ["/play", "Jogar", "Como jogar"],
+  ["/status", "Jogar", "Status"],
+  ["/online", "Jogar", "Online"],
+  ["/leaderboards", "Jogar", "Ranking"],
+  // LOJA
+  ["/store", "Loja", "VIPs"],
   ["/ranks/swift", "Loja", "VIPs"],
+  // COMUNIDADE
   ["/community", "Comunidade", "Visão geral"],
+  ["/news", "Comunidade", "Notícias"],
+  ["/news/temporada-4-sobrevivencia", "Comunidade", "Notícias"],
+  ["/events", "Comunidade", "Eventos"],
+  ["/player", "Comunidade", "Jogadores"],
+  // RECURSOS
+  ["/wiki", "Recursos", "Wiki"],
+  ["/wiki/como-entrar-no-servidor", "Recursos", "Wiki"],
   ["/rules", "Recursos", "Regras"],
+  ["/faq", "Recursos", "FAQ"],
 ]) {
   test(`contextual navigation: ${route}`, async ({ page }, testInfo) => {
     await page.goto(route);
-    const subnav = page.getByRole("navigation", { name: `Subtópicos — ${section}` });
+    const subnavs = page.getByRole("navigation", { name: `Subtópicos — ${section}` });
+    // Exactly one contextual subnav (the shared one from site-header.tsx), no duplicated page-local row.
+    await expect(subnavs).toHaveCount(1, `exactly one contextual subnav on ${route}`);
+    const subnav = subnavs.first();
     await expect(subnav.getByRole("link", { name: subtopic, exact: true })).toHaveAttribute("aria-current", "page");
     if (testInfo.project.name === "desktop") {
       const mainNav = page.getByRole("navigation", { name: "Navegação principal" });

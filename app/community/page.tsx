@@ -1,7 +1,6 @@
 import { ContentPage } from "@/components/content/content-page";
 import { NewsListing } from "@/components/news-listing";
 import { EventsListing } from "@/components/events-listing";
-import { DiscordLink } from "@/components/discord-link";
 import { OnlinePlayers } from "@/components/online-players";
 import { getPublishedNews } from "@/data/content";
 import { publicPageMetadata } from "@/lib/seo";
@@ -22,12 +21,6 @@ export default async function CommunityPage() {
 
   return (
     <ContentPage active="/community" title="SwiftMC Community" description="Notícias, eventos e encontros da comunidade SwiftMC em um só lugar.">
-      <nav aria-label="Seções da comunidade" className="mb-6 flex flex-wrap gap-3">
-        <a href="#news" className="button-secondary">Notícias</a>
-        <a href="#events" className="button-secondary">Eventos</a>
-        <DiscordLink className="button-primary">Entrar no Discord</DiscordLink>
-      </nav>
-
       <header className="mb-12">
         <div className="border-l-2 border-violet pl-4 sm:pl-5">
           <p className="eyebrow">Comunidade SwiftMC</p>

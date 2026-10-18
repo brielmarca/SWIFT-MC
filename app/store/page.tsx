@@ -1,15 +1,10 @@
 import { publicPageMetadata } from "@/lib/seo";
-import { ShieldCheck, Sparkles, Zap, Store } from "lucide-react";
-import Link from "next/link";
+import { ShieldCheck, Sparkles, Zap } from "lucide-react";
 import { Footer } from "@/components/footer";
 import { SiteHeader } from "@/components/site-header";
 import { StoreCatalog } from "@/components/store-catalog";
 
 export const metadata = publicPageMetadata("/store");
-
-const storeSections = [
-  { href: "/store", label: "VIPs", icon: Store },
-] as const;
 
 const assurances = [
   { icon: Zap, title: "Escolha rápida", text: "Compare os níveis e salve sua seleção no carrinho deste dispositivo." },
@@ -23,11 +18,6 @@ export default function StorePage() {
       <SiteHeader />
       <main id="main-content" className="site-container min-h-[70vh] py-8 sm:py-12">
         <div>
-          <nav aria-label="Loja" className="mb-6 flex flex-wrap gap-1 border-b border-white/10 sm:gap-4">
-            {storeSections.map(({ href, label, icon: Icon }) => <Link key={href} href={href} aria-current="page" className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 border-b-2 px-2 text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet sm:flex-none sm:px-4 sm:text-sm border-ultraviolet text-ultraviolet">
-              <Icon size={16} aria-hidden="true" className="hidden shrink-0 sm:block" />{label}
-            </Link>)}
-          </nav>
           <header className="mb-6 max-w-3xl border-l-2 border-violet pl-4 sm:mb-8 sm:pl-5">
             <p className="eyebrow">Loja</p>
             <h1 className="page-title mt-2">
