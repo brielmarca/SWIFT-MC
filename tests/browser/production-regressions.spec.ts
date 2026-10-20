@@ -75,7 +75,7 @@ for (const [route, section, subtopic] of [
     await page.goto(route);
     const subnavs = page.getByRole("navigation", { name: `Subtópicos — ${section}` });
     // Exactly one contextual subnav (the shared one from site-header.tsx), no duplicated page-local row.
-    await expect(subnavs).toHaveCount(1, `exactly one contextual subnav on ${route}`);
+    await expect(subnavs, `exactly one contextual subnav on ${route}`).toHaveCount(1);
     const subnav = subnavs.first();
     await expect(subnav.getByRole("link", { name: subtopic, exact: true })).toHaveAttribute("aria-current", "page");
     if (testInfo.project.name === "desktop") {

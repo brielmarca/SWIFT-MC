@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import config from "../cloudflare.config";
+import { bindings } from "cf/config";
 
 test("Workers config emits allowlisted variables and secret declarations, never secret values", () => {
   const values = {
@@ -30,5 +31,15 @@ test("Workers config emits allowlisted variables and secret declarations, never 
       if (value === undefined) delete process.env[key];
       else process.env[key] = value;
     }
+  }
+});
+
+test("installed cf supports future auth binding declarations without provisioning resources", () => {
+  assert.equal(typeof bindings.hyperdrive, "function");
+  assert.equal(typeof bindings.rateLimit, "function");
+  assert.equal(typeof bindings.durableObject, "function");
+  for (const name of ["AUTH_RATE_LIMIT_KEY", "AUTH_ENCRYPTION_KEY", "DISCORD_CLIENT_SECRET"]) {
+    assert.deepEqual({ [name]: bindings.secret() }, { [name]: { type: "secret" } });
+    assert.ok(!(name in config({ mode: "production", isPreview: false }).worker.env));
   }
 });

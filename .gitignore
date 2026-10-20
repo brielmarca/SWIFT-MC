@@ -15,3 +15,6 @@ yarn-error.log*
 *.tsbuildinfo
 /test-results/
 /playwright-report/
+# Local-only generated Phase A routes; remove before normal builds/deployment.
+/app/runtime-feasibility/
+/app/auth-infrastructure-probe/
