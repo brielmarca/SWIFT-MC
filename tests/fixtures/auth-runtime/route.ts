@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { cryptoProbe } from "@/lib/auth-feasibility/crypto";
-import { hasExactOrigin, internalReturnPath } from "@/lib/auth-feasibility/security";
+import { hasExactOrigin, internalReturnPath } from "@/lib/auth/browser-security";
+import { hashPassword, verifyPassword } from "@/lib/auth/password";
+import { generateSessionToken, digestSessionToken, tokenDigestsEqual } from "@/lib/auth/tokens";
 
 export const dynamic = "force-dynamic";
 const attributes = { httpOnly: true, secure: true, sameSite: "lax" as const, path: "/" };
@@ -13,7 +15,14 @@ export async function POST(request: Request) {
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const mode = url.searchParams.get("mode");
-  if (mode === "crypto") return Response.json(await cryptoProbe(), { headers: { "Cache-Control": "private, no-store" } });
+  if (mode === "crypto") {
+    // Synthetic, ephemeral inputs only. Exercise B0 in both actual production runtimes.
+    const token = generateSessionToken();
+    const hash = await hashPassword(token);
+    if (!await verifyPassword(token, hash) || await verifyPassword("wrong-fixture", hash) ||
+        !tokenDigestsEqual(digestSessionToken(token), digestSessionToken(token))) throw new Error("B0 primitive regression");
+    return Response.json(await cryptoProbe(), { headers: { "Cache-Control": "private, no-store" } });
+  }
   const response = mode === "redirect" ? NextResponse.redirect(new URL("/runtime-feasibility", url), 303) : NextResponse.json({ dummy: true });
   response.headers.set("Cache-Control", "private, no-store");
   response.cookies.set("__Host-swiftmc_session", mode === "delete" ? "" : "phase-a-dummy", {
