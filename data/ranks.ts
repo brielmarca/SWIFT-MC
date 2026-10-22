@@ -26,7 +26,6 @@ export type RankComparison = {
   homes: number;
   mcmmoXpBonus: string;
   portableWorkstations: string;
-  monthlyClaimBlocks: number;
   monthlyMoney: number;
 };
 
@@ -122,7 +121,6 @@ const swiftWeeklyKit: Kit = {
     { quantity: 16, name: "Garrafa de XP" },
   ],
   money: 1000,
-  claimBlocks: 250,
 };
 
 const swiftMonthlyKit: Kit = {
@@ -138,7 +136,6 @@ const swiftMonthlyKit: Kit = {
     { quantity: 32, name: "Garrafa de XP" },
   ],
   money: 3000,
-  claimBlocks: 1000,
 };
 
 const swiftWelcomeKit: Kit = {
@@ -175,7 +172,6 @@ const eclipseWeeklyKit: Kit = {
     { quantity: 32, name: "Garrafa de XP" },
   ],
   money: 2500,
-  claimBlocks: 750,
 };
 
 const eclipseMonthlyKit: Kit = {
@@ -191,7 +187,6 @@ const eclipseMonthlyKit: Kit = {
     { quantity: 48, name: "Garrafa de XP" },
   ],
   money: 8000,
-  claimBlocks: 3000,
 };
 
 const eclipseWelcomeKit: Kit = {
@@ -229,7 +224,6 @@ const cosmicWeeklyKit: Kit = {
     { quantity: 48, name: "Garrafa de XP" },
   ],
   money: 5000,
-  claimBlocks: 2000,
   mcmmoXp: 1500,
 };
 
@@ -247,7 +241,6 @@ const cosmicMonthlyKit: Kit = {
     { quantity: 64, name: "Garrafa de XP" },
   ],
   money: 20000,
-  claimBlocks: 8000,
 };
 
 const cosmicWelcomeKit: Kit = {
@@ -289,7 +282,6 @@ const overdriveWeeklyKit: Kit = {
     { quantity: 64, name: "Garrafa de XP" },
   ],
   money: 10000,
-  claimBlocks: 5000,
   mcmmoXp: 5000,
 };
 
@@ -312,7 +304,6 @@ const overdriveMonthlyKit: Kit = {
     { quantity: 64, name: "Garrafa de XP" },
   ],
   money: 50000,
-  claimBlocks: 20000,
 };
 
 const overdriveWelcomeKit: Kit = {
@@ -361,7 +352,6 @@ const rankCatalog: readonly Omit<Rank, "price">[] = [
       homes: 3,
       mcmmoXpBonus: "+10%",
       portableWorkstations: "Mesa de trabalho",
-      monthlyClaimBlocks: 1000,
       monthlyMoney: 3000,
     },
     faq: sharedFaq,
@@ -409,7 +399,6 @@ const rankCatalog: readonly Omit<Rank, "price">[] = [
       homes: 5,
       mcmmoXpBonus: "+25%",
       portableWorkstations: "Mesa de trabalho, Baú do fim, Bigorna",
-      monthlyClaimBlocks: 3000,
       monthlyMoney: 8000,
     },
     faq: sharedFaq,
@@ -459,7 +448,6 @@ const rankCatalog: readonly Omit<Rank, "price">[] = [
       homes: 8,
       mcmmoXpBonus: "+50%",
       portableWorkstations: "Todas (Ferreiro, Cortador, Tear, Amolar, Cartografia)",
-      monthlyClaimBlocks: 8000,
       monthlyMoney: 20000,
     },
     faq: sharedFaq,
@@ -507,7 +495,6 @@ const rankCatalog: readonly Omit<Rank, "price">[] = [
       homes: 12,
       mcmmoXpBonus: "2x",
       portableWorkstations: "Todas",
-      monthlyClaimBlocks: 20000,
       monthlyMoney: 50000,
     },
     faq: sharedFaq,

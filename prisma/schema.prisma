@@ -140,3 +140,182 @@ model Fulfillment {
 
   @@index([status, nextAttemptAt])
 }
+
+// Website authorization only; Minecraft ranks never map to these roles.
+enum UserRole {
+  USER
+  SUPPORT
+  MODERATOR
+  ADMIN
+  OWNER
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum AuthProvider {
+  EMAIL_PASSWORD
+  DISCORD
+}
+
+enum OAuthIntent {
+  LOGIN
+  LINK
+}
+
+enum EmailChallengePurpose {
+  REGISTER
+  VERIFY_EMAIL
+  CHANGE_EMAIL
+  PASSWORD_RESET
+}
+
+model User {
+  id                  String              @id @default(cuid())
+  emailNormalized     String?             @unique @db.VarChar(254)
+  emailVerifiedAt     DateTime?           @db.Timestamptz(3)
+  displayName         String              @db.VarChar(100)
+  role                UserRole            @default(USER)
+  status              UserStatus          @default(ACTIVE)
+  authVersion         Int                 @default(1)
+  createdAt           DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime            @updatedAt @db.Timestamptz(3)
+  identities          AuthIdentity[]
+  sessions            Session[]
+  oauthLinkTransactions OAuthTransaction[]
+  emailChallenges     EmailChallenge[]
+  minecraftIdentity   MinecraftIdentity?
+  actorAuditEvents    AuthAuditEvent[]    @relation("AuthAuditActor")
+  subjectAuditEvents  AuthAuditEvent[]    @relation("AuthAuditSubject")
+}
+
+model AuthIdentity {
+  id                  String              @id @default(cuid())
+  userId              String
+  provider            AuthProvider
+  // Stable provider identifier, never an email or display name. Immutable in SQL.
+  providerSubject     String              @db.VarChar(255)
+  createdAt           DateTime            @default(now()) @db.Timestamptz(3)
+  lastAuthenticatedAt DateTime?           @db.Timestamptz(3)
+  user                User                @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  passwordCredential  PasswordCredential?
+
+  @@unique([provider, providerSubject])
+  @@unique([userId, provider])
+}
+
+model PasswordCredential {
+  identityId   String       @id
+  passwordHash String       @db.VarChar(512)
+  changedAt    DateTime     @default(now()) @db.Timestamptz(3)
+  // SQL trigger restricts this relation to EMAIL_PASSWORD identities.
+  identity     AuthIdentity @relation(fields: [identityId], references: [id], onDelete: Cascade, onUpdate: Restrict)
+}
+
+model Session {
+  id                String    @id @default(cuid())
+  userId            String
+  tokenHash         String    @unique @db.VarChar(128)
+  authVersion       Int
+  createdAt         DateTime  @default(now()) @db.Timestamptz(3)
+  lastSeenAt        DateTime  @default(now()) @db.Timestamptz(3)
+  idleExpiresAt     DateTime  @db.Timestamptz(3)
+  absoluteExpiresAt DateTime  @db.Timestamptz(3)
+  revokedAt         DateTime? @db.Timestamptz(3)
+  revocationReason  String?   @db.VarChar(100)
+  authenticatedAt   DateTime  @db.Timestamptz(3)
+  mfaVerifiedAt     DateTime? @db.Timestamptz(3)
+  user              User      @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  oauthTransactions OAuthTransaction[]
+
+  @@index([userId])
+  @@index([idleExpiresAt])
+  @@index([absoluteExpiresAt])
+  @@index([revokedAt])
+}
+
+model AuthBrowserContext {
+  id           String             @id @default(cuid())
+  tokenHash    String             @unique @db.VarChar(128)
+  csrfTokenHash String            @db.VarChar(128)
+  expiresAt    DateTime           @db.Timestamptz(3)
+  createdAt    DateTime           @default(now()) @db.Timestamptz(3)
+  transactions OAuthTransaction[]
+
+  @@index([expiresAt])
+}
+
+model OAuthTransaction {
+  id                     String             @id @default(cuid())
+  stateHash              String             @unique @db.VarChar(128)
+  browserContextId       String
+  intent                 OAuthIntent
+  linkUserId             String?
+  initiatingSessionId    String?
+  pkceVerifierCiphertext String             @db.VarChar(2048)
+  returnPath             String             @db.VarChar(2048)
+  expiresAt              DateTime           @db.Timestamptz(3)
+  consumedAt             DateTime?          @db.Timestamptz(3)
+  createdAt              DateTime           @default(now()) @db.Timestamptz(3)
+  browserContext         AuthBrowserContext @relation(fields: [browserContextId], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  linkUser               User?              @relation(fields: [linkUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  initiatingSession      Session?           @relation(fields: [initiatingSessionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([browserContextId])
+  @@index([linkUserId])
+  @@index([initiatingSessionId])
+  @@index([expiresAt])
+}
+
+model EmailChallenge {
+  id              String                @id @default(cuid())
+  userId          String?
+  emailNormalized String                @db.VarChar(254)
+  purpose         EmailChallengePurpose
+  tokenHash       String                @unique @db.VarChar(128)
+  authVersion     Int?
+  expiresAt       DateTime              @db.Timestamptz(3)
+  consumedAt      DateTime?             @db.Timestamptz(3)
+  createdAt       DateTime              @default(now()) @db.Timestamptz(3)
+  user            User?                 @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([userId])
+  @@index([emailNormalized, purpose])
+  @@index([expiresAt])
+}
+
+model MinecraftIdentity {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  namespace          String   @db.VarChar(64)
+  // Canonical provider subject (e.g. normalized UUID), never a username.
+  subject            String   @db.VarChar(128)
+  lastKnownUsername  String?  @db.VarChar(64)
+  verifiedAt         DateTime @db.Timestamptz(3)
+  verificationMethod String   @db.VarChar(64)
+  user               User     @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([namespace, subject])
+}
+
+model AuthAuditEvent {
+  id            String   @id @default(cuid())
+  actorUserId   String?
+  subjectUserId String?
+  eventType     String   @db.VarChar(100)
+  outcome       String   @db.VarChar(32)
+  requestId     String   @db.VarChar(128)
+  // Allowlisted, sanitized JSON object only; SQL limits serialized size to 4 KiB.
+  metadata      Json     @default("{}") @db.JsonB
+  createdAt     DateTime @default(now()) @db.Timestamptz(3)
+  actorUser     User?    @relation("AuthAuditActor", fields: [actorUserId], references: [id], onDelete: SetNull, onUpdate: Restrict)
+  subjectUser   User?    @relation("AuthAuditSubject", fields: [subjectUserId], references: [id], onDelete: SetNull, onUpdate: Restrict)
+
+  @@index([actorUserId, createdAt])
+  @@index([subjectUserId, createdAt])
+  @@index([requestId])
+  @@index([createdAt])
+}

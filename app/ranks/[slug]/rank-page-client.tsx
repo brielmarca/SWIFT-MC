@@ -142,8 +142,8 @@ function OverviewSection({ rank }: { rank: Rank }) {
                 <dd className="font-bold text-ink">{rank.comparison.mcmmoXpBonus}</dd>
               </div>
               <div className="flex items-center justify-between gap-4 border-b border-white/[0.07] pb-4">
-                <dt className="text-sm text-muted">Blocos de claim/mês</dt>
-                <dd className="font-bold text-ink">{rank.comparison.monthlyClaimBlocks.toLocaleString("pt-BR")}</dd>
+                <dt className="text-sm text-muted">Blocos de claim — Boas-vindas (resgate único)</dt>
+                <dd className="font-bold text-ink">{rank.welcomeKit.claimBlocks?.toLocaleString("pt-BR") ?? "—"}</dd>
               </div>
               <div className="flex items-center justify-between gap-4">
                 <dt className="text-sm text-muted">Dinheiro/mês</dt>
@@ -229,6 +229,7 @@ function KitsSection({ rank }: { rank: Rank }) {
         <p id="kits-heading" className="eyebrow">Kits</p>
         <h2 className="page-heading mt-3">Kits do {rank.name}</h2>
         <p className="mt-4 max-w-2xl text-base leading-7 text-muted">Clique em cada kit para ver os itens completos, encantamentos e recompensas.</p>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">Blocos de claim são concedidos exclusivamente no Kit Boas-vindas.</p>
         <InheritanceNotice rank={rank} />
         <div className="mt-8 space-y-4">
           {kits.map((kit) => (

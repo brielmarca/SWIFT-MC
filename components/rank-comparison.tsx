@@ -12,7 +12,7 @@ const rows: readonly ComparisonRow[] = [
   { label: "Homes", value: (rank) => rank.comparison.homes },
   { label: "XP mcMMO", value: (rank) => rank.comparison.mcmmoXpBonus },
   { label: "Bancadas portáteis", value: (rank) => rank.comparison.portableWorkstations },
-  { label: "Blocos de claim/mês", value: (rank) => rank.comparison.monthlyClaimBlocks.toLocaleString("pt-BR") },
+  { label: "Blocos de claim — Boas-vindas (resgate único)", value: (rank) => rank.welcomeKit.claimBlocks?.toLocaleString("pt-BR") ?? "—" },
   { label: "Dinheiro/mês", value: (rank) => `$${rank.comparison.monthlyMoney.toLocaleString("pt-BR")}` },
 ];
 
