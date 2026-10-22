@@ -242,6 +242,7 @@ model AuthBrowserContext {
   tokenHash    String             @unique @db.VarChar(128)
   csrfTokenHash String            @db.VarChar(128)
   expiresAt    DateTime           @db.Timestamptz(3)
+  consumedAt   DateTime?          @db.Timestamptz(3)
   createdAt    DateTime           @default(now()) @db.Timestamptz(3)
   transactions OAuthTransaction[]
 

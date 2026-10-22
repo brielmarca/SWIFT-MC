@@ -55,6 +55,7 @@ CREATE TABLE "AuthBrowserContext" (
     "tokenHash" VARCHAR(128) NOT NULL,
     "csrfTokenHash" VARCHAR(128) NOT NULL,
     "expiresAt" TIMESTAMPTZ(3) NOT NULL,
+    "consumedAt" TIMESTAMPTZ(3),
     "createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "AuthBrowserContext_pkey" PRIMARY KEY ("id")
 );
@@ -161,7 +162,8 @@ ALTER TABLE "Session"
     ("revokedAt" IS NOT NULL AND length(btrim("revocationReason")) > 0));
 ALTER TABLE "AuthBrowserContext"
   ADD CONSTRAINT "AuthBrowserContext_hashes_nonempty" CHECK (length(btrim("tokenHash")) > 0 AND length(btrim("csrfTokenHash")) > 0),
-  ADD CONSTRAINT "AuthBrowserContext_expiry_order" CHECK ("createdAt" < "expiresAt");
+  ADD CONSTRAINT "AuthBrowserContext_expiry_order" CHECK ("createdAt" < "expiresAt"),
+  ADD CONSTRAINT "AuthBrowserContext_consumption_order" CHECK ("consumedAt" IS NULL OR "consumedAt" >= "createdAt");
 ALTER TABLE "OAuthTransaction"
   ADD CONSTRAINT "OAuthTransaction_secrets_nonempty" CHECK (length(btrim("stateHash")) > 0 AND length(btrim("pkceVerifierCiphertext")) > 0),
   ADD CONSTRAINT "OAuthTransaction_expiry_order" CHECK ("createdAt" < "expiresAt"),
