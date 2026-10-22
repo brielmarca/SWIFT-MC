@@ -1,5 +1,44 @@
 export type RankSlug = "swift" | "eclipse" | "cosmic" | "overdrive";
 
+export type Mount = {
+  name: string;
+  type: "terrestrial" | "flying";
+  introducedAt: RankSlug;
+  description: string;
+  image?: string;
+  confirmed: boolean;
+};
+
+export type RankMount = Mount & { inheritedFrom?: RankSlug };
+
+// Official VIP catalog. Artwork is optional until a verified local asset exists.
+// Nuvem Relâmpago is unconfirmed and must not be published as an official mount.
+export const mountCatalog: readonly Mount[] = [
+  { name: "Corcel Safira", type: "terrestrial", introducedAt: "swift", description: "Corcel terrestre com identidade visual azul e safira.", confirmed: true },
+  { name: "Lobo do Eclipse", type: "terrestrial", introducedAt: "eclipse", description: "Lobo terrestre com tema de eclipse em preto e branco.", confirmed: true },
+  { name: "Cervo Astral", type: "terrestrial", introducedAt: "cosmic", description: "Cervo terrestre com chifres luminosos e tema de constelações.", confirmed: true },
+  { name: "Grifo Celestial", type: "flying", introducedAt: "cosmic", description: "Grifo voador com tema celestial e estelar em azul e violeta.", confirmed: true },
+  { name: "Tigre Relâmpago", type: "terrestrial", introducedAt: "overdrive", description: "Tigre terrestre exclusivo do Overdrive, com visual dourado, elétrico e tema de raios.", confirmed: true },
+  { name: "Dragão da Tempestade", type: "flying", introducedAt: "overdrive", description: "Dragão voador com tema de tempestade e eletricidade. Montaria personalizada do SwiftMounts.", confirmed: true },
+];
+
+export function getRankMounts(slug: RankSlug): readonly RankMount[] {
+  const includedRanks = new Set<RankSlug>();
+  let current = getRank(slug);
+  while (current && !includedRanks.has(current.slug)) {
+    includedRanks.add(current.slug);
+    current = current.inheritsFrom ? getRank(current.inheritsFrom) : undefined;
+  }
+  return mountCatalog
+    .filter((mount) => mount.confirmed && includedRanks.has(mount.introducedAt))
+    .map((mount) => ({ ...mount, ...(mount.introducedAt !== slug ? { inheritedFrom: mount.introducedAt } : {}) }));
+}
+
+export function getMountSummary(slug: RankSlug): string {
+  const count = getRankMounts(slug).length;
+  return count === 1 ? "1 montaria confirmada" : `${count} montarias confirmadas`;
+}
+
 // Version filenames whenever artwork changes: this also changes optimizer/CDN cache keys.
 export const rankArtworkPaths: Record<RankSlug, string> = {
   swift: "/brand/ranks/swift-v2.jpeg",

@@ -7,6 +7,7 @@ import Link from "next/link";
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { Footer } from "@/components/footer";
 import { RankComparison } from "@/components/rank-comparison";
+import { RankMounts } from "@/components/rank-mounts";
 import { SiteHeader } from "@/components/site-header";
 import { getRank, rankArtworkPaths, type Rank } from "@/data/ranks";
 
@@ -345,6 +346,7 @@ export function RankPageClient({ rank }: RankPageClientProps) {
 
         <OverviewSection rank={rank} />
         <VantagensSection rank={rank} />
+        <RankMounts rank={rank} />
         <KitsSection rank={rank} />
 
         <section className="page-section border-y border-white/10 bg-black/20" aria-labelledby="comparison-heading">

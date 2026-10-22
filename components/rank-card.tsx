@@ -3,7 +3,7 @@
 import { Crown, Diamond, ShieldCheck, Sparkles, Star, ShoppingBag } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { rankArtworkPaths, type Rank } from "@/data/ranks";
+import { getMountSummary, rankArtworkPaths, type Rank } from "@/data/ranks";
 import { useCart } from "./cart-provider";
 import { useRouter } from "next/navigation";
 import type { CSSProperties } from "react";
@@ -90,6 +90,7 @@ export function RankCard({ rank, variant = "full" }: RankCardProps) {
             )}
           </div>
           <p className="mt-2 text-xs leading-5 text-muted">Prévia demo · Assinatura mensal · Sem cobrança real</p>
+          <p className={`mt-3 text-xs font-semibold ${styles.accent}`}>{getMountSummary(rank.slug)}</p>
           {variant === "full" && <ul className="mt-4 space-y-2 text-xs leading-5 text-muted">{rank.summaryBenefits.slice(0, 2).map((benefit) => <li key={benefit}>{benefit}</li>)}</ul>}
         </div>
 

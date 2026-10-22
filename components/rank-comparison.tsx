@@ -1,5 +1,5 @@
 import { Check, Minus } from "lucide-react";
-import { ranks } from "@/data/ranks";
+import { getRankMounts, ranks } from "@/data/ranks";
 
 type ComparisonRow = {
   label: string;
@@ -9,6 +9,11 @@ type ComparisonRow = {
 const rows: readonly ComparisonRow[] = [
   { label: "Preço mensal", value: (rank) => rank.price ?? "Preço em breve" },
   { label: "Duração", value: (rank) => rank.duration },
+  { label: "Montarias confirmadas (inclui herdadas)", value: (rank) => {
+    const mounts = getRankMounts(rank.slug);
+    const flying = mounts.filter((mount) => mount.type === "flying").length;
+    return `${mounts.length} · ${mounts.length - flying} terrestre${mounts.length - flying === 1 ? "" : "s"}${flying ? ` + ${flying} voadora${flying === 1 ? "" : "s"}` : ""}`;
+  } },
   { label: "Homes", value: (rank) => rank.comparison.homes },
   { label: "XP mcMMO", value: (rank) => rank.comparison.mcmmoXpBonus },
   { label: "Bancadas portáteis", value: (rank) => rank.comparison.portableWorkstations },
