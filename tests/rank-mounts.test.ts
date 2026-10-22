@@ -28,6 +28,10 @@ for (const rank of ranks) {
       const { inheritedFrom, ...data } = mount;
       assert.deepEqual(data, canonical);
       assert.equal(inheritedFrom, canonical.introducedAt === rank.slug ? undefined : canonical.introducedAt);
+      assert.ok(!("image" in mount), `${mount.name} must be text-only (no image)`);
+      assert.ok(typeof mount.name === "string" && mount.name.length > 0);
+      assert.ok(typeof mount.description === "string" && mount.description.length > 0);
+      assert.ok(mount.type === "terrestrial" || mount.type === "flying");
     }
     if (rank.inheritsFrom) {
       for (const parent of getRankMounts(rank.inheritsFrom)) {

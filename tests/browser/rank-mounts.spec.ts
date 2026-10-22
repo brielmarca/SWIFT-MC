@@ -13,12 +13,6 @@ for (const rank of ranks) {
       await expect(card.getByText(mount.type === "flying" ? "Voadora" : "Terrestre", { exact: true })).toBeVisible();
       await expect(card.getByText(mount.description, { exact: true })).toBeVisible();
       await expect(card.getByText(mount.inheritedFrom ? `Herdada do VIP ${getRank(mount.inheritedFrom)!.name}` : `Exclusiva do VIP ${rank.name}`, { exact: true })).toBeVisible();
-      if (!mount.image) {
-        await expect(card.getByText("SwiftMC · Arte indisponível", { exact: true })).toBeVisible();
-        await expect(card.getByRole("img")).toHaveCount(0);
-      } else {
-        await expect(card.getByRole("img", { name: mount.name })).toBeVisible();
-      }
     }
     await expect(page.getByText("Nuvem Relâmpago", { exact: false })).toHaveCount(0);
     const comparison = page.getByRole("row").filter({ hasText: "Montarias confirmadas (inclui herdadas)" });

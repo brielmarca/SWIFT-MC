@@ -5,13 +5,12 @@ export type Mount = {
   type: "terrestrial" | "flying";
   introducedAt: RankSlug;
   description: string;
-  image?: string;
   confirmed: boolean;
 };
 
 export type RankMount = Mount & { inheritedFrom?: RankSlug };
 
-// Official VIP catalog. Artwork is optional until a verified local asset exists.
+// Official VIP catalog. Mounts are text-only; no artwork is used.
 // Nuvem Relâmpago is unconfirmed and must not be published as an official mount.
 export const mountCatalog: readonly Mount[] = [
   { name: "Corcel Safira", type: "terrestrial", introducedAt: "swift", description: "Corcel terrestre com identidade visual azul e safira.", confirmed: true },

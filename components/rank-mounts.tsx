@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { getMountSummary, getRank, getRankMounts, type Rank } from "@/data/ranks";
 
 export function RankMounts({ rank }: { rank: Rank }) {
@@ -17,16 +16,6 @@ export function RankMounts({ rank }: { rank: Rank }) {
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {mounts.map((mount) => (
             <article key={mount.name} className="content-panel overflow-hidden" style={{ borderColor: `${rank.color.primary}33` }}>
-              <div className="relative flex aspect-[2/1] flex-col items-center justify-center gap-2 border-b border-white/[0.07] bg-gradient-to-br from-violet/10 via-black/30 to-black/60">
-                {mount.image ? (
-                  <Image src={mount.image} alt={mount.name} fill className="object-contain p-4" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" />
-                ) : (
-                  <>
-                    <Image src="/brand/emblem.png" alt="" width={56} height={56} className="h-14 w-14 object-contain opacity-70" />
-                    <span className="text-xs text-muted">SwiftMC · Arte indisponível</span>
-                  </>
-                )}
-              </div>
               <div className="p-5">
                 <span className="rounded border px-2 py-1 text-xs font-semibold" style={{ color: rank.color.primary, borderColor: `${rank.color.primary}4d` }}>{mount.type === "flying" ? "Voadora" : "Terrestre"}</span>
                 <h3 className="mt-4 text-lg font-bold text-ink">{mount.name}</h3>
