@@ -1,10 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
-import { CartProvider } from "@/components/cart-provider";
-import { ServerStatusProvider } from "@/components/server-status-provider";
+import { SiteProviders } from "@/components/site-providers";
 import { getServerConfig } from "@/lib/server-status";
-import { CheckoutDraftProvider } from "@/components/checkout-draft-provider";
-import { SiteAnnouncement } from "@/components/site-announcement";
 import { getActiveAnnouncement } from "@/data/content";
 import { rootMetadata } from "@/lib/seo";
 import "./globals.css";
@@ -22,14 +19,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="pt-BR">
       <body className={jakarta.variable}>
-        <ServerStatusProvider publicAddress={getServerConfig().publicAddress}>
-          <CartProvider>
-            <CheckoutDraftProvider>
-              <SiteAnnouncement announcement={getActiveAnnouncement()} />
-              {children}
-            </CheckoutDraftProvider>
-          </CartProvider>
-        </ServerStatusProvider>
+        <SiteProviders publicAddress={getServerConfig().publicAddress} announcement={getActiveAnnouncement()}>
+          {children}
+        </SiteProviders>
       </body>
     </html>
   );
