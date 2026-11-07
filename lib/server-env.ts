@@ -77,3 +77,41 @@ export function getMercadoPagoWebhookConfig(): MercadoPagoWebhookConfig {
 
   return { accessToken, webhookSecret };
 }
+
+export type StripeConfig = {
+  secretKey: string;
+};
+
+export type StripeWebhookConfig = {
+  secretKey: string;
+  webhookSecret: string;
+};
+
+export function getStripeConfig(): StripeConfig {
+  const secretKey = process.env.STRIPE_SECRET_KEY;
+
+  if (!secretKey) {
+    throw new Error("STRIPE_SECRET_KEY is required.");
+  }
+
+  if (!/^(sk|rk)_live_/.test(secretKey) && !/^(sk|rk)_test_/.test(secretKey)) {
+    throw new Error("STRIPE_SECRET_KEY must be a valid Stripe secret key (sk_* or rk_*).");
+  }
+
+  return { secretKey };
+}
+
+export function getStripeWebhookConfig(): StripeWebhookConfig {
+  const secretKey = process.env.STRIPE_SECRET_KEY;
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  if (!secretKey) {
+    throw new Error("STRIPE_SECRET_KEY is required.");
+  }
+
+  if (!webhookSecret) {
+    throw new Error("STRIPE_WEBHOOK_SECRET is required.");
+  }
+
+  return { secretKey, webhookSecret };
+}

@@ -1,0 +1,99 @@
+import { getStripeWebhookConfig } from "@/lib/server-env";
+import { getPrisma } from "@/lib/prisma";
+import { createStripeClient } from "@/lib/payments/stripe";
+import {
+  parseStripeWebhookEvent,
+  parseStripeSignature,
+  verifyStripeSignature,
+  reconcileStripeWebhook,
+} from "@/lib/payments/stripe-webhook";
+
+export async function POST(request: Request): Promise<Response> {
+  let config: { secretKey: string; webhookSecret: string };
+  try {
+    config = getStripeWebhookConfig();
+  } catch {
+    return Response.json(
+      { error: "WEBHOOK_CONFIG_UNAVAILABLE" },
+      { status: 503, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+
+  let rawBody: string;
+  try {
+    rawBody = await request.text();
+  } catch {
+    return Response.json(
+      { error: "INVALID_REQUEST_BODY" },
+      { status: 400, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+
+  const signatureHeader = request.headers.get("stripe-signature");
+  const parsed = parseStripeSignature(signatureHeader);
+  if (!parsed) {
+    return Response.json(
+      { error: "INVALID_SIGNATURE_HEADER" },
+      { status: 401, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+
+  const metadata = {
+    eventId: "",
+    timestamp: parsed.timestamp,
+    signature: parsed.signature,
+  };
+
+  const signatureValid = await verifyStripeSignature(rawBody, metadata, config.webhookSecret);
+  if (!signatureValid) {
+    return Response.json(
+      { error: "INVALID_SIGNATURE" },
+      { status: 401, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+
+  let event: { id: string; type: string; data: { object: unknown } };
+  try {
+    const parsedEvent = parseStripeWebhookEvent(JSON.parse(rawBody));
+    if (!parsedEvent) {
+      return Response.json(
+        { error: "INVALID_EVENT_PAYLOAD" },
+        { status: 400, headers: { "Cache-Control": "no-store" } },
+      );
+    }
+    event = parsedEvent;
+  } catch {
+    return Response.json(
+      { error: "INVALID_EVENT_PAYLOAD" },
+      { status: 400, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+
+  metadata.eventId = event.id;
+
+  const db = getPrisma();
+  const stripe = createStripeClient(config.secretKey, fetch);
+
+  try {
+    const result = await reconcileStripeWebhook(db, stripe, event, metadata);
+    const body: Record<string, boolean> = { received: true };
+    if (result === "duplicate") body.duplicate = true;
+    if (result === "ignored") body.ignored = true;
+    if (result === "processed") body.processed = true;
+    return Response.json(
+      body,
+      { status: 200, headers: { "Cache-Control": "no-store" } },
+    );
+  } catch (error) {
+    if (error instanceof Error && error.name === "StripeUnavailableError") {
+      return Response.json(
+        { error: "PROVIDER_UNAVAILABLE" },
+        { status: 503, headers: { "Cache-Control": "no-store" } },
+      );
+    }
+    return Response.json(
+      { error: "INTERNAL_ERROR" },
+      { status: 500, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+}

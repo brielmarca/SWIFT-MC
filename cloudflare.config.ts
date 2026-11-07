@@ -7,7 +7,7 @@ export default defineConfig(({ mode }) => {
   // Runtime secrets are supplied by Cloudflare, never serialized from .env.
   const env = loadEnv(mode ?? "production", process.cwd(), [
     "MINECRAFT_HOST", "MINECRAFT_PORT", "MINECRAFT_PUBLIC_ADDRESS", "MINECRAFT_DATA_API_URL",
-    "AUTH_HYPERDRIVE_ID",
+    "AUTH_HYPERDRIVE_ID", "APP_URL", "EMAIL_FROM",
   ]);
   const dataApiUrl = env.MINECRAFT_DATA_API_URL?.trim() || "";
   const stagingDiagnostics = mode === "auth-staging";
@@ -27,15 +27,21 @@ export default defineConfig(({ mode }) => {
       env: {
         ASSETS: bindings.assets(),
         IMAGES: bindings.images(),
+        ...(env.AUTH_HYPERDRIVE_ID?.trim() ? {
+          AUTH_HYPERDRIVE: bindings.hyperdrive({ id: env.AUTH_HYPERDRIVE_ID.trim() }),
+        } : {}),
+        AUTH_RATE_LIMIT: bindings.rateLimit({ namespace: "auth", simple: { limit: 10, period: 60 } }),
         ...(stagingDiagnostics ? {
           AUTH_DIAGNOSTICS_ENVIRONMENT: bindings.text("staging"),
           AUTH_DIAGNOSTICS_ENABLED: bindings.text("1"),
           AUTH_DIAGNOSTICS_TOKEN: bindings.secret(),
-          ...(env.AUTH_HYPERDRIVE_ID?.trim() ? {
-            AUTH_HYPERDRIVE: bindings.hyperdrive({ id: env.AUTH_HYPERDRIVE_ID.trim() }),
-          } : {}),
         } : {}),
         NODE_ENV: bindings.text(mode === "development" ? "development" : "production"),
+        APP_URL: bindings.text(env.APP_URL?.trim() || ""),
+        RESEND_API_KEY: bindings.secret(),
+        STRIPE_SECRET_KEY: bindings.secret(),
+        STRIPE_WEBHOOK_SECRET: bindings.secret(),
+        EMAIL_FROM: bindings.text(env.EMAIL_FROM?.trim() || "noreply@swiftmc.com.br"),
         MINECRAFT_HOST: bindings.text(env.MINECRAFT_HOST?.trim() || ""),
         MINECRAFT_PORT: bindings.text(env.MINECRAFT_PORT?.trim() || ""),
         MINECRAFT_PUBLIC_ADDRESS: bindings.text(env.MINECRAFT_PUBLIC_ADDRESS?.trim() || ""),

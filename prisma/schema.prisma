@@ -21,6 +21,7 @@ enum OrderStatus {
 
 enum PaymentProvider {
   MERCADO_PAGO
+  STRIPE
 }
 
 enum PaymentStatus {
@@ -61,6 +62,7 @@ model Order {
   rankDuration           String
   minecraftUsername      String
   email                  String
+  userId                 String?      @db.VarChar(255)
   currency               String       @default("BRL")
   subtotalCents          Int
   discountCents          Int          @default(0)
@@ -72,9 +74,12 @@ model Order {
   updatedAt              DateTime     @updatedAt @db.Timestamptz(3)
   payments               Payment[]
   fulfillment            Fulfillment?
+  user                   User?        @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@index([status, createdAt])
   @@index([minecraftUsername])
+  @@index([userId])
+  @@index([userId, createdAt])
 }
 
 model Payment {
@@ -185,6 +190,7 @@ model User {
   updatedAt           DateTime            @updatedAt @db.Timestamptz(3)
   identities          AuthIdentity[]
   sessions            Session[]
+  orders              Order[]
   oauthLinkTransactions OAuthTransaction[]
   emailChallenges     EmailChallenge[]
   minecraftIdentity   MinecraftIdentity?
@@ -210,6 +216,8 @@ model AuthIdentity {
 model PasswordCredential {
   identityId   String       @id
   passwordHash String       @db.VarChar(512)
+  failedLoginAttempts Int   @default(0)
+  lockedUntil DateTime?     @db.Timestamptz(3)
   changedAt    DateTime     @default(now()) @db.Timestamptz(3)
   // SQL trigger restricts this relation to EMAIL_PASSWORD identities.
   identity     AuthIdentity @relation(fields: [identityId], references: [id], onDelete: Cascade, onUpdate: Restrict)
