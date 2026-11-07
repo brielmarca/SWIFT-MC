@@ -6,6 +6,9 @@ import "server-only";
 export type { Clock } from "./clock";
 export { SystemClock } from "./clock";
 
+export type { RollbackRequiredCode } from "./errors";
+export { RollbackRequiredError, isRollbackRequiredError } from "./errors";
+
 export type {
   AuthUser, AuthIdentity, PasswordCredential, AuthSession, AuthBrowserContext,
   OAuthTransaction, EmailChallenge, MinecraftIdentity, AuthAuditRecord,
@@ -46,11 +49,11 @@ export { deriveLimiterKey, limiterKeyForEmail, limiterKeyForEmailAndIp, limiterK
 
 export type {
   LoginRequest, RegistrationRequest, RegistrationCompleteRequest, PasswordResetRequest,
-  PasswordResetCompleteRequest, LogoutRequest,
+  PasswordResetCompleteRequest, PasswordChangeRequest, LogoutRequest,
 } from "./dto";
 export {
   LoginRequestSchema, RegistrationRequestSchema, RegistrationCompleteRequestSchema,
-  PasswordResetRequestSchema, PasswordResetCompleteRequestSchema, LogoutRequestSchema,
+  PasswordResetRequestSchema, PasswordResetCompleteRequestSchema, PasswordChangeRequestSchema, LogoutRequestSchema,
   validateLogin, validateRegistration, validateRegistrationComplete, validatePasswordReset,
   validatePasswordResetComplete, validateLogout,
 } from "./dto";

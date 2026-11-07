@@ -1,19 +1,22 @@
 import "server-only";
-import { verifyPassword } from "@/lib/auth/password";
+import { verifyPassword, hashPassword, isPasswordPolicyValid } from "@/lib/auth/password";
 import { normalizeAuthEmail } from "@/lib/auth/email";
 import { publicLoginFailure, PUBLIC_EMAIL_CHALLENGE_ACK } from "@/lib/auth/errors";
 import { sanitizeAuthAuditMetadata } from "@/lib/auth/audit-metadata";
 import { LoginOutcome } from "./types";
 import {
-  UserRepository, IdentityRepository, PasswordCredentialRepository,
+  UserRepository, IdentityRepository, PasswordCredentialRepository, LoginAttemptRepository,
+  EmailChallengeRepository,
 } from "./repositories";
 import { SessionService } from "./session-service";
 import { AuditRepository } from "./repositories";
 import { Clock } from "./clock";
+import { AUTH_AUDIT_EVENTS } from "./audit";
+import { RollbackRequiredError } from "./errors";
 
 const DUMMY_PASSWORD = "swiftmc-login-dummy";
 const DUMMY_PASSWORD_HASH =
-  "$swiftmc$scrypt$v=1$N=32768,r=8,p=3$AAAAAAAAAAAAAAAAAAAAAA$BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB";
+  "$swiftmc$scrypt$v=1$N=32768,r=8,p=3$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 
 /**
  * Fixed dummy hash used for equivalent verification work on missing/invalid
@@ -41,8 +44,10 @@ export interface PasswordLoginDeps {
   userRepository: UserRepository;
   identityRepository: IdentityRepository;
   passwordCredentialRepository: PasswordCredentialRepository;
+  loginAttemptRepository: LoginAttemptRepository;
   sessionService: SessionService;
   auditRepository: AuditRepository;
+  emailChallengeRepository: EmailChallengeRepository;
   clock: Clock;
 }
 
@@ -53,12 +58,33 @@ export interface PasswordLoginService {
     rememberMe: boolean;
     requestId: string;
   }): Promise<LoginOutcome>;
+
+  /**
+   * Change a user's password. Requires current password verification.
+   * On success: replaces the password hash, increments authVersion (invalidating
+   * all existing sessions), revokes all user sessions, and invalidates
+   * outstanding password-reset challenges.
+   *
+   * MUST be invoked inside a single transaction (withAuthTransaction). The whole
+   * mutation runs against expected state: the new hash is stored only if the
+   * credential verified above is still current, and a failed authVersion
+   * increment throws RollbackRequiredError so the transaction rolls back the
+   * replacement instead of committing partial security state. Conflicts detected
+   * before any write (unknown account, wrong current password, concurrent
+   * credential replacement) return `{ ok: false }` without mutating anything.
+   */
+  changePassword(params: {
+    email: string;
+    currentPassword: string;
+    newPassword: string;
+    requestId: string;
+  }): Promise<{ ok: true } | { ok: false; code: "CHANGE_FAILED" }>;
 }
 
 export function createPasswordLoginService(deps: PasswordLoginDeps): PasswordLoginService {
   const {
     userRepository, identityRepository, passwordCredentialRepository,
-    sessionService, auditRepository,
+    sessionService, auditRepository, emailChallengeRepository,
   } = deps;
 
   async function recordAudit(params: {
@@ -121,13 +147,18 @@ export function createPasswordLoginService(deps: PasswordLoginDeps): PasswordLog
       // Step 5: perform password verification against the real hash.
       const passwordOk = await verifyPassword(password, credential.passwordHash);
 
+      // Verify even while locked so the public result/work stays generic.
+      const loginAllowed = await deps.loginAttemptRepository.recordLoginAttempt(
+        identity.id, credential.passwordHash, passwordOk,
+      );
+
       // Step 6: enforce ACTIVE status.
       const active = user.status === "ACTIVE";
 
       // Step 7: re-read/recheck authVersion before issuing (user.authVersion is current).
       const authVersionOk = true;
 
-      const credentialsValid = passwordOk && active && authVersionOk;
+      const credentialsValid = passwordOk && loginAllowed && active && authVersionOk;
 
       if (!credentialsValid) {
         // Real verification already ran above; keep generic public failure.
@@ -141,7 +172,12 @@ export function createPasswordLoginService(deps: PasswordLoginDeps): PasswordLog
         return { ok: false, code: "LOGIN_FAILED" };
       }
 
-      // Step 8: issue session through SessionService.
+      // Step 8: Revoke all existing sessions for this user (session rotation on login).
+      // Prevents session fixation: any previously issued session token is invalidated
+      // when a new login occurs.
+      await sessionService.revokeAllUserSessions(user.id);
+
+      // Step 9: issue a new session through SessionService.
       const isStaff = user.role !== "USER";
       const issued = await sessionService.issueSession({
         userId: user.id,
@@ -169,8 +205,133 @@ export function createPasswordLoginService(deps: PasswordLoginDeps): PasswordLog
         metadata: sanitizeAuthAuditMetadata({ ...metadataBase }),
       });
 
-      // Step 9: return domain result only. Raw token goes to the cookie setter.
+      // Step 10: return domain result only. Raw token goes to the cookie setter.
       return { ok: true, session: issued.session, user, rawToken: issued.rawToken };
+    },
+
+    /**
+     * Change a user's password. Requires current password verification.
+     * On success: replaces the password hash, increments authVersion (invalidating
+     * all existing sessions), revokes all user sessions, and invalidates
+     * outstanding password-reset challenges. The caller must supply
+     * transaction-scoped repositories (withAuthTransaction); failures after the
+     * first write throw RollbackRequiredError so the transaction rolls back.
+     */
+    async changePassword(params: {
+      email: string;
+      currentPassword: string;
+      newPassword: string;
+      requestId: string;
+    }): Promise<{ ok: true } | { ok: false; code: "CHANGE_FAILED" }> {
+      if (!isPasswordPolicyValid(params.newPassword)) return { ok: false, code: "CHANGE_FAILED" };
+      const normalizedEmail = normalizeAuthEmail(params.email);
+      const metadataBase = sanitizeAuthAuditMetadata({
+        requestId: params.requestId,
+        provider: "EMAIL_PASSWORD",
+      });
+
+      // Find the canonical user. Not found => dummy work + generic failure.
+      const user = await userRepository.findByNormalizedEmail(normalizedEmail);
+      if (!user) {
+        await dummyPasswordWork();
+        await recordAudit({
+          eventType: "PASSWORD_CHANGED",
+          outcome: "failure",
+          actorUserId: null,
+          subjectUserId: null,
+          metadata: sanitizeAuthAuditMetadata({ ...metadataBase, reason: "INVALID_CREDENTIALS" }),
+        });
+        return { ok: false, code: "CHANGE_FAILED" };
+      }
+
+      // Resolve EMAIL_PASSWORD identity.
+      const identity = await identityRepository.findByUserAndProvider(user.id, "EMAIL_PASSWORD");
+      if (!identity) {
+        await dummyPasswordWork();
+        await recordAudit({
+          eventType: "PASSWORD_CHANGED",
+          outcome: "failure",
+          actorUserId: null,
+          subjectUserId: user.id,
+          metadata: sanitizeAuthAuditMetadata({ ...metadataBase, reason: "INVALID_CREDENTIALS" }),
+        });
+        return { ok: false, code: "CHANGE_FAILED" };
+      }
+
+      // Resolve password credential.
+      const credential = await passwordCredentialRepository.findByIdentity(identity.id);
+      if (!credential) {
+        await dummyPasswordWork();
+        await recordAudit({
+          eventType: "PASSWORD_CHANGED",
+          outcome: "failure",
+          actorUserId: null,
+          subjectUserId: user.id,
+          metadata: sanitizeAuthAuditMetadata({ ...metadataBase, reason: "INVALID_CREDENTIALS" }),
+        });
+        return { ok: false, code: "CHANGE_FAILED" };
+      }
+
+      // Verify current password.
+      const currentPasswordOk = await verifyPassword(params.currentPassword, credential.passwordHash);
+      if (!currentPasswordOk) {
+        await recordAudit({
+          eventType: "PASSWORD_CHANGED",
+          outcome: "failure",
+          actorUserId: null,
+          subjectUserId: user.id,
+          metadata: sanitizeAuthAuditMetadata({ ...metadataBase, reason: "INVALID_CREDENTIALS" }),
+        });
+        return { ok: false, code: "CHANGE_FAILED" };
+      }
+
+      // Hash the new password.
+      const newPasswordHash = await hashPassword(params.newPassword);
+
+      // Expected-state credential replacement: the row is only updated while it
+      // still holds the exact hash verified above, so a request that observed a
+      // stale credential cannot overwrite a concurrent password change. Zero rows
+      // matched means nothing was written yet, so an ordinary failure result is
+      // safe here.
+      const replaced = await passwordCredentialRepository.replacePasswordHashIfUnchanged(
+        identity.id, credential.passwordHash, newPasswordHash,
+      );
+      if (!replaced) {
+        await recordAudit({
+          eventType: "PASSWORD_CHANGED",
+          outcome: "failure",
+          actorUserId: null,
+          subjectUserId: user.id,
+          metadata: sanitizeAuthAuditMetadata({ ...metadataBase, reason: "INVALID_CREDENTIALS" }),
+        });
+        return { ok: false, code: "CHANGE_FAILED" };
+      }
+
+      // Conditional authVersion increment against the version read in this
+      // transaction. The replacement above already succeeded, so returning a
+      // failure object would commit a new password without invalidating
+      // sessions: fail by throwing to roll back the replacement as well.
+      const bumped = await userRepository.bumpAuthVersion(user.id, user.authVersion);
+      if (!bumped) {
+        throw new RollbackRequiredError("CHANGE_FAILED", "AUTH_VERSION_MISMATCH");
+      }
+
+      // Revoke all existing sessions (logout-all on password change).
+      await sessionService.revokeAllUserSessions(user.id);
+
+      // Outstanding password-reset challenges were bound to the old credential
+      // state; invalidate them explicitly inside the same transaction.
+      await emailChallengeRepository.invalidateOutstanding(normalizedEmail, "PASSWORD_RESET");
+
+      await recordAudit({
+        eventType: AUTH_AUDIT_EVENTS.PASSWORD_CHANGED,
+        outcome: "success",
+        actorUserId: user.id,
+        subjectUserId: user.id,
+        metadata: sanitizeAuthAuditMetadata({ ...metadataBase }),
+      });
+
+      return { ok: true };
     },
   };
 }

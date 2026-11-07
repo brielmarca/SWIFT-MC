@@ -2,6 +2,7 @@ import "server-only";
 import { randomBytes, scrypt, timingSafeEqual } from "node:crypto";
 
 export const PASSWORD_MAX_BYTES = 1024;
+export const PASSWORD_MIN_LENGTH = 12;
 const PREFIX = "$swiftmc$scrypt$v=1$N=32768,r=8,p=3$";
 const FORMAT = /^\$swiftmc\$scrypt\$v=1\$N=32768,r=8,p=3\$([A-Za-z0-9_-]{22})\$([A-Za-z0-9_-]{43})$/;
 
@@ -10,6 +11,10 @@ function validPassword(password: unknown): password is string {
     password.length <= PASSWORD_MAX_BYTES && Buffer.byteLength(password, "utf8") <= PASSWORD_MAX_BYTES &&
     // Reject unpaired surrogates rather than silently replacing them during UTF-8 encoding.
     !/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/u.test(password);
+}
+
+export function isPasswordPolicyValid(password: unknown): password is string {
+  return typeof password === "string" && validPassword(password) && password.length >= PASSWORD_MIN_LENGTH;
 }
 
 function parseHash(encoded: unknown): { salt: Buffer; key: Buffer } | null {
@@ -31,9 +36,9 @@ function derive(password: string, salt: Buffer): Promise<Buffer> {
   });
 }
 
-/** No trimming, truncation or Unicode normalization. Enrollment strength rules belong to future services. */
+/** No trimming, truncation or Unicode normalization. */
 export async function hashPassword(password: string): Promise<string> {
-  if (!validPassword(password)) throw new TypeError("Invalid password input");
+  if (!isPasswordPolicyValid(password)) throw new TypeError("Invalid password input");
   const salt = randomBytes(16);
   const key = await derive(password, salt);
   try {

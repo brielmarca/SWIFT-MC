@@ -1,7 +1,9 @@
 import "server-only";
 import { z } from "zod";
+import { PASSWORD_MIN_LENGTH } from "@/lib/auth/password";
 
-const passwordSchema = z.string().min(1).max(1024);
+const credentialSchema = z.string().min(1).max(1024);
+const passwordSchema = z.string().min(PASSWORD_MIN_LENGTH).max(1024);
 const displayNameSchema = z.string().min(1).max(100);
 const challengeTokenSchema = z.string().min(1).max(128);
 
@@ -17,7 +19,7 @@ const challengeTokenSchema = z.string().min(1).max(128);
 
 export const LoginRequestSchema = z.object({
   email: z.string().min(1).max(254),
-  password: passwordSchema,
+  password: credentialSchema,
   rememberMe: z.boolean().optional(),
 }).strict();
 
@@ -25,8 +27,8 @@ export type LoginRequest = z.infer<typeof LoginRequestSchema>;
 
 export const RegistrationRequestSchema = z.object({
   email: z.string().min(1).max(254),
-  password: passwordSchema,
-  displayName: displayNameSchema,
+  password: passwordSchema.optional(),
+  displayName: displayNameSchema.optional(),
 }).strict();
 
 export type RegistrationRequest = z.infer<typeof RegistrationRequestSchema>;
@@ -54,6 +56,19 @@ export const PasswordResetCompleteRequestSchema = z.object({
 
 export type PasswordResetCompleteRequest = z.infer<typeof PasswordResetCompleteRequestSchema>;
 
+export const PasswordChangeRequestSchema = z.object({
+  currentPassword: credentialSchema,
+  newPassword: passwordSchema,
+}).strict();
+
+export type PasswordChangeRequest = z.infer<typeof PasswordChangeRequestSchema>;
+
+export const ResendVerificationRequestSchema = z.object({
+  email: z.string().min(1).max(254),
+}).strict();
+
+export type ResendVerificationRequest = z.infer<typeof ResendVerificationRequestSchema>;
+
 export const LogoutRequestSchema = z.object({}).strict();
 
 export type LogoutRequest = z.infer<typeof LogoutRequestSchema>;
@@ -67,7 +82,10 @@ export function validateRegistration(input: unknown) {
 }
 
 export function validateRegistrationComplete(input: unknown) {
-  return RegistrationCompleteRequestSchema.safeParse(input);
+  return z.union([RegistrationCompleteRequestSchema, z.object({
+    email: z.string().min(1).max(254),
+    challengeToken: challengeTokenSchema,
+  }).strict()]).safeParse(input);
 }
 
 export function validatePasswordReset(input: unknown) {
@@ -76,6 +94,10 @@ export function validatePasswordReset(input: unknown) {
 
 export function validatePasswordResetComplete(input: unknown) {
   return PasswordResetCompleteRequestSchema.safeParse(input);
+}
+
+export function validateResendVerification(input: unknown) {
+  return ResendVerificationRequestSchema.safeParse(input);
 }
 
 export function validateLogout(input: unknown) {

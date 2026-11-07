@@ -1,11 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { generateSecurityToken, digestSecurityToken } from "@/lib/auth/tokens";
 import { createPasswordResetService, type PasswordResetDeps } from "@/lib/auth-domain/password-reset";
 import {
   type UserRepository, type IdentityRepository, type PasswordCredentialRepository,
   type EmailChallengeRepository, type AuthUser, type AuthIdentity, type EmailChallenge, type EmailChallengePurpose,
+  type AuthSession, type AuthRole, type AuthStatus, type AuthProvider,
 } from "@/lib/auth-domain/repositories";
+import type { SessionService } from "@/lib/auth-domain/session-service";
+import type { SessionValidateFailureCode } from "@/lib/auth-domain/types";
 import type { AuditRepository } from "@/lib/auth-domain/repositories";
+import { RollbackRequiredError } from "@/lib/auth-domain/errors";
 import { Clock } from "@/lib/auth-domain/clock";
 
 class FixedClock implements Clock {
@@ -23,6 +28,21 @@ class FakeUserRepository implements UserRepository {
     for (const u of this.users.values()) if (u.emailNormalized === email) return u;
     return null;
   }
+  async createUser(params: {
+    emailNormalized: string | null;
+    displayName: string;
+    role: AuthRole;
+    status: AuthStatus;
+    authVersion: number;
+    emailVerifiedAt: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
+  }): Promise<AuthUser> {
+    const id = `user_${this.users.size + 1}`;
+    const user: AuthUser = { id, ...params, emailVerifiedAt: params.emailVerifiedAt ?? null };
+    this.users.set(id, user);
+    return user;
+  }
   async bumpAuthVersion(userId: string, expected: number): Promise<boolean> {
     if (this.bumpShouldFail) return false;
     const u = this.users.get(userId);
@@ -30,6 +50,7 @@ class FakeUserRepository implements UserRepository {
     u.authVersion += 1;
     return true;
   }
+  async updateEmailVerifiedAt(): Promise<void> {}
   add(u: AuthUser) { this.users.set(u.id, u); }
 }
 
@@ -41,6 +62,17 @@ class FakeIdentityRepository implements IdentityRepository {
   }
   async findByProviderAndSubject(): Promise<AuthIdentity | null> { return null; }
   async resolveOwner(): Promise<{ userId: string; user: AuthUser } | null> { return null; }
+  async createIdentity(params: {
+    userId: string;
+    provider: AuthProvider;
+    providerSubject: string;
+    createdAt: Date;
+  }): Promise<AuthIdentity> {
+    const id = `id_${this.identities.size + 1}`;
+    const identity: AuthIdentity = { id, ...params, lastAuthenticatedAt: null };
+    this.identities.set(id, identity);
+    return identity;
+  }
   add(i: AuthIdentity) { this.identities.set(i.id, i); }
 }
 
@@ -50,7 +82,13 @@ class FakePasswordCredentialRepository implements PasswordCredentialRepository {
     const h = this.creds.get(identityId);
     return h ? { identityId, passwordHash: h, changedAt: new Date() } : null;
   }
-  async replacePasswordHash(identityId: string, passwordHash: string): Promise<void> { this.creds.set(identityId, passwordHash); }
+  async createPasswordHash(): Promise<void> {}
+  async replacePasswordHashIfUnchanged(identityId: string, expectedPasswordHash: string, passwordHash: string): Promise<boolean> {
+    const current = this.creds.get(identityId);
+    if (current !== expectedPasswordHash) return false;
+    this.creds.set(identityId, passwordHash);
+    return true;
+  }
   add(identityId: string, hash: string) { this.creds.set(identityId, hash); }
   getHash(identityId: string) { return this.creds.get(identityId); }
 }
@@ -72,8 +110,8 @@ class FakeEmailChallengeRepository implements EmailChallengeRepository {
   async invalidateOutstanding(): Promise<void> {}
   add(tokenHash: string, purpose: EmailChallengePurpose, expiresAt: Date, emailNormalized: string) {
     this.challenges.set(tokenHash, {
-      id: tokenHash, userId: null, emailNormalized, purpose, tokenHash,
-      authVersion: null, expiresAt, consumedAt: null, createdAt: new Date(),
+      id: tokenHash, userId: "user_1", emailNormalized, purpose, tokenHash,
+      authVersion: 1, expiresAt, consumedAt: null, createdAt: new Date(),
     });
   }
 }
@@ -89,12 +127,21 @@ function baseUser(overrides: Partial<AuthUser> = {}): AuthUser {
   return { id: "user_1", emailNormalized: "a@example.com", emailVerifiedAt: null, displayName: "A", role: "USER", status: "ACTIVE", authVersion: 1, createdAt: new Date(), updatedAt: new Date(), ...overrides };
 }
 
+class FakeSessionService implements SessionService {
+  revokedUsers = new Set<string>();
+  async issueSession(): Promise<{ ok: true; session: AuthSession; rawToken: string }> { throw new Error("not used"); }
+  async validateSession(): Promise<{ ok: true; session: AuthSession; user: AuthUser } | { ok: false; code: SessionValidateFailureCode }> { throw new Error("not used"); }
+  async revokeSession(sessionId: string): Promise<void> { void sessionId; }
+  async revokeAllUserSessions(userId: string): Promise<void> { this.revokedUsers.add(userId); }
+}
+
 function makeService(deps: Partial<PasswordResetDeps> & { clock: FixedClock }) {
   return createPasswordResetService({
     userRepository: deps.userRepository ?? new FakeUserRepository(),
     identityRepository: deps.identityRepository ?? new FakeIdentityRepository(),
     passwordCredentialRepository: deps.passwordCredentialRepository ?? new FakePasswordCredentialRepository(),
     emailChallengeRepository: deps.emailChallengeRepository ?? new FakeEmailChallengeRepository(deps.clock),
+    sessionService: deps.sessionService ?? new FakeSessionService(),
     auditRepository: deps.auditRepository ?? new FakeAuditRepository(),
     clock: deps.clock,
   } as PasswordResetDeps);
@@ -113,10 +160,12 @@ test("expired challenge is rejected", async () => {
   creds.add(identity.id, "hash");
 
   const past = new Date("2026-01-01T00:00:00Z");
-  challenges.add("tok_expired", "PASSWORD_RESET", past, user.emailNormalized!);
+  const rawToken = generateSecurityToken("password-reset");
+  const tokenHash = digestSecurityToken(rawToken, "password-reset");
+  challenges.add(tokenHash, "PASSWORD_RESET", past, user.emailNormalized!);
 
   const svc = makeService({ clock, userRepository: users, identityRepository: identities, passwordCredentialRepository: creds, emailChallengeRepository: challenges });
-  const result = await svc.completePasswordReset({ email: user.emailNormalized!, challengeToken: "tok_expired", newPassword: "new-pass", requestId: "req_1" });
+  const result = await svc.completePasswordReset({ email: user.emailNormalized!, challengeToken: rawToken, newPassword: "new-secure-pass-123", requestId: "req_1" });
   assert.equal(result.ok, false);
   if (result.ok) throw new Error("unreachable");
   assert.equal(result.code, "RESET_FAILED");
@@ -135,12 +184,16 @@ test("consumed challenge cannot be replayed", async () => {
   creds.add(identity.id, "hash");
 
   const future = new Date("2099-01-01T00:00:00Z");
-  challenges.add("tok_consumed", "PASSWORD_RESET", future, user.emailNormalized!);
+  const rawToken = generateSecurityToken("password-reset");
+  const tokenHash = digestSecurityToken(rawToken, "password-reset");
+  challenges.add(tokenHash, "PASSWORD_RESET", future, user.emailNormalized!);
 
   const svc = makeService({ clock, userRepository: users, identityRepository: identities, passwordCredentialRepository: creds, emailChallengeRepository: challenges });
-  // First consume marks it consumed.
-  await challenges.consume("tok_consumed");
-  const result = await svc.completePasswordReset({ email: user.emailNormalized!, challengeToken: "tok_consumed", newPassword: "new-pass", requestId: "req_1" });
+  const first = await svc.completePasswordReset({ email: user.emailNormalized!, challengeToken: rawToken, newPassword: "new-secure-pass-123", requestId: "req_first" });
+  assert.equal(first.ok, true);
+  const firstHash = creds.getHash(identity.id);
+  const result = await svc.completePasswordReset({ email: user.emailNormalized!, challengeToken: rawToken, newPassword: "new-secure-pass-123", requestId: "req_1" });
+  assert.equal(creds.getHash(identity.id), firstHash);
   assert.equal(result.ok, false);
   if (result.ok) throw new Error("unreachable");
   assert.equal(result.code, "RESET_FAILED");
@@ -159,16 +212,21 @@ test("authVersion mismatch during reset is rejected", async () => {
   creds.add(identity.id, "hash");
 
   const future = new Date("2099-01-01T00:00:00Z");
-  challenges.add("tok_ok", "PASSWORD_RESET", future, user.emailNormalized!);
+  const rawToken = generateSecurityToken("password-reset");
+  const tokenHash = digestSecurityToken(rawToken, "password-reset");
+  challenges.add(tokenHash, "PASSWORD_RESET", future, user.emailNormalized!);
 
-  // Simulate a concurrent authVersion bump: optimistic concurrency fails.
+  // Simulate a concurrent authVersion bump: optimistic concurrency fails after
+  // the challenge was consumed, so the flow must throw to roll the partial
+  // mutation back instead of returning a failure object.
   users.bumpShouldFail = true;
 
   const svc = makeService({ clock, userRepository: users, identityRepository: identities, passwordCredentialRepository: creds, emailChallengeRepository: challenges });
-  const result = await svc.completePasswordReset({ email: user.emailNormalized!, challengeToken: "tok_ok", newPassword: "new-pass", requestId: "req_1" });
-  assert.equal(result.ok, false);
-  if (result.ok) throw new Error("unreachable");
-  assert.equal(result.code, "RESET_FAILED");
+  await assert.rejects(
+    () => svc.completePasswordReset({ email: user.emailNormalized!, challengeToken: rawToken, newPassword: "new-secure-pass-123", requestId: "req_1" }),
+    (error: unknown) => error instanceof RollbackRequiredError && error.code === "RESET_FAILED" && error.reason === "AUTH_VERSION_MISMATCH",
+    "post-consume failure must reject so the transaction rolls back, never report success",
+  );
 });
 
 test("reset increments authVersion on success", async () => {
@@ -184,10 +242,12 @@ test("reset increments authVersion on success", async () => {
   creds.add(identity.id, "hash");
 
   const future = new Date("2099-01-01T00:00:00Z");
-  challenges.add("tok_ok", "PASSWORD_RESET", future, user.emailNormalized!);
+  const rawToken = generateSecurityToken("password-reset");
+  const tokenHash = digestSecurityToken(rawToken, "password-reset");
+  challenges.add(tokenHash, "PASSWORD_RESET", future, user.emailNormalized!);
 
   const svc = makeService({ clock, userRepository: users, identityRepository: identities, passwordCredentialRepository: creds, emailChallengeRepository: challenges });
-  const result = await svc.completePasswordReset({ email: user.emailNormalized!, challengeToken: "tok_ok", newPassword: "new-pass", requestId: "req_1" });
+  const result = await svc.completePasswordReset({ email: user.emailNormalized!, challengeToken: rawToken, newPassword: "new-secure-pass-123", requestId: "req_1" });
   assert.equal(result.ok, true);
   if (!result.ok) throw new Error("unreachable");
   const updated = await users.findById(user.id);
@@ -196,7 +256,8 @@ test("reset increments authVersion on success", async () => {
 
 test("unknown email in reset produces generic failure", async () => {
   const svc = makeService({ clock: new FixedClock("2026-10-22T00:00:00Z") });
-  const result = await svc.completePasswordReset({ email: "none@example.com", challengeToken: "tok", newPassword: "new-pass", requestId: "req_1" });
+  const rawToken = generateSecurityToken("password-reset");
+  const result = await svc.completePasswordReset({ email: "none@example.com", challengeToken: rawToken, newPassword: "new-secure-pass-123", requestId: "req_1" });
   assert.equal(result.ok, false);
   if (result.ok) throw new Error("unreachable");
   assert.equal(result.code, "RESET_FAILED");
@@ -209,4 +270,65 @@ test("requestPasswordReset never discloses account existence", async () => {
   assert.equal(a.ok, true);
   assert.equal(b.ok, true);
   assert.equal(a.acknowledgement, b.acknowledgement);
+});
+
+test("reset token cannot target another email/user or outlive its auth version", async () => {
+  for (const override of [
+    { emailNormalized: "attacker@example.com" }, { userId: "attacker" }, { authVersion: 0 }, { authVersion: null },
+  ]) {
+    const clock = new FixedClock("2026-10-22T00:00:00Z");
+    const users = new FakeUserRepository();
+    const identities = new FakeIdentityRepository();
+    const creds = new FakePasswordCredentialRepository();
+    const challenges = new FakeEmailChallengeRepository(clock);
+    const user = baseUser();
+    users.add(user);
+    identities.add({ id: "id_1", userId: user.id, provider: "EMAIL_PASSWORD", providerSubject: user.emailNormalized!, createdAt: clock.now(), lastAuthenticatedAt: null });
+    creds.add("id_1", "original-hash");
+    const rawToken = generateSecurityToken("password-reset");
+    const tokenHash = digestSecurityToken(rawToken, "password-reset");
+    challenges.add(tokenHash, "PASSWORD_RESET", new Date("2099-01-01"), user.emailNormalized!);
+    Object.assign(challenges.challenges.get(tokenHash)!, override);
+    const svc = makeService({ clock, userRepository: users, identityRepository: identities, passwordCredentialRepository: creds, emailChallengeRepository: challenges });
+    await assert.rejects(
+      () => svc.completePasswordReset({ email: user.emailNormalized!, challengeToken: rawToken, newPassword: "new-secure-pass-456", requestId: "binding" }),
+      (error: unknown) => error instanceof RollbackRequiredError && error.code === "RESET_FAILED",
+      "binding mismatch after challenge consumption must reject, never return ok:false",
+    );
+    assert.equal(creds.getHash("id_1"), "original-hash", "credential untouched");
+    assert.equal(user.authVersion, 1, "authVersion untouched");
+  }
+});
+
+test("reset never overwrites a concurrently replaced credential", async () => {
+  const clock = new FixedClock("2026-10-22T00:00:00Z");
+  const users = new FakeUserRepository();
+  const identities = new FakeIdentityRepository();
+  const creds = new FakePasswordCredentialRepository();
+  const challenges = new FakeEmailChallengeRepository(clock);
+  const user = baseUser();
+  users.add(user);
+  identities.add({ id: "id_1", userId: user.id, provider: "EMAIL_PASSWORD", providerSubject: user.emailNormalized!, createdAt: clock.now(), lastAuthenticatedAt: null });
+  creds.add("id_1", "original-hash");
+  const rawToken = generateSecurityToken("password-reset");
+  const tokenHash = digestSecurityToken(rawToken, "password-reset");
+  challenges.add(tokenHash, "PASSWORD_RESET", new Date("2099-01-01T00:00:00Z"), user.emailNormalized!);
+
+  // Simulate a concurrent writer landing between this request's credential read
+  // and its conditional replace.
+  const originalFind = creds.findByIdentity.bind(creds);
+  creds.findByIdentity = async (identityId: string) => {
+    const credential = await originalFind(identityId);
+    creds.creds.set(identityId, "concurrent-writer-hash");
+    return credential;
+  };
+
+  const svc = makeService({ clock, userRepository: users, identityRepository: identities, passwordCredentialRepository: creds, emailChallengeRepository: challenges });
+  await assert.rejects(
+    () => svc.completePasswordReset({ email: user.emailNormalized!, challengeToken: rawToken, newPassword: "new-secure-pass-456", requestId: "req_race" }),
+    (error: unknown) => error instanceof RollbackRequiredError && error.code === "RESET_FAILED" && error.reason === "CREDENTIAL_MODIFIED",
+    "lost conditional replace must reject so the consumed challenge rolls back",
+  );
+  assert.equal(creds.getHash("id_1"), "concurrent-writer-hash", "stale reset must not overwrite the concurrent password");
+  assert.equal(user.authVersion, 1, "no authVersion bump after lost race");
 });
