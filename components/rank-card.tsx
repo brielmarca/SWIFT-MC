@@ -6,6 +6,7 @@ import Link from "next/link";
 import { getMountSummary, rankArtworkPaths, type Rank } from "@/data/ranks";
 import { useCart } from "./cart-provider";
 import { useRouter } from "next/navigation";
+import { redirectToStripeCheckout } from "@/lib/stripe-checkout-client";
 import type { CSSProperties } from "react";
 
 type RankCardProps = { rank: Rank; variant?: "full" | "preview" };
@@ -50,6 +51,29 @@ export function RankCard({ rank, variant = "full" }: RankCardProps) {
     if (!hasItem(rank.slug)) addItem(rank.slug);
     router.push("/checkout");
   };
+
+  async function handleBuyWithStripe() {
+    const username = window.prompt("Informe seu nome de usuário no Minecraft Java:");
+    if (!username) return;
+    const email = window.prompt("Informe seu e-mail:");
+    if (!email) return;
+
+    try {
+      await redirectToStripeCheckout({
+        type: "vip",
+        rankSlug: rank.slug,
+        minecraftUsername: username.trim(),
+        email: email.trim(),
+        idempotencyKey: crypto.randomUUID(),
+      });
+    } catch (error) {
+      if (error instanceof Error && error.name === "StripeCheckoutError") {
+        alert((error as { message: string }).message);
+      } else {
+        alert("Não foi possível iniciar a compra. Tente novamente.");
+      }
+    }
+  }
 
   return (
     <article
@@ -102,6 +126,17 @@ export function RankCard({ rank, variant = "full" }: RankCardProps) {
           >
             <ShoppingBag size={16} aria-hidden="true" />
             Ver prévia demo
+          </button>
+          <button
+            type="button"
+            onClick={handleBuyWithStripe}
+            className="button-secondary w-full px-4 border-white/20 hover:bg-white/10 text-white"
+            disabled={!rank.price}
+          >
+            <span className="flex items-center justify-center gap-2">
+              <span className="text-xs">Stripe</span>
+              {rank.price ? "Comprar agora" : "Preço em breve"}
+            </span>
           </button>
           <button
             type="button"

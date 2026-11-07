@@ -11,6 +11,7 @@ import {
 
 import type { StripeReconciliationClient } from "@/lib/payments/stripe";
 import { StripeUnavailableError } from "@/lib/payments/stripe";
+import { createFulfillmentForOrder } from "@/lib/fulfillment/fulfillment-service";
 
 const STRIPE_ID_PATTERN = /^[A-Za-z0-9]{1,255}$/;
 const ORDER_NUMBER_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
@@ -446,6 +447,7 @@ export async function reconcileStripeWebhook(
         lastSyncedAt: now,
       },
     });
+    let orderStatusChanged = false;
     if (orderStatus !== verifiedPayment.order.status) {
       await tx.order.update({
         where: { id: verifiedPayment.orderId },
@@ -457,7 +459,34 @@ export async function reconcileStripeWebhook(
               : verifiedPayment.order.paidAt,
         },
       });
+      orderStatusChanged = true;
     }
+
+    // Create fulfillment record when order first becomes PAID.
+    if (orderStatusChanged && orderStatus === OrderStatus.PAID) {
+      const existingFulfillment = await tx.fulfillment.findUnique({
+        where: { orderId: verifiedPayment.orderId },
+      });
+      if (!existingFulfillment) {
+        const order = verifiedPayment.order;
+        const type: "rank" | "coins" =
+          order.rankSlug.startsWith("coins-") ? "coins" : "rank";
+        await createFulfillmentForOrder(
+          tx as unknown as PrismaClient,
+          {
+            id: order.id,
+            orderNumber: order.orderNumber,
+            rankSlug: order.rankSlug,
+            rankName: order.rankName,
+            minecraftUsername: order.minecraftUsername,
+            totalCents: order.totalCents,
+            currency: order.currency,
+          },
+          type,
+        );
+      }
+    }
+
     await tx.paymentEvent.update({
       where: { deduplicationKey: key },
       data: {
