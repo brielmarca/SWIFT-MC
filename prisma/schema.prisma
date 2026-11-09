@@ -4,8 +4,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_DATABASE_URL")
 }
 
@@ -52,29 +52,43 @@ enum FulfillmentStatus {
   FAILED
 }
 
+enum VipEntitlementStatus {
+  ACTIVE
+  EXPIRED
+  REVOKED
+}
+
+enum BridgeDeliveryStatus {
+  PENDING
+  SUPERSEDED
+  ACKED
+  CANCELLED_REFUND
+}
+
 model Order {
-  id                     String       @id @default(cuid())
-  publicToken            String       @unique
-  orderNumber            String       @unique
-  status                 OrderStatus  @default(PENDING_PAYMENT)
+  id                     String          @id @default(cuid())
+  publicToken            String          @unique
+  orderNumber            String          @unique
+  status                 OrderStatus     @default(PENDING_PAYMENT)
   rankSlug               String
   rankName               String
   rankDuration           String
   minecraftUsername      String
   email                  String
-  userId                 String?      @db.VarChar(255)
-  currency               String       @default("BRL")
+  userId                 String?         @db.VarChar(255)
+  currency               String          @default("BRL")
   subtotalCents          Int
-  discountCents          Int          @default(0)
+  discountCents          Int             @default(0)
   totalCents             Int
-  checkoutIdempotencyKey String       @unique
-  expiresAt              DateTime     @db.Timestamptz(3)
-  paidAt                 DateTime?    @db.Timestamptz(3)
-  createdAt              DateTime     @default(now()) @db.Timestamptz(3)
-  updatedAt              DateTime     @updatedAt @db.Timestamptz(3)
+  checkoutIdempotencyKey String          @unique
+  expiresAt              DateTime        @db.Timestamptz(3)
+  paidAt                 DateTime?       @db.Timestamptz(3)
+  createdAt              DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt              DateTime        @updatedAt @db.Timestamptz(3)
   payments               Payment[]
   fulfillment            Fulfillment?
-  user                   User?        @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  vipEntitlement         VipEntitlement?
+  user                   User?           @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@index([status, createdAt])
   @@index([minecraftUsername])
@@ -83,25 +97,25 @@ model Order {
 }
 
 model Payment {
-  id                   String          @id @default(cuid())
-  orderId              String
-  provider             PaymentProvider @default(MERCADO_PAGO)
-  status               PaymentStatus   @default(CREATED)
-  providerOrderId      String?         @unique
-  providerIdempotencyKey String?       @unique
-  checkoutUrl          String?
-  preferenceId         String?         @unique
-  providerPaymentId    String?         @unique
-  providerStatus       String?
-  providerStatusDetail String?
-  paymentMethod        String?
-  amountCents          Int?
-  currency             String?
-  approvedAt           DateTime?       @db.Timestamptz(3)
-  lastSyncedAt         DateTime?       @db.Timestamptz(3)
-  createdAt            DateTime        @default(now()) @db.Timestamptz(3)
-  updatedAt            DateTime        @updatedAt @db.Timestamptz(3)
-  order                Order           @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  id                     String          @id @default(cuid())
+  orderId                String
+  provider               PaymentProvider @default(MERCADO_PAGO)
+  status                 PaymentStatus   @default(CREATED)
+  providerOrderId        String?         @unique
+  providerIdempotencyKey String?         @unique
+  checkoutUrl            String?
+  preferenceId           String?         @unique
+  providerPaymentId      String?         @unique
+  providerStatus         String?
+  providerStatusDetail   String?
+  paymentMethod          String?
+  amountCents            Int?
+  currency               String?
+  approvedAt             DateTime?       @db.Timestamptz(3)
+  lastSyncedAt           DateTime?       @db.Timestamptz(3)
+  createdAt              DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt              DateTime        @updatedAt @db.Timestamptz(3)
+  order                  Order           @relation(fields: [orderId], references: [id], onDelete: Restrict)
 
   @@index([orderId, createdAt])
 }
@@ -142,6 +156,7 @@ model Fulfillment {
   createdAt         DateTime          @default(now()) @db.Timestamptz(3)
   updatedAt         DateTime          @updatedAt @db.Timestamptz(3)
   order             Order             @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  vipEntitlement    VipEntitlement?
 
   @@index([status, nextAttemptAt])
 }
@@ -179,23 +194,25 @@ enum EmailChallengePurpose {
 }
 
 model User {
-  id                  String              @id @default(cuid())
-  emailNormalized     String?             @unique @db.VarChar(254)
-  emailVerifiedAt     DateTime?           @db.Timestamptz(3)
-  displayName         String              @db.VarChar(100)
-  role                UserRole            @default(USER)
-  status              UserStatus          @default(ACTIVE)
-  authVersion         Int                 @default(1)
-  createdAt           DateTime            @default(now()) @db.Timestamptz(3)
-  updatedAt           DateTime            @updatedAt @db.Timestamptz(3)
-  identities          AuthIdentity[]
-  sessions            Session[]
-  orders              Order[]
+  id                    String              @id @default(cuid())
+  emailNormalized       String?             @unique @db.VarChar(254)
+  emailVerifiedAt       DateTime?           @db.Timestamptz(3)
+  displayName           String              @db.VarChar(100)
+  role                  UserRole            @default(USER)
+  status                UserStatus          @default(ACTIVE)
+  authVersion           Int                 @default(1)
+  createdAt             DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime            @updatedAt @db.Timestamptz(3)
+  identities            AuthIdentity[]
+  sessions              Session[]
+  orders                Order[]
   oauthLinkTransactions OAuthTransaction[]
-  emailChallenges     EmailChallenge[]
-  minecraftIdentity   MinecraftIdentity?
-  actorAuditEvents    AuthAuditEvent[]    @relation("AuthAuditActor")
-  subjectAuditEvents  AuthAuditEvent[]    @relation("AuthAuditSubject")
+  emailChallenges       EmailChallenge[]
+  minecraftIdentity     MinecraftIdentity?
+  minecraftLinkCodes    MinecraftLinkCode[]
+  vipEntitlements       VipEntitlement[]
+  actorAuditEvents      AuthAuditEvent[]    @relation("AuthAuditActor")
+  subjectAuditEvents    AuthAuditEvent[]    @relation("AuthAuditSubject")
 }
 
 model AuthIdentity {
@@ -214,29 +231,29 @@ model AuthIdentity {
 }
 
 model PasswordCredential {
-  identityId   String       @id
-  passwordHash String       @db.VarChar(512)
-  failedLoginAttempts Int   @default(0)
-  lockedUntil DateTime?     @db.Timestamptz(3)
-  changedAt    DateTime     @default(now()) @db.Timestamptz(3)
+  identityId          String       @id
+  passwordHash        String       @db.VarChar(512)
+  failedLoginAttempts Int          @default(0)
+  lockedUntil         DateTime?    @db.Timestamptz(3)
+  changedAt           DateTime     @default(now()) @db.Timestamptz(3)
   // SQL trigger restricts this relation to EMAIL_PASSWORD identities.
-  identity     AuthIdentity @relation(fields: [identityId], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  identity            AuthIdentity @relation(fields: [identityId], references: [id], onDelete: Cascade, onUpdate: Restrict)
 }
 
 model Session {
-  id                String    @id @default(cuid())
+  id                String             @id @default(cuid())
   userId            String
-  tokenHash         String    @unique @db.VarChar(128)
+  tokenHash         String             @unique @db.VarChar(128)
   authVersion       Int
-  createdAt         DateTime  @default(now()) @db.Timestamptz(3)
-  lastSeenAt        DateTime  @default(now()) @db.Timestamptz(3)
-  idleExpiresAt     DateTime  @db.Timestamptz(3)
-  absoluteExpiresAt DateTime  @db.Timestamptz(3)
-  revokedAt         DateTime? @db.Timestamptz(3)
-  revocationReason  String?   @db.VarChar(100)
-  authenticatedAt   DateTime  @db.Timestamptz(3)
-  mfaVerifiedAt     DateTime? @db.Timestamptz(3)
-  user              User      @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  createdAt         DateTime           @default(now()) @db.Timestamptz(3)
+  lastSeenAt        DateTime           @default(now()) @db.Timestamptz(3)
+  idleExpiresAt     DateTime           @db.Timestamptz(3)
+  absoluteExpiresAt DateTime           @db.Timestamptz(3)
+  revokedAt         DateTime?          @db.Timestamptz(3)
+  revocationReason  String?            @db.VarChar(100)
+  authenticatedAt   DateTime           @db.Timestamptz(3)
+  mfaVerifiedAt     DateTime?          @db.Timestamptz(3)
+  user              User               @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   oauthTransactions OAuthTransaction[]
 
   @@index([userId])
@@ -246,13 +263,13 @@ model Session {
 }
 
 model AuthBrowserContext {
-  id           String             @id @default(cuid())
-  tokenHash    String             @unique @db.VarChar(128)
-  csrfTokenHash String            @db.VarChar(128)
-  expiresAt    DateTime           @db.Timestamptz(3)
-  consumedAt   DateTime?          @db.Timestamptz(3)
-  createdAt    DateTime           @default(now()) @db.Timestamptz(3)
-  transactions OAuthTransaction[]
+  id            String             @id @default(cuid())
+  tokenHash     String             @unique @db.VarChar(128)
+  csrfTokenHash String             @db.VarChar(128)
+  expiresAt     DateTime           @db.Timestamptz(3)
+  consumedAt    DateTime?          @db.Timestamptz(3)
+  createdAt     DateTime           @default(now()) @db.Timestamptz(3)
+  transactions  OAuthTransaction[]
 
   @@index([expiresAt])
 }
@@ -297,17 +314,90 @@ model EmailChallenge {
 }
 
 model MinecraftIdentity {
-  id                 String   @id @default(cuid())
-  userId             String   @unique
-  namespace          String   @db.VarChar(64)
+  id                 String              @id @default(cuid())
+  userId             String              @unique
+  namespace          String              @db.VarChar(64)
   // Canonical provider subject (e.g. normalized UUID), never a username.
-  subject            String   @db.VarChar(128)
-  lastKnownUsername  String?  @db.VarChar(64)
-  verifiedAt         DateTime @db.Timestamptz(3)
-  verificationMethod String   @db.VarChar(64)
-  user               User     @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  subject            String              @db.VarChar(128)
+  lastKnownUsername  String?             @db.VarChar(64)
+  verifiedAt         DateTime            @db.Timestamptz(3)
+  verificationMethod String              @db.VarChar(64)
+  user               User                @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  linkCodes          MinecraftLinkCode[]
 
   @@unique([namespace, subject])
+}
+
+model MinecraftLinkCode {
+  id               String             @id @default(cuid())
+  userId           String
+  identityId       String?
+  codeHash         String             @unique @db.VarChar(128)
+  expiresAt        DateTime           @db.Timestamptz(3)
+  consumedAt       DateTime?          @db.Timestamptz(3)
+  consumedUuid     String?            @db.VarChar(36)
+  consumedNickname String?            @db.VarChar(16)
+  createdAt        DateTime           @default(now()) @db.Timestamptz(3)
+  user             User               @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  identity         MinecraftIdentity? @relation(fields: [identityId], references: [id], onDelete: SetNull, onUpdate: Restrict)
+
+  @@index([userId, createdAt])
+  @@index([expiresAt])
+}
+
+model VipEntitlement {
+  id                String               @id @default(cuid())
+  userId            String
+  orderId           String               @unique
+  fulfillmentId     String               @unique
+  rankSlug          String               @db.VarChar(32)
+  minecraftUuid     String?              @db.VarChar(36)
+  minecraftUsername String               @db.VarChar(64)
+  startsAt          DateTime             @db.Timestamptz(3)
+  expiresAt         DateTime             @db.Timestamptz(3)
+  status            VipEntitlementStatus @default(ACTIVE)
+  revokedAt         DateTime?            @db.Timestamptz(3)
+  revokeReason      String?              @db.VarChar(64)
+  createdAt         DateTime             @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime             @updatedAt @db.Timestamptz(3)
+  user              User                 @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  order             Order                @relation(fields: [orderId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  fulfillment       Fulfillment          @relation(fields: [fulfillmentId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  deliveries        BridgeDelivery[]
+
+  @@index([userId, status, expiresAt])
+  @@index([minecraftUuid, status, expiresAt])
+}
+
+model MinecraftDeliverySequence {
+  accountId String   @id @db.VarChar(191)
+  nextSeq   BigInt   @default(1)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+}
+
+model BridgeDelivery {
+  deliveryId    String               @id @db.VarChar(191)
+  accountId     String               @db.VarChar(191)
+  playerUuid    String               @db.VarChar(36)
+  kind          String               @db.VarChar(16)
+  action        String               @db.VarChar(16)
+  vip           String?              @db.VarChar(32)
+  cashAmount    Int                  @default(0)
+  expiresAt     DateTime?            @db.Timestamptz(3)
+  sequence      BigInt
+  status        BridgeDeliveryStatus @default(PENDING)
+  serverId      String?              @db.VarChar(64)
+  ackedAt       DateTime?            @db.Timestamptz(3)
+  supersededAt  DateTime?            @db.Timestamptz(3)
+  orderId       String?
+  entitlementId String?
+  createdAt     DateTime             @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime             @updatedAt @db.Timestamptz(3)
+  entitlement   VipEntitlement?      @relation(fields: [entitlementId], references: [id], onDelete: SetNull, onUpdate: Restrict)
+
+  @@index([status, accountId, sequence])
+  @@index([orderId])
+  @@index([entitlementId, status])
 }
 
 model AuthAuditEvent {
