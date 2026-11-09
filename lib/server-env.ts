@@ -115,3 +115,14 @@ export function getStripeWebhookConfig(): StripeWebhookConfig {
 
   return { secretKey, webhookSecret };
 }
+
+export type MinecraftBridgeConfig = { secret: string; serverId: string; allowedServerIds: Set<string> | null };
+
+export function getMinecraftBridgeConfig(env: Record<string, string | undefined> = process.env): MinecraftBridgeConfig | null {
+  const secret = env.MINECRAFT_BRIDGE_SECRET?.trim();
+  const serverId = env.MINECRAFT_BRIDGE_SERVER_ID?.trim();
+  if (!secret || secret.length < 32 || !serverId) return null;
+  const rawAllowed = env.MINECRAFT_BRIDGE_ALLOWED_SERVER_IDS?.trim();
+  const allowedServerIds = rawAllowed ? new Set(rawAllowed.split(",").map(s => s.trim()).filter(Boolean)) : null;
+  return { secret, serverId, allowedServerIds: allowedServerIds?.size ? allowedServerIds : null };
+}
