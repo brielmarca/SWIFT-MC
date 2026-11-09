@@ -15,6 +15,13 @@ yarn-error.log*
 *.tsbuildinfo
 /test-results/
 /playwright-report/
+# Local bridge packages and generated Maven output (keep source and pom.xml).
+/bridge.zip
+/minecraft/build-artifacts/
+/minecraft/**/target/
+/minecraft/**/libs/*.jar
+/scripts/*.backup
+/tests/integration/*.backup
 # Local-only generated Phase A routes; remove before normal builds/deployment.
 /app/runtime-feasibility/
 /app/auth-infrastructure-probe/

@@ -7,15 +7,17 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test": "NODE_OPTIONS='--conditions=react-server' tsx --test tests/*.test.ts",
+    "typecheck": "next typegen && tsc --noEmit",
+    "test": "NODE_OPTIONS='--conditions=react-server' tsx --experimental-test-module-mocks --test tests/*.test.ts",
     "test:browser": "playwright test",
     "test:auth-runtime": "node scripts/auth-runtime.mjs",
     "db:migrate:status": "node scripts/prisma-direct.mjs status",
     "db:migrate:deploy": "node scripts/prisma-direct.mjs deploy",
     "db:migrate:dev": "node scripts/prisma-direct.mjs dev",
-    "test:db": "NODE_OPTIONS='--conditions=react-server' tsx --test tests/integration/*.test.ts",
+    "test:db": "node scripts/test-db.mjs",
     "dev:vinext": "vite dev --port 3001",
     "build:vinext": "vite build",
+    "postbuild:vinext": "next typegen",
     "start:vinext": "vite preview",
     "deploy:vinext": "vinext-cloudflare deploy"
   },
@@ -24,17 +26,18 @@
     "@prisma/client": "^6.19.0",
     "@vinext/cloudflare": "^1.0.1",
     "lucide-react": "^0.468.0",
-    "next": "^16.3.8",
+    "next": "^16.4.5",
     "pg": "^8.23.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-server-dom-webpack": "^19.3.0",
     "server-only": "^0.0.1",
     "vinext": "^1.0.1",
-    "zod": "^4.1.12"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^2.0.0-beta.sha-52b0dc0e9",
+    "@electric-sql/pglite": "^0.5.15",
     "@eslint/js": "^9.39.5",
     "@playwright/test": "^1.64.1",
     "@tailwindcss/postcss": "^4.3.3",
@@ -53,7 +56,25 @@
     "tsx": "^4.20.6",
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.57.1",
-    "vite": "^8.3.0"
+    "vite": "^8.3.6"
+  },
+  "overrides": {
+    "@cloudflare/config": {
+      "zod": "$zod"
+    },
+    "miniflare": {
+      "undici": "7.30.1"
+    },
+    "sharp@<0.35.5": "0.35.5",
+    "@prisma/config": {
+      "deepmerge-ts": "8.0.0"
+    },
+    "@typescript-eslint/typescript-estree": {
+      "minimatch": "11.0.1"
+    },
+    "satori": {
+      "fflate": "0.7.5"
+    }
   },
   "type": "module"
 }
