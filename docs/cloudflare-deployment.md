@@ -1,4 +1,4 @@
-# SwiftMC on Cloudflare Workers / vinext
+# Swift MC on Cloudflare Workers / vinext
 
 Deployment reference and verification guide for maintainers. Payments remain paused. Public pages do not require a database or payment credentials.
 
@@ -46,7 +46,10 @@ Generated `.cloudflare/`, `.vinext/`, `.next/`, `.wrangler/`, `dist/`, `out/`, a
 
 | Variable | Where configured | Default / missing behavior | Exposure |
 | --- | --- | --- | --- |
-| `MINECRAFT_HOST` | Build/deploy environment or ignored `.env.production.local`; emitted as a Worker text binding | `play.swiftmc.net` | Server-side ping target. May become the displayed address when no public-address override exists. |
+| `APP_URL` | **Build/deploy environment**; emitted as a Worker text binding and read as `process.env` in Next.js server code | `https://swiftmc.com.br` | Production origin for auth APIs, email links, MercadoPago config. HTTPS, credential-free. Never localhost. |
+| `RESEND_API_KEY` | **Runtime Secret** on Worker `swift-mc` | `createEmailService()` returns `null`; password reset/verification emails are not sent. Failures are logged server-side, never reported as successful delivery to the client. | Private API key; declared via `bindings.secret()`, never serialized to Build Output or client bundles. |
+| `EMAIL_FROM` | Build/deploy environment; emitted as a Worker text binding | `noreply@swiftmc.com.br` | Sender address for auth emails. Non-secret. |
+| `MINECRAFT_HOST` | Build/deploy environment or ignored `.env.production.local`; emitted as a Worker text binding | `swiftmc.com.br` | Server-side ping target. May become the displayed address when no public-address override exists. |
 | `MINECRAFT_PORT` | Same as host | `25565`; invalid/out-of-range ports return offline with unknown counts | Server-side TCP target port |
 | `MINECRAFT_PUBLIC_ADDRESS` | Same as host | Derived from the host and non-default port | Intentionally public: rendered in HTML and returned by the status API |
 | `NEXT_PUBLIC_DISCORD_URL` | **Build environment**, before either build | Discord CTA becomes disabled when missing/invalid | Public build-time value. Only credential-free HTTPS URLs on `discord.gg` or `discord.com`, without a custom port, are accepted. Rebuild after changes. |
@@ -70,9 +73,9 @@ Set `NEXT_PUBLIC_SITE_URL=https://swiftmc.com.br` before building/deploying. It 
 
 - `/sitemap.xml`: public landing/network/content pages, all local ranks, published wiki guides, and news whose publication date has passed. No arbitrary player profiles, checkout pages, drafts, or invented modification dates. News visibility is evaluated per request.
 - `/robots.txt`: permits the public site and disallows `/api/`. HTML noindex pages remain crawlable so crawlers can read their directives.
-- `/manifest.webmanifest`: SwiftMC browser identity using the existing local emblem and black/purple colors. No service worker or offline/PWA behavior is added.
+- `/manifest.webmanifest`: Swift MC browser identity using the existing local emblem and black/purple colors. No service worker or offline/PWA behavior is added.
 - `/player/[username]` and `/checkout` descendants use `noindex, follow`. Player profiles remain shareable with dynamic titles and social previews; `/player` itself is indexable. Missing content uses noindex metadata and the existing not-found behavior.
-- Page metadata shares the `%s | SwiftMC` title template, canonical origin, Open Graph site identity and Twitter summary cards. Published articles use their existing local image when supplied; otherwise `/brand/emblem.png` is used. The near-square brand image is not represented as a wide social banner.
+- Page metadata shares the `%s | Swift MC` title template, canonical origin, Open Graph site identity and Twitter summary cards. Published articles use their existing local image when supplied; otherwise `/brand/emblem.png` is used. The near-square brand image is not represented as a wide social banner.
 
 Submit `https://swiftmc.com.br/sitemap.xml` to Google Search Console after the production domain is connected. Indexing and social preview refresh timing are controlled by the respective crawlers.
 
@@ -99,16 +102,31 @@ Submit `https://swiftmc.com.br/sitemap.xml` to Google Search Console after the p
 - Short caches are isolate-local and not globally shared across Cloudflare locations. Socket objects are created per query and destroyed when it completes; they are not cached. Cache payloads are bounded, and unknown values stay `null`.
 - Public pages never call Prisma. Database client construction is deferred until a validated database operation, inside existing error handling. This audit does not certify active database/payment operations: before resuming payments, separately verify Workers-compatible connection pooling, database networking, migrations, and provider flows.
 
+### Secrets never reach client bundles or logs
+
+`cloudflare.config.ts` uses an explicit non-secret allowlist when loading
+configuration. Runtime secrets (`RESEND_API_KEY`, `MINECRAFT_DATA_API_TOKEN`,
+diagnostic secrets) are declared only via `bindings.secret()`, which records the
+binding **name** in Build Output, never the value. `process.env` is never
+spread into client code, and no `NEXT_PUBLIC_` alias exists for any secret.
+`scripts/check-auth-public-assets.mjs` scans built public assets for private
+names and fails the build if any are found.
+
+Never log secret values. Server-side error logging (e.g. Resend delivery
+failures) records only the error type, never the API key, recipient, or email
+body.
+
 ## Manual Cloudflare setup
 
 1. Select the intended account and existing Worker `swift-mc`. Configure deployment authentication (`cf auth login` locally or an appropriately scoped Cloudflare API token in CI); do not expose deploy credentials as application bindings.
 2. Set the non-secret build variables from the table. If defaults are correct and no private data integration is ready, they may remain unset.
-3. If enabling the read-only data integration, configure its HTTPS URL and create the runtime Secret `MINECRAFT_DATA_API_TOKEN` on `swift-mc` before deployment. This does not enable payments.
-4. Ensure the `IMAGES` binding/service is available for the account; retain `ASSETS` and `IMAGES` in the source configuration. Local image optimization passed, but account entitlements must be checked in Cloudflare.
-5. Verify the custom domain or `workers.dev` hostname and its routing. No production domain is hardcoded in the application deployment config.
-6. Verify Minecraft origin DNS, port and firewall reachability from deployed Workers, and that the data API accepts its configured bearer token.
-7. Keep database, Mercado Pago, webhook and fulfillment credentials unconfigured for this paused public deployment. Rank prices and checkout behavior are unchanged.
-8. Deploy with `npm run deploy:vinext`, then verify the deployed version's bindings and the smoke checks below. No live deployment or remote account settings were changed by this audit.
+3. Create the runtime Secret `RESEND_API_KEY` on Worker `swift-mc` via **Settings → Variables and Secrets → Add → Secret**. This is required for password-reset and verification emails. Without it, `createEmailService()` returns `null` and emails are not sent; the request endpoint still returns a generic acknowledgement.
+4. If enabling the read-only data integration, configure its HTTPS URL and create the runtime Secret `MINECRAFT_DATA_API_TOKEN` on `swift-mc` before deployment. This does not enable payments.
+5. Ensure the `IMAGES` binding/service is available for the account; retain `ASSETS` and `IMAGES` in the source configuration. Local image optimization passed, but account entitlements must be checked in Cloudflare.
+6. Verify the custom domain or `workers.dev` hostname and its routing. The production origin is `https://swiftmc.com.br`; no production domain is hardcoded in the application deployment config.
+7. Verify Minecraft origin DNS, port and firewall reachability from deployed Workers, and that the data API accepts its configured bearer token.
+8. Keep database, Mercado Pago, webhook and fulfillment credentials unconfigured for this paused public deployment. Rank prices and checkout behavior are unchanged.
+9. Deploy with `npm run deploy:vinext`, then verify the deployed version's bindings and the smoke checks below. No live deployment or remote account settings were changed by this audit.
 
 ## Verification checklist
 

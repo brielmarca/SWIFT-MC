@@ -34,6 +34,26 @@ test("Workers config emits allowlisted variables and secret declarations, never 
   }
 });
 
+test("internal job secret is declared and fulfillment bindings stay optional", () => {
+  const saved = process.env.MINECRAFT_FULFILLMENT_URL;
+  try {
+    delete process.env.MINECRAFT_FULFILLMENT_URL;
+    let worker = config({ mode: "production", isPreview: false }).worker;
+    assert.deepEqual(worker.env.INTERNAL_JOB_SECRET, { type: "secret" });
+    assert.deepEqual(worker.env.MINECRAFT_FULFILLMENT_URL, { type: "text", value: "" });
+    assert.ok(!("MINECRAFT_FULFILLMENT_TOKEN" in worker.env));
+    assert.ok(!("DATABASE_URL" in worker.env));
+
+    process.env.MINECRAFT_FULFILLMENT_URL = "https://fulfill.example.com/";
+    worker = config({ mode: "production", isPreview: false }).worker;
+    assert.deepEqual(worker.env.MINECRAFT_FULFILLMENT_URL, { type: "text", value: "https://fulfill.example.com/" });
+    assert.deepEqual(worker.env.MINECRAFT_FULFILLMENT_TOKEN, { type: "secret" });
+  } finally {
+    if (saved === undefined) delete process.env.MINECRAFT_FULFILLMENT_URL;
+    else process.env.MINECRAFT_FULFILLMENT_URL = saved;
+  }
+});
+
 test("installed cf supports future auth binding declarations without provisioning resources", () => {
   assert.equal(typeof bindings.hyperdrive, "function");
   assert.equal(typeof bindings.rateLimit, "function");

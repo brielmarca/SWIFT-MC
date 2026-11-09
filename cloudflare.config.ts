@@ -7,9 +7,11 @@ export default defineConfig(({ mode }) => {
   // Runtime secrets are supplied by Cloudflare, never serialized from .env.
   const env = loadEnv(mode ?? "production", process.cwd(), [
     "MINECRAFT_HOST", "MINECRAFT_PORT", "MINECRAFT_PUBLIC_ADDRESS", "MINECRAFT_DATA_API_URL",
-    "AUTH_HYPERDRIVE_ID", "APP_URL", "EMAIL_FROM",
+    "AUTH_HYPERDRIVE_ID", "APP_URL", "EMAIL_FROM", "MINECRAFT_FULFILLMENT_URL",
+    "MINECRAFT_BRIDGE_SERVER_ID", "MINECRAFT_BRIDGE_ALLOWED_SERVER_IDS",
   ]);
   const dataApiUrl = env.MINECRAFT_DATA_API_URL?.trim() || "";
+  const fulfillmentUrl = env.MINECRAFT_FULFILLMENT_URL?.trim() || "";
   const stagingDiagnostics = mode === "auth-staging";
   if (existsSync("app/auth-infrastructure-probe") && !stagingDiagnostics) {
     throw new Error("Remove staging diagnostic routes before a normal Worker build");
@@ -48,6 +50,14 @@ export default defineConfig(({ mode }) => {
         MINECRAFT_DATA_API_URL: bindings.text(dataApiUrl),
         // The integration is optional. A configured URL requires a deployed secret.
         ...(dataApiUrl ? { MINECRAFT_DATA_API_TOKEN: bindings.secret() } : {}),
+        // Internal scheduler authentication for POST /api/internal/fulfillments/process.
+        INTERNAL_JOB_SECRET: bindings.secret(),
+        MINECRAFT_BRIDGE_SECRET: bindings.secret(),
+        MINECRAFT_BRIDGE_SERVER_ID: bindings.text(env.MINECRAFT_BRIDGE_SERVER_ID?.trim() || "swift-survival"),
+        MINECRAFT_BRIDGE_ALLOWED_SERVER_IDS: bindings.text(env.MINECRAFT_BRIDGE_ALLOWED_SERVER_IDS?.trim() || ""),
+        // Optional legacy Minecraft fulfillment integration. A configured URL requires a deployed secret.
+        MINECRAFT_FULFILLMENT_URL: bindings.text(fulfillmentUrl),
+        ...(fulfillmentUrl ? { MINECRAFT_FULFILLMENT_TOKEN: bindings.secret() } : {}),
       },
     }),
   };
