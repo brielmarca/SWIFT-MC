@@ -261,7 +261,10 @@ export async function processPendingFulfillments(
       status: {
         in: [FulfillmentStatus.PENDING, FulfillmentStatus.RETRY_PENDING],
       },
-      ...(now ? { nextAttemptAt: { lte: now } } : {}),
+      OR: [
+        { nextAttemptAt: { lte: now } },
+        { status: FulfillmentStatus.PENDING, nextAttemptAt: null },
+      ],
     },
     include: { order: true },
     orderBy: { nextAttemptAt: "asc" },
