@@ -9,13 +9,14 @@ const expected = {
   cosmic: ["Corcel Safira", "Lobo do Eclipse", "Cervo Astral", "Grifo Celestial"],
   overdrive: ["Corcel Safira", "Lobo do Eclipse", "Cervo Astral", "Grifo Celestial", "Tigre Relâmpago", "Dragão da Tempestade"],
 };
-// Baseline captured before adding mounts: protects all existing VIP fields,
-// including prices, claims, kits, commands, cosmetics and mcMMO bonuses.
+// RC baseline: shared FAQ/benefit copy no longer claims automatic renewal
+// (one-time 1-month VIP purchases). Prices, claims, kits, commands,
+// cosmetics and mcMMO bonuses remain protected.
 const originalRanks = {
-  swift: "f6d0a3cd2d2e1da8d029028dede00acbb352c143f3772b3d1e7c75a94df8cb33",
-  eclipse: "3fd8ae683c29dde2b3d5a45921de6913e9c8337a5ee12d2ea7134132088f98ff",
-  cosmic: "92a73015ea8146b5da84923ee641a3676808bc60d4f4fae6a55bbbe89f26cadd",
-  overdrive: "cf2a96f183b67b04faa426357b3441ee3311cc0bf33d321c301c7feb4eb19aca",
+  swift: "cf9617335da0ab20a67a3ca6c623e2c7e7d56844efc542724820a6ce04d600b0",
+  eclipse: "a398f20ae6c5713a15f4b80c476ca12ca58c22fd00ab5093ca9a9489e4d4e5f4",
+  cosmic: "af38c258a59057c7a30c58a4445ef5180559fc4337840328d9a15df6cef97bb3",
+  overdrive: "436cf85585da3c04a7247b7af566f7fe65fba0c00b2988944055e32158fa6836",
 };
 
 for (const rank of ranks) {

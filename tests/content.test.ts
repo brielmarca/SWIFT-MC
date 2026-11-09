@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
+import { mockEditorialContent } from "./helpers/content-fixtures";
+import type { EventPost, NewsPost } from "@/data/content";
+mockEditorialContent();
+const {
   classifyEvents,
   eventPosts,
   filterNews,
@@ -15,9 +18,7 @@ import {
   isNewsVisible,
   newsPosts,
   siteAnnouncement,
-  type EventPost,
-  type NewsPost,
-} from "@/data/content";
+} = await import("@/data/content");
 import { formatClockTime, formatEventRange, formatNewsDate, formatNewsShortDate } from "@/lib/content-format";
 
 const NOW = Date.parse("2026-10-06T12:00:00Z");
@@ -110,7 +111,7 @@ test("related news excludes itself, stays bounded and prefers matching category 
 });
 
 test("events classify automatically by date: upcoming ascending, past most recent first", () => {
-  const { upcoming, past } = classifyEvents(Date.now());
+  const { upcoming, past } = classifyEvents(NOW);
   assert.equal(upcoming.length, 2, "two upcoming sample events");
   assert.equal(past.length, 1, "one past sample event");
   assert.ok(eventPosts.some((event) => event.status === "draft"), "sample content includes a draft event");

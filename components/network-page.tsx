@@ -13,7 +13,7 @@ export function NetworkPage({ active, title, description, children }: {
     <main id="main-content" className="site-container min-h-[70vh] py-8 sm:py-12">
       <div>
         <header className="mb-6 border-l-2 border-violet pl-4 sm:pl-5">
-          <p className="eyebrow">{isPlayer ? "Jogadores SwiftMC" : "Jogar / Servidor"}</p>
+          <p className="eyebrow">{isPlayer ? "Jogadores" : "Jogar / Servidor"}</p>
           <h1 className="page-title mt-2">{title}</h1>
           <p className="page-description">{description}</p>
         </header>

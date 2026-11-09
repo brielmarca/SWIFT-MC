@@ -4,7 +4,6 @@ import Image from "next/image";
 import { ChevronDown, Gift, Info, ShoppingBag } from "lucide-react";
 import { useRef, useState } from "react";
 import type { CashPackage } from "@/data/cash-packages";
-import { redirectToStripeCheckout } from "@/lib/stripe-checkout-client";
 
 const currency = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const quantity = new Intl.NumberFormat("pt-BR");
@@ -14,29 +13,6 @@ export function CashPackageCard({ pack }: { pack: CashPackage }) {
   const previewRef = useRef<HTMLDialogElement>(null);
   const name = `${quantity.format(pack.amount)} Cash`;
   const detailsId = `cash-details-${pack.amount}`;
-
-  async function handleBuyWithStripe() {
-    const username = window.prompt("Informe seu nome de usuário no Minecraft Java:");
-    if (!username) return;
-    const email = window.prompt("Informe seu e-mail:");
-    if (!email) return;
-
-    try {
-      await redirectToStripeCheckout({
-        type: "coins",
-        coinsPackageId: pack.amount,
-        minecraftUsername: username.trim(),
-        email: email.trim(),
-        idempotencyKey: crypto.randomUUID(),
-      });
-    } catch (error) {
-      if (error instanceof Error && error.name === "StripeCheckoutError") {
-        alert((error as { message: string }).message);
-      } else {
-        alert("Não foi possível iniciar a compra. Tente novamente.");
-      }
-    }
-  }
 
   return (
     <article className="rank-card-tall group overflow-hidden motion-safe:hover:-translate-y-1" aria-labelledby={`cash-title-${pack.amount}`}>
@@ -63,27 +39,17 @@ export function CashPackageCard({ pack }: { pack: CashPackage }) {
         <div className="mt-5">
           <p className="text-xs text-muted"><span className="sr-only">Preço original: </span><s>{currency.format(pack.originalPrice / 100)}</s></p>
           <p className="mt-1 text-3xl font-extrabold tabular-nums text-ultraviolet"><span className="sr-only">Preço promocional: </span>{currency.format(pack.price / 100)}</p>
-          <p className="mt-2 text-xs leading-5 text-muted">{quantity.format(pack.amount + pack.bonus)} Cash no total · Prévia demo</p>
+          <p className="mt-2 text-xs leading-5 text-muted">{quantity.format(pack.amount + pack.bonus)} Cash no total · Compra indisponível</p>
         </div>
         <div className="mt-5 grid gap-2">
           <button
             type="button"
             className="button-primary w-full px-4"
-            aria-label={`Comprar · Demo — ${name}`}
+            aria-label={`Compra indisponível — ${name}`}
             aria-haspopup="dialog"
             onClick={() => previewRef.current?.showModal()}
           >
-            <ShoppingBag size={16} aria-hidden="true" /> Comprar · Demo
-          </button>
-          <button
-            type="button"
-            onClick={handleBuyWithStripe}
-            className="button-secondary w-full px-4 border-white/20 hover:bg-white/10 text-white"
-          >
-            <span className="flex items-center justify-center gap-2">
-              <span className="text-xs">Stripe</span>
-              Comprar agora
-            </span>
+            <ShoppingBag size={16} aria-hidden="true" /> Compra indisponível
           </button>
           <button
             type="button"
@@ -105,7 +71,7 @@ export function CashPackageCard({ pack }: { pack: CashPackage }) {
             {pack.survivalOnly && <li>Pacote exclusivo para o Survival.</li>}
             <li>50% de desconto sobre o preço original.</li>
           </ul>
-          <p className="mt-2">Demonstração visual: nenhum pedido é criado e nenhum Cash é creditado.</p>
+          <p className="mt-2">Nenhum pedido é criado e nenhum Cash é creditado nesta fase.</p>
         </div>
         <dialog
           ref={previewRef}
@@ -113,14 +79,14 @@ export function CashPackageCard({ pack }: { pack: CashPackage }) {
           aria-describedby={`cash-preview-description-${pack.amount}`}
           className="fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md overflow-y-auto rounded-xl border border-violet/25 bg-card p-6 text-ink shadow-card backdrop:bg-void/80 backdrop:backdrop-blur-sm"
         >
-          <p className="eyebrow">Somente demonstração</p>
-          <h2 id={`cash-preview-title-${pack.amount}`} className="mt-3 text-xl font-extrabold uppercase">Prévia de {name}</h2>
+          <p className="eyebrow">Compra indisponível</p>
+          <h2 id={`cash-preview-title-${pack.amount}`} className="mt-3 text-xl font-extrabold uppercase">{name}</h2>
           <p className="mt-3 font-bold text-ultraviolet">{quantity.format(pack.amount + pack.bonus)} Cash no total · {currency.format(pack.price / 100)}</p>
           <p id={`cash-preview-description-${pack.amount}`} className="mt-4 text-sm leading-6 text-muted">
-            Esta compra é apenas uma demonstração. Nenhuma cobrança, pedido ou entrega de Cash será realizada.
+            Compras e entrega de Cash ficam indisponíveis até a validação final em homologação. Nenhuma cobrança ou entrega será realizada nesta fase.
           </p>
           <form method="dialog" className="mt-6">
-            <button type="submit" className="button-primary w-full">Entendi, voltar aos pacotes</button>
+            <button type="submit" className="button-primary w-full">Voltar aos pacotes</button>
           </form>
         </dialog>
       </div>

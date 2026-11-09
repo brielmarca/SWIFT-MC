@@ -18,7 +18,7 @@ export const mountCatalog: readonly Mount[] = [
   { name: "Cervo Astral", type: "terrestrial", introducedAt: "cosmic", description: "Cervo terrestre com chifres luminosos e tema de constelações.", confirmed: true },
   { name: "Grifo Celestial", type: "flying", introducedAt: "cosmic", description: "Grifo voador com tema celestial e estelar em azul e violeta.", confirmed: true },
   { name: "Tigre Relâmpago", type: "terrestrial", introducedAt: "overdrive", description: "Tigre terrestre exclusivo do Overdrive, com visual dourado, elétrico e tema de raios.", confirmed: true },
-  { name: "Dragão da Tempestade", type: "flying", introducedAt: "overdrive", description: "Dragão voador com tema de tempestade e eletricidade. Montaria personalizada do SwiftMounts.", confirmed: true },
+  { name: "Dragão da Tempestade", type: "flying", introducedAt: "overdrive", description: "Dragão voador com tema de tempestade e eletricidade.", confirmed: true },
 ];
 
 export function getRankMounts(slug: RankSlug): readonly RankMount[] {
@@ -35,7 +35,7 @@ export function getRankMounts(slug: RankSlug): readonly RankMount[] {
 
 export function getMountSummary(slug: RankSlug): string {
   const count = getRankMounts(slug).length;
-  return count === 1 ? "1 montaria confirmada" : `${count} montarias confirmadas`;
+  return count === 1 ? "1 montaria" : `${count} montarias`;
 }
 
 // Version filenames whenever artwork changes: this also changes optimizer/CDN cache keys.
@@ -117,15 +117,15 @@ export function formatMonthlyPrice(cents: number | null): string | null {
 const sharedFaq: readonly RankFaq[] = [
   {
     question: "O rank expira?",
-    answer: "Sim. Todos os ranks são assinaturas mensais, com cobrança a cada mês. Os benefícios ficam disponíveis enquanto a assinatura estiver ativa. Os pagamentos estão pausados nesta etapa.",
+    answer: "Os VIPs têm duração de 1 mês e a compra é avulsa, sem renovação automática. Compras no site permanecem indisponíveis até a validação final de pagamento e entrega em homologação.",
   },
   {
-    question: "Os benefícios funcionam no Java e no Bedrock?",
-    answer: "Sim. Os benefícios são aplicados à sua conta dentro da rede SWIFT MC e funcionam nas versões Java e Bedrock suportadas.",
+    question: "Em qual versão os benefícios funcionam?",
+    answer: "Os benefícios são aplicados à sua conta na rede Swift MC para Minecraft Java 1.21.11. Compatibilidade com outras edições ou versões não é anunciada nesta fase.",
   },
   {
     question: "Já posso concluir a compra pelo site?",
-    answer: "Você pode experimentar o checkout demonstrativo. Nenhum pedido, pagamento ou benefício real é criado ou ativado.",
+    answer: "Ainda não. A loja mostra os planos e benefícios, mas as compras ficam desativadas até a validação final de pagamento e entrega no servidor.",
   },
   {
     question: "Como resgato os kits?",
@@ -133,7 +133,7 @@ const sharedFaq: readonly RankFaq[] = [
   },
   {
     question: "Os kits e vantagens ativam automaticamente?",
-    answer: "O checkout atual é demonstrativo e não ativa kits ou vantagens no servidor.",
+    answer: "Compras e ativações no servidor ficam indisponíveis até a conclusão da validação em homologação. Quando liberado, a entrega dependerá da confirmação do pagamento e do servidor Minecraft.",
   },
 ];
 
@@ -364,7 +364,7 @@ const rankCatalog: readonly Omit<Rank, "price">[] = [
     badge: "Essencial",
     priceCents: 2000,
     duration: "Mensal",
-    description: "Assinatura VIP mensal com vantagens para expandir sua fazenda e sua sobrevivência no mapa. A porta de entrada para a experiência VIP.",
+    description: "VIP mensal com vantagens para expandir sua fazenda e sua sobrevivência no mapa. A porta de entrada para a experiência VIP.",
     summaryBenefits: [
       "Tag [SWIFT] no Chat",
       "3 homes para teleporte",
@@ -406,7 +406,7 @@ const rankCatalog: readonly Omit<Rank, "price">[] = [
     badge: "Intermediário",
     priceCents: 3500,
     duration: "Mensal",
-    description: "Assinatura VIP mensal com tudo do Swift + utilidades remotas, mais homes e XP aumentado. Ideal para quem quer mais conveniência no Survival.",
+    description: "VIP mensal com tudo do Swift + utilidades remotas, mais homes e XP aumentado. Ideal para quem quer mais conveniência no Survival.",
     summaryBenefits: [
       "Todas as vantagens do Swift",
       "5 homes para teleporte",
@@ -415,7 +415,7 @@ const rankCatalog: readonly Omit<Rank, "price">[] = [
       "+25% XP no mcMMO",
     ],
     benefits: [
-      "Todos os benefícios do rank Swift enquanto a assinatura estiver ativa",
+      "Todos os benefícios do rank Swift enquanto o VIP estiver ativo",
       "5 homes (casas) para se teleportar",
       "Baú do fim portátil: /enderchest",
       "Bigorna portátil: /anvil",
@@ -454,7 +454,7 @@ const rankCatalog: readonly Omit<Rank, "price">[] = [
     badge: "Avançado",
     priceCents: 6500,
     duration: "Mensal",
-    description: "Assinatura VIP mensal com tudo do Eclipse + bancadas portáteis completas, nick colorido, teleporte sem espera. Para jogadores dedicados.",
+    description: "VIP mensal com tudo do Eclipse + bancadas portáteis completas, nick colorido, teleporte sem espera. Para jogadores dedicados.",
     summaryBenefits: [
       "Todas as vantagens do Eclipse",
       "8 homes para teleporte",
@@ -464,7 +464,7 @@ const rankCatalog: readonly Omit<Rank, "price">[] = [
       "+50% XP no mcMMO",
     ],
     benefits: [
-      "Todos os benefícios do rank Eclipse enquanto a assinatura estiver ativa",
+      "Todos os benefícios do rank Eclipse enquanto o VIP estiver ativo",
       "8 homes (casas) para se teleportar",
       "Bancadas portáteis: mesa de ferreiro, cortador de pedra, tear, pedra de amolar e mesa de cartografia",
       "/nick: escolha seu apelido com cores",
@@ -502,7 +502,7 @@ const rankCatalog: readonly Omit<Rank, "price">[] = [
     badge: "Máximo",
     priceCents: 9500,
     duration: "Mensal",
-    description: "O ápice da experiência VIP em uma assinatura mensal. Tudo do Cosmic + cura, teleporte sem cooldown, 2x mcMMO, kits de netherite, elytra e beacon.",
+    description: "O ápice da experiência VIP, com tudo do Cosmic + cura, teleporte sem cooldown, 2x mcMMO, kits de netherite, elytra e beacon.",
     summaryBenefits: [
       "Todas as vantagens do Cosmic",
       "12 homes para teleporte",
@@ -512,7 +512,7 @@ const rankCatalog: readonly Omit<Rank, "price">[] = [
       "Kits com netherite, elytra e beacon",
     ],
     benefits: [
-      "Todos os benefícios do rank Cosmic enquanto a assinatura estiver ativa",
+      "Todos os benefícios do rank Cosmic enquanto o VIP estiver ativo",
       "12 homes (casas) para se teleportar",
       "/heal: recupera toda a vida (1 vez por hora)",
       "Teleporte sem tempo de espera e sem cooldown",

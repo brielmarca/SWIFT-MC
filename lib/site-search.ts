@@ -1,6 +1,5 @@
 import { classifyEvents, getPublishedNews } from "@/data/content";
 import { formatNewsShortDate } from "@/lib/content-format";
-import { isJavaUsername } from "@/lib/minecraft-profile";
 import { playerLinks } from "@/data/server-info";
 import { faqs, rules } from "@/data/player-guides";
 import { getGuideSearchText, getPublishedGuides } from "@/data/wiki";
@@ -9,7 +8,6 @@ import { getGuideSearchText, getPublishedGuides } from "@/data/wiki";
 // No data is duplicated here — sources are imported from their own modules.
 
 export const SEARCH_GROUPS = [
-  { id: "jogador", label: "Jogador" },
   { id: "noticias", label: "Notícias" },
   { id: "eventos", label: "Eventos" },
   { id: "wiki", label: "Wiki" },
@@ -33,7 +31,6 @@ export type SearchGroup = { id: SearchGroupId; label: string; items: SearchResul
 
 /** Hard cap per group so the palette stays compact. */
 export const MAX_RESULTS_PER_GROUP: Record<SearchGroupId, number> = {
-  jogador: 1,
   noticias: 4,
   eventos: 3,
   wiki: 4,
@@ -82,31 +79,24 @@ function rankCandidates(group: SearchGroupId, label: string, candidates: readonl
 }
 
 const PAGE_DESCRIPTIONS: Record<string, string> = {
-  "/store": "Loja de ranks VIP, benefícios e carrinho local",
-  "/play": "Endereço do servidor, versão e como entrar",
-  "/online": "Jogadores online agora no SWIFT MC",
-  "/player": "Perfil público e estatísticas de jogadores",
-  "/leaderboards": "Ranking de tempo de jogo, abates e moedas",
-  "/news": "Notícias, guias e avisos da comunidade",
-  "/events": "Próximos eventos e atividades da comunidade",
-  "/wiki": "Guias completos do servidor em passo a passo",
-  "/rules": "Regras do servidor e convivência",
-  "/faq": "Perguntas frequentes sobre o servidor",
-  "/status": "Status e versão atual do servidor",
+  "/store": "Loja de ranks VIP e benefícios",
+  "/play": "Endereço do servidor, versão 1.21.11 e como entrar",
+  "/status": "Status, jogadores online e conexão",
+  "/news": "Notícias e avisos oficiais",
+  "/lore": "Lore do servidor Swift MC",
+  "/wiki": "Guias completos do servidor",
+  "/rules": "Regras do servidor e Discord",
+  "/faq": "Perguntas frequentes",
+  "/privacy": "Política de privacidade",
+  "/terms": "Termos de compra",
+  "/refund": "Política de reembolso",
 };
 
-/** Search across all local sources. Draft/future news, draft events are excluded via the existing queries. */
+/** Search across all local sources. Draft/future content is excluded by existing queries. */
 export function searchSite(query: string, now: number = Date.now()): SearchGroup[] {
   const words = getSearchWords(query);
   if (!words.length) return [];
   const groups: (SearchGroup | null)[] = [];
-
-  const name = query.trim();
-  groups.push(isJavaUsername(name) ? {
-    id: "jogador",
-    label: "Jogador",
-    items: [{ id: "jogador:perfil", group: "jogador", title: `Buscar jogador: ${name}`, href: `/player/${name}`, meta: "Perfil público" }],
-  } : null);
 
   groups.push(rankCandidates("noticias", "Notícias", getPublishedNews(now).map((post) => ({
     key: post.slug,
@@ -154,8 +144,8 @@ export function searchSite(query: string, now: number = Date.now()): SearchGroup
     meta: entry.category,
   })), query, words));
 
-  const pages = playerLinks.map((link) => ({ href: link.href, label: link.label }));
-  groups.push(rankCandidates("paginas", "Páginas", [{ href: "/store", label: "Loja" }, ...pages].map((page) => ({
+  const pages = [{ href: "/store", label: "Loja" }, { href: "/lore", label: "Lore" }, { href: "/privacy", label: "Privacidade" }, { href: "/terms", label: "Termos de compra" }, { href: "/refund", label: "Reembolso" }, ...playerLinks];
+  groups.push(rankCandidates("paginas", "Páginas", pages.map((page) => ({
     key: page.href,
     title: page.label,
     extra: `${page.label} ${PAGE_DESCRIPTIONS[page.href] ?? ""} ${page.href}`,

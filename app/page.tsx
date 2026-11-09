@@ -1,4 +1,3 @@
-import { CommunityCTA } from "@/components/community-cta";
 import { FeatureGrid } from "@/components/feature-grid";
 import { Footer } from "@/components/footer";
 import { Hero } from "@/components/hero";
@@ -20,7 +19,6 @@ export default function Home() {
         <StoreSection />
         <FeatureGrid />
         <NewsTeaser />
-        <CommunityCTA />
       </main>
       <Footer />
     </>

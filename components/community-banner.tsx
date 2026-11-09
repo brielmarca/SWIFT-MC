@@ -10,7 +10,7 @@ export function CommunityBanner() {
           <div className="relative z-10 max-w-2xl">
             <div className="status-chip"><span className="status-dot" /> Comunidade oficial</div>
             <h2 className="mt-6 text-3xl font-extrabold uppercase tracking-[-0.04em] text-ink sm:text-4xl lg:text-5xl">
-              Junte-se à <span className="gradient-text">comunidade SWIFT MC</span>
+              Junte-se à <span className="gradient-text">comunidade Swift MC</span>
             </h2>
             <p className="mt-5 text-base leading-7 text-muted">
               Receba atualizacoes, participe de sorteios, negocie itens raros e fale diretamente com nossa equipe de suporte.

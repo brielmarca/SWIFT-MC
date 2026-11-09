@@ -131,7 +131,7 @@ function OverviewSection({ rank }: { rank: Rank }) {
                 <dd className="font-bold text-ink">{rank.duration}</dd>
               </div>
               <div className="flex items-center justify-between gap-4 border-b border-white/[0.07] pb-4">
-                <dt className="text-sm text-muted">Valor mensal</dt>
+                <dt className="text-sm text-muted">Preço (compra avulsa)</dt>
             <dd className="whitespace-nowrap font-bold tabular-nums text-ink">{rank.price ?? "Preço em breve"}</dd>
               </div>
               <div className="flex items-center justify-between gap-4 border-b border-white/[0.07] pb-4">
@@ -153,7 +153,7 @@ function OverviewSection({ rank }: { rank: Rank }) {
             </dl>
             <AddToCartButton slug={rank.slug} className={`button-primary mt-6 w-full bg-gradient-to-r ${color.gradient} hover:opacity-90 text-black`} />
             <Link href="/store#store-search" className="mt-2 inline-flex min-h-11 w-full items-center justify-center text-xs font-bold uppercase tracking-wider text-muted hover:text-ink">Continuar na loja</Link>
-            <p className="mt-2 text-center text-xs leading-5 text-muted">Prévia demo: nenhuma cobrança ou ativação de VIP. Sua seleção fica salva neste dispositivo.</p>
+            <p className="mt-2 text-center text-xs leading-5 text-muted">Compras no site ficam indisponíveis até a validação final de pagamento e entrega em homologação.</p>
           </div>
         </aside>
       </div>
@@ -249,7 +249,7 @@ function ComoFuncionaSection() {
         <div className="mx-auto max-w-3xl text-center">
           <p id="como-funciona-heading" className="eyebrow">Como funciona</p>
           <h2 className="page-heading mt-3">Resgate dos kits no servidor</h2>
-          <p className="mt-4 text-sm leading-6 text-muted">Informações para quem já possui um VIP ativo. A demonstração do site não ativa VIPs nem libera kits.</p>
+          <p className="mt-4 text-sm leading-6 text-muted">Informações para quem possui um VIP ativo. A ativação de compras e kits no site depende da liberação após validação em homologação.</p>
         </div>
         <div className="mt-12 grid gap-6 md:grid-cols-3">
           <div className="glass-panel flex flex-col items-center text-center p-6">
@@ -264,8 +264,8 @@ function ComoFuncionaSection() {
           </div>
           <div className="glass-panel flex flex-col items-center text-center p-6">
             <div className="icon-well !h-14 !w-14"><HeartPulse size={24} className="text-ultraviolet" aria-hidden="true" /></div>
-            <h3 className="mt-4 text-lg font-bold text-ink">Checkout demo</h3>
-            <p className="mt-2 text-sm leading-6 text-muted">Experimente o fluxo sem cobranças. Nenhum kit ou benefício será ativado.</p>
+            <h3 className="mt-4 text-lg font-bold text-ink">Compras indisponíveis</h3>
+            <p className="mt-2 text-sm leading-6 text-muted">A finalização da compra só será liberada após validação completa de pagamento e entrega no servidor.</p>
           </div>
         </div>
       </div>
@@ -303,7 +303,7 @@ export function RankPageClient({ rank }: RankPageClientProps) {
                 <p className="page-description">{rank.description}</p>
               </div>
               <aside className="glass-panel p-6 sm:p-8 lg:col-span-5" style={{ borderColor: `${color.primary}4d` }} aria-label={`Resumo do rank ${rank.name}`}>
-                <p className="micro-label">Assinatura mensal</p>
+                <p className="micro-label">Compra avulsa · 1 mês</p>
                 <div className="mt-2 flex flex-wrap items-end gap-2">
                   {rank.price ? (
                     <span className="text-2xl font-extrabold tabular-nums text-ink sm:text-3xl xl:text-4xl">{rank.price}</span>
@@ -320,7 +320,7 @@ export function RankPageClient({ rank }: RankPageClientProps) {
                 </div>
                 <AddToCartButton slug={rank.slug} className={`button-primary mt-6 w-full bg-gradient-to-r ${color.gradient} hover:opacity-90 text-black`} />
                 <Link href="/store#store-search" className="mt-2 inline-flex min-h-11 w-full items-center justify-center text-xs font-bold uppercase tracking-wider text-muted hover:text-ink">Continuar na loja</Link>
-                <p className="mt-2 text-center text-xs leading-5 text-muted">Prévia demo: nenhuma cobrança ou ativação de VIP. Sua seleção fica salva neste dispositivo.</p>
+                <p className="mt-2 text-center text-xs leading-5 text-muted">Compras no site ficam indisponíveis até a validação final de pagamento e entrega em homologação.</p>
               </aside>
             </div>
           </div>

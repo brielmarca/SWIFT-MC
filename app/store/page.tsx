@@ -1,21 +1,22 @@
 import { publicPageMetadata } from "@/lib/seo";
 import { ShieldCheck, Sparkles, Zap } from "lucide-react";
 import { Footer } from "@/components/footer";
-import { SiteHeader } from "@/components/site-header";
+import { AuthHeader } from "@/components/auth-header";
 import { StoreCatalog } from "@/components/store-catalog";
+import { CashShop } from "@/components/cash-shop";
 
 export const metadata = publicPageMetadata("/store");
 
 const assurances = [
   { icon: Zap, title: "Escolha rápida", text: "Compare os níveis e salve sua seleção no carrinho deste dispositivo." },
-  { icon: ShieldCheck, title: "Valores mensais", text: "Todos os VIPs são mensais. O checkout é apenas uma demonstração, sem cobrança ou ativação de VIP." },
+  { icon: ShieldCheck, title: "Valores mensais", text: "VIPs mensais com pagamento avulso via Stripe, sem renovação automática. Cash permanece em demonstração." },
   { icon: Sparkles, title: "Progressão preservada", text: "Cada nível inclui vantagens que ampliam sua experiência Survival." },
 ];
 
 export default function StorePage() {
   return (
     <>
-      <SiteHeader />
+      <AuthHeader />
       <main id="main-content" className="site-container min-h-[70vh] py-8 sm:py-12">
         <div>
           <header className="mb-6 max-w-3xl border-l-2 border-violet pl-4 sm:mb-8 sm:pl-5">
@@ -27,6 +28,10 @@ export default function StorePage() {
               Compare os valores mensais e as vantagens para encontrar o nível ideal para sua jornada no SWIFT Survival.
             </p>
           </header>
+          <nav aria-label="Categorias da loja" className="flex flex-wrap gap-3">
+            <a href="#vips" className="network-action">VIPs mensais</a>
+            <a href="#cash" className="network-action">Cash · 50% OFF</a>
+          </nav>
           <div className="mt-6 grid gap-4 lg:grid-cols-3">
             {assurances.map(({ icon: Icon, title, text }) => (
               <div key={title} className="glass-panel flex items-start gap-4 p-5 text-left">
@@ -39,7 +44,7 @@ export default function StorePage() {
             ))}
           </div>
 
-          <section className="relative flex items-center mt-16">
+          <section id="vips" aria-label="VIPs mensais" className="relative flex items-center mt-16">
             <div className="absolute inset-0 z-0">
               <img
                 src="/brand/enderman.png"
@@ -52,10 +57,11 @@ export default function StorePage() {
             <div className="site-container page-section relative z-10">
               <StoreCatalog />
               <p className="mx-auto mt-8 max-w-2xl text-center text-xs leading-5 text-muted">
-                Seu carrinho fica salvo apenas neste dispositivo. Nenhuma cobrança será realizada nesta fase.
+                Seu carrinho fica salvo neste dispositivo. Confira um VIP por compra antes de pagar no Stripe.
               </p>
             </div>
           </section>
+          <CashShop />
         </div>
       </main>
       <Footer />

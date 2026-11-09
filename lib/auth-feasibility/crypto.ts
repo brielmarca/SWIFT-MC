@@ -18,7 +18,7 @@ function memory() {
 
 /** Staging only: one hash, one verification, and exactly two concurrent hashes. */
 export async function stagingScryptProbe() {
-  const input = Buffer.from("SwiftMC infrastructure probe - not a credential", "utf8");
+  const input = Buffer.from("Swift MC infrastructure probe - not a credential", "utf8");
   const salt = randomBytes(16);
   try {
     let start = performance.now();

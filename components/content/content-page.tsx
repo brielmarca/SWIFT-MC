@@ -10,7 +10,7 @@ const recursosSections = [
   { href: "/faq", label: "FAQ", icon: CircleHelp },
 ] as const;
 
-type ActiveSection = "/community" | "/news" | "/events" | "/player" | "/wiki" | "/rules" | "/faq";
+type ActiveSection = "/news" | "/events" | "/lore" | "/vote" | "/wiki" | "/rules" | "/faq" | "/store";
 
 export function ContentPage({ active, title, description, backLabel, metadata, children }: {
   active: ActiveSection;
@@ -27,7 +27,7 @@ export function ContentPage({ active, title, description, backLabel, metadata, c
     <SiteHeader />
     <main id="main-content" className="site-container min-h-[70vh] py-8 sm:py-12">
       <div>
-        {backLabel && <Link href={isRecursos ? "/wiki" : "/community"} className="mb-5 inline-flex min-h-11 items-center gap-2 rounded-lg text-xs font-bold text-ultraviolet focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet"><ArrowLeft size={16} aria-hidden="true" />{backLabel}</Link>}
+        {backLabel && <Link href={isRecursos ? "/wiki" : "/news"} className="mb-5 inline-flex min-h-11 items-center gap-2 rounded-lg text-xs font-bold text-ultraviolet focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet"><ArrowLeft size={16} aria-hidden="true" />{backLabel}</Link>}
         <header className="mb-6 max-w-3xl border-l-2 border-violet pl-4 sm:mb-8 sm:pl-5">
           <p className="eyebrow">{eyebrow}</p>
           <h1 className={`page-title mt-2 [overflow-wrap:anywhere] ${backLabel ? "normal-case" : ""}`}>{title}</h1>

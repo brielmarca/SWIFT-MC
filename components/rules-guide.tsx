@@ -67,7 +67,7 @@ export function RulesGuide() {
     if (window.location.hash !== link.hash) window.history.pushState(window.history.state, "", link.hash);
     revealAnchor();
   }}>
-    <div role="tablist" aria-label="Regulamentos SwiftMC" className="mb-6 flex gap-3">
+    <div role="tablist" aria-label="Regulamentos Swift MC" className="mb-6 flex gap-3">
       {regulations.map((regulation, index) => <button key={regulation.id} ref={(node) => { tabs.current[index] = node; }}
         type="button" role="tab" id={`${regulation.id}-tab`} aria-controls={regulation.id} aria-selected={active === regulation.id}
         tabIndex={active === regulation.id ? 0 : -1} onClick={() => selectTab(index)}

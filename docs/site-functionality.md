@@ -2,7 +2,7 @@
 
 Copy the site variables from `.env.example` into the deployment environment:
 
-- `MINECRAFT_HOST`: Java Minecraft hostname or IP, without a scheme or port. Default: `play.swiftmc.net`.
+- `MINECRAFT_HOST`: Java Minecraft hostname or IP, without a scheme or port. Default: `swiftmc.com.br`.
 - `MINECRAFT_PORT`: Java TCP status port, default `25565`. Set the actual port explicitly (DNS SRV discovery is not performed).
 - `MINECRAFT_PUBLIC_ADDRESS`: optional player-facing address, including a non-default port where needed. Defaults to the host and port above.
 - `NEXT_PUBLIC_DISCORD_URL`: HTTPS Discord invite (`discord.gg` or `discord.com`). Missing or invalid values show “Discord em breve”. Rebuild after changing this public variable.
@@ -38,7 +38,7 @@ Heads are fetched server-side from Crafatar via `/api/minecraft/avatar/[uuid]`, 
 
 Public profile pages reuse the existing cached server-only lookup. Successful lookups redirect to canonical username casing. Missing/renamed names explain how to search the current name; no rename history is inferred or stored. Unavailable lookups have a retry action, subject to the existing 30-second negative cache. UUID and canonical profile URLs have copy actions with manual-copy fallback.
 
-The existing avatar endpoint also accepts `?view=body`, selecting a fixed Crafatar body-render URL with the same timeout, size bound, image validation, and cache. A failed render falls back to the player head and an unavailable message. No arbitrary provider URLs are accepted. Public profiles do not establish SWIFT MC membership; rank, coins, playtime, first join, last seen, kills, and deaths are all explicitly unavailable until a real server-stats source exists.
+The existing avatar endpoint also accepts `?view=body`, selecting a fixed Crafatar body-render URL with the same timeout, size bound, image validation, and cache. A failed render falls back to the player head and an unavailable message. No arbitrary provider URLs are accepted. Public profiles do not establish Swift MC membership; rank, coins, playtime, first join, last seen, kills, and deaths are all explicitly unavailable until a real server-stats source exists.
 
 ## News, events and announcements
 

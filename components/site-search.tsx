@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, CalendarDays, Compass, HelpCircle, Newspaper, Search, ShieldCheck, User, X } from "lucide-react";
+import { BookOpen, CalendarDays, Compass, HelpCircle, Newspaper, Search, ShieldCheck, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -17,7 +17,6 @@ import {
 import { searchSite, type SearchGroupId, type SearchResult } from "@/lib/site-search";
 
 const GROUP_ICONS: Record<SearchGroupId, LucideIcon> = {
-  jogador: User,
   noticias: Newspaper,
   eventos: CalendarDays,
   wiki: BookOpen,
@@ -173,7 +172,7 @@ export function SiteSearchDialog({ onClose }: { onClose: () => void }) {
               value={query}
               onChange={(event) => { setQuery(event.target.value); setActiveIndex(0); }}
               onKeyDown={handleInputKeyDown}
-              placeholder="Buscar notícias, regras, eventos, jogador…"
+              placeholder="Buscar notícias, regras, eventos, wiki…"
               autoComplete="off"
               autoCapitalize="none"
               spellCheck={false}
@@ -226,7 +225,7 @@ export function SiteSearchDialog({ onClose }: { onClose: () => void }) {
                 <p className="text-base font-bold text-ink">Nenhum resultado para “{query.trim()}”</p>
                 <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-muted">
                   {looksLikeUsername
-                    ? "Nomes de jogador têm 3 a 16 caracteres: letras, números ou sublinhado (_). Verifique o termo buscado."
+                    ? "Nenhum resultado encontrado. Tente outro termo."
                     : "Tente outras palavras, abra as páginas rápidas abaixo ou use o buscador da loja em /store."}
                 </p>
                 <ul className="mt-5 flex flex-wrap justify-center gap-2">

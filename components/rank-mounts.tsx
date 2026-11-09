@@ -7,7 +7,7 @@ export function RankMounts({ rank }: { rank: Rank }) {
   return (
     <section className="page-section border-y border-white/10 bg-black/20" aria-labelledby="mounts-heading">
       <div className="site-container">
-        <p className="eyebrow">Coleção VIP · SwiftMounts</p>
+        <p className="eyebrow">Coleção VIP</p>
         <h2 id="mounts-heading" className="page-heading mt-3">Montarias</h2>
         <p className="mt-4 text-base leading-7 text-muted">{getMountSummary(rank.slug)} no VIP {rank.name}.</p>
         {inheritedRanks.length > 0 && (

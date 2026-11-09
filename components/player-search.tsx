@@ -69,7 +69,7 @@ export function PlayerSearch() {
     </form>
     <aside className="network-panel p-5 sm:p-6" aria-labelledby="player-search-about">
       <h2 id="player-search-about" className="text-sm font-bold text-ink">Por trás do username</h2>
-      <ul className="mt-4 space-y-3 text-sm leading-6 text-muted"><li><span className="font-bold text-ink">Identidade</span> · Nome, avatar e skin da conta Java.</li><li><span className="font-bold text-ink">Na SwiftMC</span> · Rank, presença, tempo de jogo e estatísticas, quando disponíveis.</li></ul>
+      <ul className="mt-4 space-y-3 text-sm leading-6 text-muted"><li><span className="font-bold text-ink">Identidade</span> · Nome, avatar e skin da conta Java.</li><li><span className="font-bold text-ink">Na Swift MC</span> · Rank, presença, tempo de jogo e estatísticas, quando disponíveis.</li></ul>
       <p className="mt-4 border-t border-white/10 pt-4 text-xs leading-5 text-muted">Ter uma conta Minecraft não confirma participação na rede.</p>
     </aside>
     </div>

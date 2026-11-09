@@ -2,7 +2,7 @@
 
 ## Scope and decisions
 
-This document defines the first production backend for SWIFT MC rank purchases and records the API contract implemented so far.
+This document defines the first production backend for Swift MC rank purchases and records the API contract implemented so far.
 
 The MVP uses:
 
@@ -12,14 +12,14 @@ The MVP uses:
 - A server-side fulfillment worker that grants the purchased rank through a private Minecraft integration.
 - The existing Next.js application for server-side API route handlers and order status pages.
 
-Checkout Pro is preferred over collecting card details in the SWIFT MC application. Mercado Pago hosts the sensitive payment UI, while this application creates a preference and redirects the buyer to it. No card number, CVV, PIX credential, payment token, or Minecraft credential is stored by or sent through the browser application.
+Checkout Pro is preferred over collecting card details in the Swift MC application. Mercado Pago hosts the sensitive payment UI, while this application creates a preference and redirects the buyer to it. No card number, CVV, PIX credential, payment token, or Minecraft credential is stored by or sent through the browser application.
 
 Not included in the MVP:
 
 - User accounts or authentication.
 - Shopping carts or orders containing multiple ranks.
 - Recurring billing.
-- Refund initiation from the SWIFT MC UI.
+- Refund initiation from the Swift MC UI.
 - A database-backed product administration interface.
 - A general-purpose message broker. PostgreSQL provides the initial durable fulfillment queue.
 - Coupon support. The current coupon control remains disabled until a server-side coupon model and validation rules are designed.

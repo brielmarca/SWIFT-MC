@@ -5,9 +5,7 @@ import { PlayServerCard } from "@/components/play-server-card";
 import { DiscordLink } from "@/components/discord-link";
 import { Footer } from "@/components/footer";
 import { ServerAddress, ServerStatusProvider } from "@/components/server-status-provider";
-import { ServerInfoVersion } from "@/components/server-info-version";
-import { ServerInfoStatus } from "@/components/server-info-status";
-import { SiteHeader } from "@/components/site-header";
+import { AuthHeader } from "@/components/auth-header";
 import { serverInfo } from "@/data/server-info";
 import { getGuideBySlug } from "@/data/wiki";
 
@@ -33,7 +31,7 @@ function HowToJoin() {
   return (
     <section aria-labelledby="howto-title" className="page-section">
       <div className="site-container">
-        <h2 id="howto-title" className="page-heading">Como entrar no SwiftMC</h2>
+        <h2 id="howto-title" className="page-heading">Como entrar na Swift MC</h2>
         <p className="mt-3 max-w-2xl text-base leading-7 text-muted">Quatro passos rápidos do launcher ao Survival.</p>
         <ol className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {steps.map((step, index) => (
@@ -57,19 +55,14 @@ function ServerInfo() {
       <div className="site-container">
         <h2 id="serverinfo-title" className="page-heading">Informações do servidor</h2>
         <p className="mt-3 max-w-2xl text-base leading-7 text-muted">Detalhes técnicos para conexão e compatibilidade.</p>
-
-        <dl className="mt-10 grid gap-6 md:grid-cols-3">
+        <dl className="mt-10 grid gap-6 md:grid-cols-2">
           <div className="min-w-0">
             <dt className="micro-label">Endereço público</dt>
             <ServerInfoAddress />
           </div>
           <div className="min-w-0">
             <dt className="micro-label">Versão suportada</dt>
-            <ServerInfoVersion />
-          </div>
-          <div className="min-w-0">
-            <dt className="micro-label">Status atual</dt>
-            <ServerInfoStatus />
+            <dd className="mt-2 min-h-7 break-words text-lg font-bold text-ink">{serverInfo.edition}</dd>
           </div>
         </dl>
       </div>
@@ -146,16 +139,16 @@ function NeedHelp() {
 export default function PlayPage() {
   return (
     <>
-      <SiteHeader />
+      <AuthHeader />
       <main id="main-content">
         <section className="relative overflow-hidden py-8 sm:py-12">
           <div className="ambient ambient-left" />
           <div className="ambient ambient-right" />
           <div className="site-container relative z-10">
             <header className="border-l-2 border-violet pl-4 sm:pl-5">
-              <p className="eyebrow">Jogar no SwiftMC</p>
+              <p className="eyebrow">Jogar na Swift MC</p>
               <h1 className="page-title mt-2">
-                Entre no <span className="gradient-text">SwiftMC</span>
+                Entre no <span className="gradient-text">Swift MC</span>
               </h1>
               <p className="page-description">
                 Endereço copiado em um clique. Status ao vivo. Passo a passo para entrar em segundos.

@@ -11,7 +11,7 @@ export default function WikiPage() {
     <ContentPage
       active="/wiki"
       title="Guias do servidor"
-      description="Guias completos do SWIFT MC: busque por um assunto, filtre por categoria e abra o passo a passo detalhado."
+      description="Guias completos do Swift MC: busque por um assunto, filtre por categoria e abra o passo a passo detalhado."
     >
       <WikiListing guides={guides} />
     </ContentPage>

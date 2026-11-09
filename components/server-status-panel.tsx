@@ -16,7 +16,7 @@ export function ServerStatusPanel({ detailed = false }: { detailed?: boolean }) 
       <NetworkStat label="Servidor" value={<span className="inline-flex items-center gap-2"><span aria-hidden="true" className={`h-2 w-2 rounded-full ${data?.online ? "bg-ultraviolet" : "bg-muted"}`} />{loading ? "…" : !data ? "Indisponível" : data.online ? "Online" : "Offline"}</span>} detail="Disponibilidade da conexão" />
       <NetworkStat label="Jogadores online" value={loading ? "…" : data?.online ? data.players : "—"} detail="Conectados neste momento" />
       <NetworkStat label="Capacidade" value={loading ? "…" : data?.online ? data.maxPlayers : "—"} detail="Máximo de jogadores" />
-      <NetworkStat label="Versão" value={loading ? "…" : data?.version || "—"} detail={serverInfo.edition} />
+      <NetworkStat label="Versão" value={loading ? serverInfo.edition : data?.version || serverInfo.edition} detail={serverInfo.edition} />
     </dl>
     <div className="network-panel flex flex-col gap-5 border-violet/25 bg-gradient-to-br from-violet/10 to-transparent p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
       <div className="min-w-0"><p className="micro-label">Seu próximo destino · {serverInfo.edition}</p><p className="mt-2 break-all font-mono text-xl font-bold text-ink sm:text-2xl">{publicAddress}</p><p className="mt-2 text-sm text-muted">Adicione este endereço à sua lista de servidores.</p></div>
@@ -28,7 +28,7 @@ export function ServerStatusPanel({ detailed = false }: { detailed?: boolean }) 
       : null}
     <div className="text-xs leading-5 text-muted">
       <p role="status">Última resposta: {lastSuccess ? <time dateTime={lastSuccess}>{new Date(lastSuccess).toLocaleString("pt-BR")}</time> : "aguardando consulta"}.</p>
-      <p className="mt-1">Atualização automática a cada {serverInfo.statusRefreshMs / 1000}s · Cache de até 15s. O horário inclui respostas de servidor offline.</p>
+      <p className="mt-1">Atualização automática a cada {serverInfo.statusRefreshMs / 1000}s. Se o servidor não responder, use o endereço e consulte o Discord para avisos.</p>
     </div>
   </section>;
   return <section className="glass-panel p-5 sm:p-8" aria-label="Status do servidor">
@@ -39,11 +39,11 @@ export function ServerStatusPanel({ detailed = false }: { detailed?: boolean }) 
         <dd className="mt-2 break-all font-mono text-xl font-bold text-ink">{publicAddress}</dd>
       </div>
       <div><dt className="micro-label">Jogadores / capacidade</dt><dd className="mt-2 min-h-7 text-xl font-bold tabular-nums text-ultraviolet">{loading ? "Consultando…" : data?.online ? `${data.players} / ${data.maxPlayers}` : "Indisponível"}</dd></div>
-      <div className="min-w-0"><dt className="micro-label">Versão informada</dt><dd className="mt-2 min-h-7 break-words text-lg font-bold text-ink">{loading ? "Consultando…" : data?.version || "Indisponível"}</dd></div>
+      <div className="min-w-0"><dt className="micro-label">Versão</dt><dd className="mt-2 min-h-7 break-words text-lg font-bold text-ink">{loading ? serverInfo.edition : data?.version || serverInfo.edition}</dd></div>
     </dl>
     <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
       <CopyIpButton />
     </div>
-    <p className="mt-4 min-h-12 text-sm leading-6 text-muted">{loading ? "Consultando o servidor. O endereço já pode ser copiado." : !data ? "Não foi possível consultar o status agora. Tente atualizar novamente ou consulte a comunidade no Discord." : !data.online ? "O servidor está offline ou não respondeu à consulta. Aguarde e tente novamente; o endereço continua disponível para copiar." : "Servidor respondendo. Confira a versão acima antes de conectar."}</p>
+    <p className="mt-4 min-h-12 text-sm leading-6 text-muted">{loading ? "Consultando o servidor. O endereço já pode ser copiado." : !data ? "Não foi possível consultar o status agora. O endereço continua disponível para copiar." : !data.online ? "O servidor não respondeu à consulta neste momento. O endereço continua disponível para copiar." : `Servidor respondendo. Use ${serverInfo.edition} para conectar.`}</p>
   </section>;
 }

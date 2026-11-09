@@ -12,7 +12,7 @@ export const wikiGuides: readonly WikiGuide[] = [
     slug: "como-entrar-no-servidor",
     title: "Como entrar no servidor",
     category: "Primeiros passos",
-    description: "Do endereço do servidor ao primeiro login: tudo o que você precisa para começar a jogar no SWIFT MC no Minecraft Java.",
+    description: "Do endereço do servidor ao primeiro login: tudo o que você precisa para começar a jogar no Swift MC no Minecraft Java.",
     tags: ["inicio", "multijogador", "endereco"],
     related: ["comandos-essenciais", "guia-do-survival"],
     featured: true,
@@ -21,13 +21,13 @@ export const wikiGuides: readonly WikiGuide[] = [
         id: "antes-de-comecar",
         title: "Antes de começar",
         blocks: [
-          { type: "paragraph", text: "O SWIFT MC roda no Minecraft Java Edition. Antes de abrir o jogo, confira a versão e o status do servidor nas páginas oficiais — se o servidor estiver offline, nenhuma configuração vai funcionar." },
+          { type: "paragraph", text: "A Swift MC usa Minecraft Java 1.21.11. Antes de abrir o jogo, confira o status do servidor — se ele estiver offline, a conexão pode não responder." },
           { type: "bullets", items: [
             "Uma conta Minecraft Java válida, usada para entrar no servidor.",
-            "A versão do jogo exibida na página de Status, para evitar incompatibilidade.",
+            "Minecraft Java 1.21.11 selecionado no launcher.",
             "As regras do servidor lidas pelo menos uma vez, para não cair na área de moderação.",
           ] },
-          { type: "callout", kind: "info", title: "Onde ficam as informações oficiais", text: "Endereço, versão e contagem de jogadores ficam nas páginas Jogar e Status. Use sempre essas fontes antes de suspeitar de problema na sua conexão." },
+          { type: "callout", kind: "info", title: "Onde ficam as informações oficiais", text: "O endereço oficial é swiftmc.com.br e a versão é Minecraft Java 1.21.11. Consulte a página Status para disponibilidade e jogadores online quando o servidor responder." },
         ],
       },
       {
@@ -37,7 +37,7 @@ export const wikiGuides: readonly WikiGuide[] = [
           { type: "steps", items: [
             "Abra o Minecraft Java e escolha Multijogador no menu principal.",
             "Clique em Adicionar servidor e escolha um nome de fácil identificação.",
-            "Cole o endereço do SWIFT MC no campo Endereço do servidor.",
+            "Cole swiftmc.com.br no campo Endereço do servidor.",
             "Salve, selecione o servidor na lista e clique em Entrar no servidor.",
           ] },
           { type: "links", items: [
@@ -134,7 +134,7 @@ export const wikiGuides: readonly WikiGuide[] = [
     slug: "como-funciona-a-economia",
     title: "Como funciona a economia",
     category: "Economia",
-    description: "Moedas, negociações entre jogadores e o papel dos leilões: entenda o mercado do SWIFT MC sem cair em golpes.",
+    description: "Moedas, negociações entre jogadores e o papel dos leilões: entenda o mercado do Swift MC sem cair em golpes.",
     tags: ["economia", "moedas", "leiloes"],
     related: ["como-funcionam-os-ranks", "guia-do-survival"],
     featured: true,
@@ -143,7 +143,7 @@ export const wikiGuides: readonly WikiGuide[] = [
         id: "visao-geral",
         title: "Visão geral",
         blocks: [
-          { type: "paragraph", text: "A economia do SWIFT MC gira em torno de moedas ganhas jogando: missões, eventos e a própria sobrevivência alimentam o seu saldo. Não existe forma oficial de comprar moedas com dinheiro real — moedas se ganham no servidor e se trocam entre jogadores." },
+          { type: "paragraph", text: "A economia do Swift MC gira em torno de moedas ganhas jogando: missões, eventos e a própria sobrevivência alimentam o seu saldo. Não existe forma oficial de comprar moedas com dinheiro real — moedas se ganham no servidor e se trocam entre jogadores." },
           { type: "bullets", items: [
             "Seu saldo é individual e consultável a qualquer momento.",
             "Preços entre jogadores são definidos por oferta e demanda, sem tabela oficial.",
@@ -187,7 +187,7 @@ export const wikiGuides: readonly WikiGuide[] = [
     slug: "guia-do-survival",
     title: "Guia do Survival",
     category: "Survival",
-    description: "Primeiros dias, base protegida e convívio com a comunidade: o roteiro essencial para sobreviver (e prosperar) no SWIFT MC.",
+    description: "Primeiros dias, base protegida e convívio com a comunidade: o roteiro essencial para sobreviver (e prosperar) no Swift MC.",
     tags: ["sobrevivencia", "base", "terrenos"],
     related: ["como-entrar-no-servidor", "comandos-essenciais"],
     sections: [
@@ -274,14 +274,14 @@ export const wikiGuides: readonly WikiGuide[] = [
           { type: "steps", items: [
             "Abra a Loja e compare os níveis, duração e benefícios de cada rank.",
             "Adicione a opção desejada ao carrinho — a seleção fica só neste navegador.",
-            "Revise os dados do jogador antes de qualquer pagamento.",
-            "Conclua a compra quando ela for reativada; a ativação segue os avisos oficiais.",
+            "Revise os dados do jogador antes de concluir uma compra, quando essa etapa for liberada após validação.",
+            "A conclusão da compra só será liberada após validação de pagamento e entrega no servidor.",
           ] },
-          { type: "callout", kind: "warning", title: "Compras estão pausadas", text: "A conclusão de pagamentos está pausada nesta etapa. O carrinho é apenas uma seleção local: ele não ativa rank, não cobra nada e não cria pedido." },
+          { type: "callout", kind: "warning", title: "Compras indisponíveis", text: "A conclusão de compras no site fica desativada até a validação final de pagamento e entrega em homologação. O carrinho não cria pedido nem ativa benefícios." },
           { type: "table", caption: "Perguntas rápidas", headers: ["Pergunta", "Resposta"], rows: [
             ["O carrinho ativa o rank?", "Não. Ele guarda a seleção neste navegador apenas."],
             ["Preciso de conta no site?", "Não para consultar a loja ou usar o carrinho."],
-            ["O rank expira?", "Todos os ranks são assinaturas mensais, com cobrança a cada mês e benefícios disponíveis enquanto a assinatura estiver ativa."],
+            ["O rank expira?", "Cada rank dura 1 mês. A compra é avulsa, sem renovação automática, e os benefícios ficam disponíveis enquanto o VIP estiver ativo."],
             ["Vantagem em PvP?", "Não. Ranks oferecem conveniência e cosméticos."],
           ] },
         ],

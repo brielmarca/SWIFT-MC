@@ -1,7 +1,7 @@
 import "server-only";
 import type { Metadata } from "next";
 
-export const SITE_NAME = "SwiftMC";
+export const SITE_NAME = "Swift MC";
 export const SITE_DESCRIPTION = "Rede brasileira de Minecraft Survival com economia, proteção de terrenos e uma comunidade ativa.";
 const DEFAULT_SITE_URL = "https://swiftmc.com.br";
 
@@ -35,7 +35,7 @@ export function siteUrl(path: string): string {
 
 export const BRAND_IMAGE = {
   src: "/brand/emblem.png",
-  alt: "Emblema roxo oficial da SwiftMC",
+  alt: "Emblema roxo oficial da Swift MC",
   width: 1316,
   height: 1195,
 } as const;
@@ -81,17 +81,22 @@ export function createPageMetadata({ title, description, path, image = BRAND_IMA
 
 export const PUBLIC_PAGES = {
   "/": { title: "Survival Minecraft", description: SITE_DESCRIPTION },
-  "/play": { title: "Como jogar", description: "Endereço, status e instruções para entrar no servidor Minecraft Java SwiftMC." },
-  "/store": { title: "Loja de ranks", description: "Compare as assinaturas VIP mensais Swift, Eclipse, Cosmic e Overdrive da rede SwiftMC." },
-  "/status": { title: "Status do servidor", description: "Consulte o status, jogadores e versão atual do servidor Minecraft SwiftMC." },
-  "/online": { title: "Jogadores online", description: "Veja quem está jogando na SwiftMC com a lista de jogadores online informada pelo servidor." },
-  "/leaderboards": { title: "Ranking do servidor", description: "Confira o ranking de tempo de jogo, abates e coins do servidor SwiftMC." },
-  "/player": { title: "Jogadores", description: "Busque perfis públicos do Minecraft Java pelo nome do jogador." },
-  "/wiki": { title: "Wiki e guias", description: "Guias do servidor SwiftMC: primeiros passos, Survival, economia, comandos e ranks." },
-  "/news": { title: "Notícias", description: "Notícias, atualizações e avisos da comunidade do servidor SwiftMC." },
-  "/community": { title: "Notícias & Eventos", description: "Todas as notícias, atualizações e eventos da comunidade SwiftMC em um só lugar." },
-  "/events": { title: "Eventos", description: "Eventos e atividades da comunidade do servidor SwiftMC, com data, horário e local." },
-  "/rules": { title: "Regras do servidor e Discord", description: "Consulte os regulamentos oficiais do servidor Minecraft e do Discord SwiftMC, com busca por assunto ou ID e navegação por seções." },
+  "/play": { title: "Como jogar", description: "Endereço, status e instruções para entrar no servidor Minecraft Java 1.21.11 da Swift MC." },
+  "/store": { title: "Loja de ranks", description: "Compare os VIPs mensais Swift, Eclipse, Cosmic e Overdrive da rede Swift MC." },
+  "/status": { title: "Status e conexão", description: "Consulte status, jogadores online e conexão do servidor Minecraft Java 1.21.11 Swift MC em swiftmc.com.br." },
+  "/lore": { title: "Lore", description: "Lore oficial da Swift MC, publicada quando houver material confirmado pela equipe." },
+  "/vote": { title: "Votar", description: "Links de votação da Swift MC serão publicados quando houver confirmação oficial da equipe." },
+  "/privacy": { title: "Política de privacidade", description: "Estrutura da política de privacidade da Swift MC. Texto final pendente de aprovação." },
+  "/terms": { title: "Termos de compra", description: "Estrutura dos termos de compra da Swift MC. Texto final pendente de aprovação." },
+  "/refund": { title: "Política de reembolso", description: "Estrutura da política de reembolso da Swift MC. Texto final pendente de aprovação." },
+
+
+
+  "/wiki": { title: "Wiki e guias", description: "Guias do servidor Swift MC: primeiros passos, Survival, economia, comandos e ranks." },
+  "/news": { title: "Notícias", description: "Notícias e avisos oficiais do servidor Swift MC." },
+
+  "/events": { title: "Eventos", description: "Eventos oficiais da comunidade Swift MC, quando houver programação confirmada." },
+  "/rules": { title: "Regras do servidor e Discord", description: "Consulte os regulamentos oficiais do servidor Minecraft e do Discord Swift MC, com busca por assunto ou ID e navegação por seções." },
   "/faq": { title: "Perguntas frequentes", description: "Tire suas dúvidas sobre o servidor, sua conta, VIPs e suporte." },
 } as const;
 
@@ -106,7 +111,7 @@ export function publicPageMetadata(path: keyof typeof PUBLIC_PAGES): Metadata {
 export const rootMetadata: Metadata = {
   ...createPageMetadata({ title: SITE_NAME, description: SITE_DESCRIPTION }),
   metadataBase: getSiteUrl(),
-  title: { default: SITE_NAME, template: "%s | SwiftMC" },
+  title: { default: SITE_NAME, template: "%s | Swift MC" },
   applicationName: SITE_NAME,
   manifest: "/manifest.webmanifest",
   icons: { icon: { url: BRAND_IMAGE.src, type: "image/png" }, apple: BRAND_IMAGE.src },

@@ -138,7 +138,7 @@ export function Leaderboards() {
             </li>;
           })}
         </ol></>}
-        <p className="mt-6 text-xs leading-5 text-muted">Dados do servidor SwiftMC · Cache de até 15s. Classificação por {CATEGORY_LABELS[category].toLowerCase()}.</p>
+        <p className="mt-6 text-xs leading-5 text-muted">Dados do servidor Swift MC · Cache de até 15s. Classificação por {CATEGORY_LABELS[category].toLowerCase()}.</p>
       </div>}
     </div>
   </div>;

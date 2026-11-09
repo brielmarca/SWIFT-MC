@@ -1,7 +1,7 @@
-// Official SwiftMC text. Keep wording, punctuation, and paragraph order verbatim.
+// Official Swift MC text. Keep wording, punctuation, and paragraph order verbatim.
 export const serverRulesText = `⚔️ SWIFTMC | REGULAMENTO OFICIAL
 
-Bem-vindo ao SwiftMC!
+Bem-vindo ao Swift MC!
 
 Nosso objetivo é oferecer uma experiência de Minecraft divertida, equilibrada e acolhedora, onde todos possam explorar, construir, evoluir e criar suas próprias histórias.
 
@@ -17,7 +17,7 @@ Ao acessar o servidor, você concorda em respeitar as regras abaixo. O desconhec
 
 1.4. É proibido divulgar informações pessoais de terceiros sem autorização.
 
-1.5. Não se passe por outros jogadores, administradores, moderadores ou representantes oficiais do SwiftMC.
+1.5. Não se passe por outros jogadores, administradores, moderadores ou representantes oficiais do Swift MC.
 
 1.6. Discussões pessoais não devem prejudicar a experiência dos demais jogadores. Utilize os canais adequados para resolver conflitos.
 
@@ -41,7 +41,7 @@ Macros que automatizem ações para obter vantagens indevidas.
 
 2.2. Mods de desempenho, acessibilidade e melhorias visuais são permitidos, desde que não ofereçam vantagens injustas.
 
-2.3. É proibido explorar falhas do Minecraft, de plugins ou de sistemas internos do SwiftMC para obter benefícios.
+2.3. É proibido explorar falhas do Minecraft, de plugins ou de sistemas internos do Swift MC para obter benefícios.
 
 2.4. Caso encontre um bug, informe à equipe. A exploração intencional ou divulgação de métodos de abuso poderá resultar em punição.
 
@@ -87,7 +87,7 @@ Macros que automatizem ações para obter vantagens indevidas.
 
 5.4. Não é permitida a comercialização de moedas, itens, terrenos, contas ou benefícios do servidor por dinheiro real sem autorização expressa da administração.
 
-5.5. Apostas e minijogos, quando disponibilizados oficialmente pelo SwiftMC, deverão utilizar exclusivamente os recursos e mecanismos permitidos pela modalidade. São proibidas apostas envolvendo dinheiro real.
+5.5. Apostas e minijogos, quando disponibilizados oficialmente pelo Swift MC, deverão utilizar exclusivamente os recursos e mecanismos permitidos pela modalidade. São proibidas apostas envolvendo dinheiro real.
 
 5.6. A equipe poderá investigar transações suspeitas e corrigir valores ou itens obtidos comprovadamente por meios irregulares.
 
@@ -163,13 +163,13 @@ Macros que automatizem ações para obter vantagens indevidas.
 
 11.7. A administração poderá atualizar este regulamento para acompanhar novas modalidades, sistemas e necessidades da comunidade. Mudanças relevantes serão comunicadas pelos canais oficiais.
 
-Ao jogar no SwiftMC, você se compromete a respeitar a comunidade, preservar a experiência coletiva e contribuir para um ambiente justo e divertido.
+Ao jogar no Swift MC, você se compromete a respeitar a comunidade, preservar a experiência coletiva e contribuir para um ambiente justo e divertido.
 
-SwiftMC — Sua aventura começa aqui.`;
+Swift MC — Sua aventura começa aqui.`;
 
 export const discordRulesText = `💬 SWIFTMC | REGRAS DO DISCORD
 
-Bem-vindo à comunidade oficial do SwiftMC!
+Bem-vindo à comunidade oficial do Swift MC!
 
 Este espaço foi criado para reunir jogadores, compartilhar experiências, divulgar novidades e facilitar a comunicação com nossa equipe.
 
@@ -207,7 +207,7 @@ Ao participar, você concorda com as regras abaixo, além dos Termos de Serviço
 
 3.4. Não publique informações privadas, conversas particulares ou imagens de outras pessoas com a intenção de expô-las ou constrangê-las.
 
-3.5. Não compartilhe ferramentas, tutoriais ou arquivos destinados a prejudicar o SwiftMC ou seus jogadores.
+3.5. Não compartilhe ferramentas, tutoriais ou arquivos destinados a prejudicar o Swift MC ou seus jogadores.
 
 §4 — DIVULGAÇÕES E PROPAGANDAS
 
@@ -249,7 +249,7 @@ Ao participar, você concorda com as regras abaixo, além dos Termos de Serviço
 
 7.3. Nunca compartilhe senhas, códigos de autenticação ou dados sensíveis.
 
-7.4. A equipe do SwiftMC não solicitará sua senha pessoal por mensagens privadas.
+7.4. A equipe do Swift MC não solicitará sua senha pessoal por mensagens privadas.
 
 7.5. Contas utilizadas para aplicar golpes, disseminar malware ou comprometer a segurança da comunidade poderão ser removidas imediatamente.
 
@@ -266,13 +266,13 @@ O descumprimento das regras poderá resultar em:
 
 A gravidade, reincidência e intenção serão consideradas na aplicação das medidas.
 
-Infrações que afetem diretamente a segurança ou a integridade do SwiftMC também poderão resultar em medidas dentro do servidor Minecraft, mediante avaliação da administração.
+Infrações que afetem diretamente a segurança ou a integridade do Swift MC também poderão resultar em medidas dentro do servidor Minecraft, mediante avaliação da administração.
 
 Caso considere uma punição injusta, utilize os canais oficiais para solicitar revisão.
 
 Faça parte de uma comunidade onde todos possam jogar, conversar e se divertir com respeito!
 
-Equipe SwiftMC.`;
+Equipe Swift MC.`;
 
 export type RegulationBlock = { id: string; ruleId?: string; paragraphs: string[] };
 export type RegulationSection = { id: string; title: string; blocks: RegulationBlock[] };

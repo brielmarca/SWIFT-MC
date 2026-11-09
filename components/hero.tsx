@@ -7,7 +7,7 @@ import { ServerStatusChip } from "./server-status-provider";
 const trustStats = [
   { value: "Survival", label: "Modo de jogo" },
   { value: "mcMMO", label: "Habilidades", accent: true },
-  { value: "Mensais", label: "Assinaturas VIP" },
+  { value: "1 mês", label: "Duração do VIP" },
 ];
 
 export function Hero() {
@@ -25,7 +25,7 @@ export function Hero() {
               <span className="gradient-text block">Survival Minecraft</span>
             </h1>
             <p className="mt-4 max-w-xl text-base leading-6 text-muted">
-              Economia balanceada, proteção total de terrenos, sistema de habilidades mcMMO, dungeons customizadas e uma comunidade acolhedora pronta para te receber.
+              Servidor Survival para Minecraft Java 1.21.11 com progressão, economia e comunidade. Copie o IP, confira o status e explore os guias antes de entrar.
             </p>
           </div>
 
@@ -52,11 +52,11 @@ export function Hero() {
           <div className="hero-stage">
             <div className="stage-grid" />
             <div className="absolute left-3 top-3 z-20 flex items-center gap-1.5 rounded-lg border border-white/10 bg-void/75 px-2.5 py-1.5 text-[8px] font-bold uppercase tracking-[0.1em] text-ink backdrop-blur sm:left-5 sm:top-5 sm:gap-2 sm:px-3 sm:py-2 sm:text-[10px] sm:tracking-[0.14em]">
-              <Zap size={14} className="text-ultraviolet" aria-hidden="true" /> Survival custom
+              <Zap size={14} className="text-ultraviolet" aria-hidden="true" /> Java 1.21.11
             </div>
             <Image
               src="/brand/emblem.png"
-              alt="Emblema roxo oficial da SWIFT MC"
+              alt="Emblema roxo oficial da Swift MC"
               width={1316}
               height={1195}
               priority
@@ -67,7 +67,7 @@ export function Hero() {
               <ShieldCheck size={14} className="text-ultraviolet" aria-hidden="true" /> Terrenos e guildas
             </div>
             <div className="absolute right-2 top-1/2 z-20 flex -translate-y-1/2 items-center gap-1.5 rounded-lg border border-violet/25 bg-void/85 px-2 py-1.5 text-[8px] font-bold uppercase tracking-[0.08em] text-ultraviolet backdrop-blur sm:right-3 sm:gap-2 sm:px-3 sm:py-2 sm:text-[10px] sm:tracking-[0.14em]">
-              <ShieldCheck size={14} aria-hidden="true" /> Survival SWIFT MC
+              <ShieldCheck size={14} aria-hidden="true" /> swiftmc.com.br
             </div>
           </div>
         </div>
