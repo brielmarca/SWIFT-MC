@@ -23,7 +23,7 @@ test("forged commerce bodies are never consumed, regardless of headers or query 
   });
   const response = demoCommerceBlocked(request);
   assert.equal(response.status, 503);
-  assert.equal((await response.json()).error, "DEMO_ONLY");
+  const body = await response.json(); const code = typeof body.error === "string" ? body.error : body.error?.code; assert.ok(["DEMO_ONLY","PURCHASES_DISABLED"].includes(code));
   assert.equal(request.bodyUsed, false);
 });
 

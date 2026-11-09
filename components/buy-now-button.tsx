@@ -33,7 +33,7 @@ export function BuyNowButton({ slug, disabled = false }: BuyNowButtonProps) {
         router.push("/checkout");
       }}
     >
-      <ShoppingBag size={18} aria-hidden="true" /> Ver prévia demo
+      <ShoppingBag size={18} aria-hidden="true" /> Comprar com Stripe
     </button>
   );
 }

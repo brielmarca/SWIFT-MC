@@ -1,10 +1,10 @@
 import "server-only";
 
-const STRIPE_API_URL = "https://api.stripe.com/v1";
+const STRIPE_API_URL = "https://api.stripe.com";
 const MAX_RESPONSE_BYTES = 64 * 1024;
 const REQUEST_TIMEOUT_MS = 10_000;
 
-const STRIPE_ID_PATTERN = /^[A-Za-z0-9]{1,255}$/;
+const STRIPE_ID_PATTERN = /^[A-Za-z0-9_]{1,255}$/;
 
 export type StripeCheckoutSession = {
   id: string;
@@ -18,6 +18,7 @@ export type StripeCheckoutSession = {
   currency: string | null;
   client_reference_id: string | null;
   metadata: Record<string, string>;
+  payment_intent: string | null;
 };
 
 export type StripeInvoice = {
@@ -26,6 +27,7 @@ export type StripeInvoice = {
   subscription: string | null;
   customer: string | null;
   amount_paid: number;
+  amount_due: number;
   currency: string;
   metadata: Record<string, string>;
 };
@@ -46,6 +48,8 @@ export type StripeCharge = {
   currency: string;
   refunded: boolean;
   receipt_email: string | null;
+  metadata: Record<string, string>;
+  payment_intent: string | null;
 };
 
 export type StripeReconciliationClient = {
@@ -136,6 +140,7 @@ function boundedCheckoutSession(value: unknown): StripeCheckoutSession | null {
     currency,
     client_reference_id: clientReferenceId,
     metadata: boundedMetadata(session.metadata),
+    payment_intent: typeof session.payment_intent === "string" ? session.payment_intent : null,
   };
 }
 
@@ -149,9 +154,10 @@ function boundedInvoice(value: unknown): StripeInvoice | null {
   const customer = typeof invoice.customer === "string" ? invoice.customer : null;
   const amountPaid =
     typeof invoice.amount_paid === "number" ? invoice.amount_paid : null;
+  const amountDue = typeof invoice.amount_due === "number" ? invoice.amount_due : null;
   const currency = boundedString(invoice.currency, 8);
 
-  if (!id || !status || amountPaid === null || !currency) return null;
+  if (!id || !status || amountPaid === null || amountDue === null || !currency) return null;
 
   return {
     id,
@@ -159,6 +165,7 @@ function boundedInvoice(value: unknown): StripeInvoice | null {
     subscription,
     customer,
     amount_paid: amountPaid,
+    amount_due: amountDue,
     currency,
     metadata: boundedMetadata(invoice.metadata),
   };
@@ -206,6 +213,8 @@ function boundedCharge(value: unknown): StripeCharge | null {
     currency,
     refunded,
     receipt_email: receiptEmail,
+    metadata: boundedMetadata(charge.metadata),
+    payment_intent: typeof charge.payment_intent === "string" ? charge.payment_intent : null,
   };
 }
 
@@ -228,6 +237,7 @@ export function createStripeClient(
           Authorization: `Bearer ${secretKey}`,
         },
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+        redirect: "manual",
       });
     } catch {
       throw new StripeUnavailableError();

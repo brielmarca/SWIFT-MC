@@ -59,7 +59,7 @@ function matchesOrderInput(order: Order, input: ValidatedOrderInput): boolean {
 export async function createOrder(
   db: PrismaClient,
   input: ValidatedOrderInput,
-  options: { idempotencyKey?: string; now?: Date } = {},
+  options: { idempotencyKey?: string; now?: Date; userId?: string; lifetimeMs?: number } = {},
 ): Promise<PublicOrder> {
   const now = options.now ?? new Date();
   const idempotencyKey = options.idempotencyKey ?? `server-${randomUUID()}`;
@@ -71,7 +71,7 @@ export async function createOrder(
   });
 
   if (existingOrder) {
-    if (!matchesOrderInput(existingOrder, input)) {
+    if (!matchesOrderInput(existingOrder, input) || existingOrder.userId !== (options.userId ?? null)) {
       throw new IdempotencyConflictError();
     }
 
@@ -84,6 +84,7 @@ export async function createOrder(
         publicToken: randomBytes(32).toString("base64url"),
         orderNumber: createOrderNumber(now),
         status: OrderStatus.PENDING_PAYMENT,
+        userId: options.userId,
         rankSlug: rank.slug,
         rankName: rank.name,
         rankDuration: rank.duration,
@@ -94,7 +95,7 @@ export async function createOrder(
         discountCents: 0,
         totalCents,
         checkoutIdempotencyKey: idempotencyKey,
-        expiresAt: new Date(now.getTime() + ORDER_LIFETIME_MS),
+        expiresAt: new Date(now.getTime() + (options.lifetimeMs ?? ORDER_LIFETIME_MS)),
       },
     });
 
@@ -112,7 +113,7 @@ export async function createOrder(
       throw error;
     }
 
-    if (!matchesOrderInput(concurrentOrder, input)) {
+    if (!matchesOrderInput(concurrentOrder, input) || concurrentOrder.userId !== (options.userId ?? null)) {
       throw new IdempotencyConflictError();
     }
 

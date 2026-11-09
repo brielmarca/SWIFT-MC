@@ -1,178 +1,58 @@
-import { getStripeWebhookConfig } from "@/lib/server-env";
-import { getPrisma } from "@/lib/prisma";
-import { createStripeCheckoutClient } from "@/lib/payments/stripe-checkout";
-import { startStripeCheckout } from "@/lib/payments/stripe-checkout";
+import { createHash } from "node:crypto";
+import { z } from "zod";
+import { getWorkersEnv } from "@/lib/auth-api/get-env";
+import { requireSession, requireCsrfToken } from "@/lib/auth/middleware";
+import { hasTrustedBrowserMutation } from "@/lib/auth/browser-security";
+import { withAuthPrisma } from "@/lib/auth-infrastructure/prisma";
+import { getStripeConfig } from "@/lib/server-env";
+import { createStripeCheckoutClient, startStripeCheckout } from "@/lib/payments/stripe-checkout";
 import { createOrder } from "@/lib/orders/create-order";
 import { validateOrderInput } from "@/lib/orders/order-input";
-import { cashPackages } from "@/data/cash-packages";
-import { OrderStatus } from "@prisma/client";
-import { randomBytes } from "node:crypto";
+import { getLinkedMinecraftIdentityForUser, orderIdentityLabel } from "@/lib/minecraft-bridge/purchase";
+import { purchasesEnabled, purchasesDisabledResponse } from "@/lib/purchase-gate";
 
-const ORDER_LIFETIME_MS = 30 * 60 * 1000;
-
-type StripeCheckoutRequest = {
-  type: "vip" | "coins";
-  rankSlug?: string;
-  coinsPackageId?: number;
-  minecraftUsername: string;
-  email: string;
-  idempotencyKey: string;
-};
+const inputSchema = z.object({
+  type: z.literal("vip"),
+  rankSlug: z.string().max(32),
+  idempotencyKey: z.uuid(),
+}).strict();
+const headers = { "Cache-Control": "private, no-store", "Referrer-Policy": "no-referrer" };
+function error(code: string, message: string, status: number) {
+  return Response.json({ error: { code, message } }, { status, headers });
+}
 
 export async function POST(request: Request): Promise<Response> {
-  // Check if Stripe is configured; if not, preserve demo mode.
-  let config: { secretKey: string; webhookSecret: string };
+  if (!purchasesEnabled()) return purchasesDisabledResponse(request);
+  const env = await getWorkersEnv();
+  const auth = await requireSession(request, env);
+  if (auth instanceof Response) return auth;
+  if (!hasTrustedBrowserMutation(request.headers, env.APP_URL ?? "")) return error("ORIGIN_REJECTED", "Origem não permitida.", 403);
+  const csrf = requireCsrfToken(request);
+  if (csrf) return csrf;
+  if (!auth.user.emailVerifiedAt || !auth.user.emailNormalized) return error("EMAIL_NOT_VERIFIED", "Verifique seu email antes de comprar.", 403);
+  const input = inputSchema.safeParse(await request.json().catch(() => null));
+  if (!input.success) return error("INVALID_INPUT", "Selecione um VIP válido.", 400);
+  let secretKey: string;
+  try { secretKey = getStripeConfig().secretKey; }
+  catch { return error("CHECKOUT_UNAVAILABLE", "Pagamento indisponível. Tente novamente mais tarde.", 503); }
   try {
-    config = getStripeWebhookConfig();
-  } catch {
-    return Response.json(
-      { error: "DEMO_ONLY", message: "Checkout em demonstração está ativo." },
-      { status: 503, headers: { "Cache-Control": "no-store" } },
-    );
-  }
-
-  let body: StripeCheckoutRequest;
-  try {
-    body = (await request.json()) as StripeCheckoutRequest;
-  } catch {
-    return Response.json(
-      { error: "INVALID_REQUEST_BODY" },
-      { status: 400, headers: { "Cache-Control": "no-store" } },
-    );
-  }
-
-  if (
-    !body ||
-    typeof body !== "object" ||
-    (body.type !== "vip" && body.type !== "coins") ||
-    typeof body.minecraftUsername !== "string" ||
-    body.minecraftUsername.trim().length < 3 ||
-    body.minecraftUsername.trim().length > 32 ||
-    typeof body.email !== "string" ||
-    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email.trim()) ||
-    typeof body.idempotencyKey !== "string" ||
-    body.idempotencyKey.trim().length < 1 ||
-    body.idempotencyKey.trim().length > 255
-  ) {
-    return Response.json(
-      { error: "INVALID_INPUT" },
-      { status: 400, headers: { "Cache-Control": "no-store" } },
-    );
-  }
-
-  const minecraftUsername = body.minecraftUsername.trim();
-  const email = body.email.trim().toLowerCase();
-  const idempotencyKey = body.idempotencyKey.trim();
-
-  const db = getPrisma();
-
-  try {
-    if (body.type === "vip") {
-      if (!body.rankSlug || typeof body.rankSlug !== "string") {
-        return Response.json(
-          { error: "INVALID_INPUT" },
-          { status: 400, headers: { "Cache-Control": "no-store" } },
-        );
-      }
-
-      const validated = validateOrderInput({
-        rankSlug: body.rankSlug,
-        minecraftUsername,
-        email,
-      });
-
-      if ("error" in validated) {
-        return Response.json(
-          { error: validated.error },
-          { status: 400, headers: { "Cache-Control": "no-store" } },
-        );
-      }
-
-      const order = await createOrder(db, validated.data, {
-        idempotencyKey,
-      });
-
-      const checkout = await startStripeCheckout(
-        db,
-        createStripeCheckoutClient(config.secretKey),
-        { orderNumber: order.orderNumber, orderToken: order.paymentToken },
-        { appUrl: new URL(process.env.APP_URL ?? "https://swiftmc.com.br") },
-      );
-
-      return Response.json(
-        { checkoutUrl: checkout.checkoutUrl, orderNumber: order.orderNumber },
-        { status: 200, headers: { "Cache-Control": "no-store" } },
-      );
-    }
-
-    // Coins purchase
-    if (!body.coinsPackageId || typeof body.coinsPackageId !== "number") {
-      return Response.json(
-        { error: "INVALID_INPUT" },
-        { status: 400, headers: { "Cache-Control": "no-store" } },
-      );
-    }
-
-    const pack = cashPackages.find((p) => p.amount === body.coinsPackageId);
-    if (!pack) {
-      return Response.json(
-        { error: "UNKNOWN_PACKAGE" },
-        { status: 400, headers: { "Cache-Control": "no-store" } },
-      );
-    }
-
-    const orderNumber = `SWIFT-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${randomBytes(5).toString("hex").toUpperCase()}`;
-    const publicToken = randomBytes(32).toString("base64url");
-    const now = new Date();
-
-    const order = await db.order.create({
-      data: {
-        publicToken,
-        orderNumber,
-        status: OrderStatus.PENDING_PAYMENT,
-        rankSlug: `coins-${pack.amount}`,
-        rankName: `${pack.amount} Cash`,
-        rankDuration: "Único",
-        minecraftUsername,
-        email,
-        currency: "BRL",
-        subtotalCents: pack.price,
-        discountCents: 0,
-        totalCents: pack.price,
-        checkoutIdempotencyKey: idempotencyKey,
-        expiresAt: new Date(now.getTime() + ORDER_LIFETIME_MS),
-      },
+    return await withAuthPrisma(env, async db => {
+      // Initial release: purchase only for the authenticated user's verified linked Minecraft identity.
+      // Never accept a checkout nickname as a delivery target.
+      const identity = await getLinkedMinecraftIdentityForUser(db, auth.user.id);
+      if (!identity) return error("MINECRAFT_LINK_REQUIRED", "Vincule sua conta Minecraft antes de comprar um VIP.", 409);
+      const validated = validateOrderInput({ ...input.data, minecraftUsername: orderIdentityLabel(identity), email: auth.user.emailNormalized! });
+      if (validated.error) return error(validated.error, "Este produto não está disponível para compra.", 400);
+      const idempotencyKey = createHash("sha256").update(`stripe:v1:${auth.user.id}:${input.data.idempotencyKey}`).digest("hex");
+      const order = await createOrder(db, validated.data!, { idempotencyKey, userId: auth.user.id, lifetimeMs: 60 * 60 * 1000 });
+      const checkout = await startStripeCheckout(db, createStripeCheckoutClient(secretKey),
+        { orderNumber: order.orderNumber, orderToken: order.paymentToken, userId: auth.user.id },
+        { appUrl: new URL(env.APP_URL!) });
+      return Response.json({ ...checkout, orderNumber: order.orderNumber }, { headers });
     });
-
-    const checkout = await startStripeCheckout(
-      db,
-      createStripeCheckoutClient(config.secretKey),
-      { orderNumber: order.orderNumber, orderToken: order.publicToken },
-      { appUrl: new URL(process.env.APP_URL ?? "https://swiftmc.com.br") },
-    );
-
-    return Response.json(
-      { checkoutUrl: checkout.checkoutUrl, orderNumber: order.orderNumber },
-      { status: 200, headers: { "Cache-Control": "no-store" } },
-    );
-  } catch (error) {
-    if (error instanceof Error) {
-      if (error.name === "IdempotencyConflictError") {
-        return Response.json(
-          { error: "IDEMPOTENCY_CONFLICT" },
-          { status: 409, headers: { "Cache-Control": "no-store" } },
-        );
-      }
-      if (error.name === "StripeUnavailableError") {
-        return Response.json(
-          { error: "PROVIDER_UNAVAILABLE" },
-          { status: 503, headers: { "Cache-Control": "no-store" } },
-        );
-      }
-    }
-    return Response.json(
-      { error: "INTERNAL_ERROR" },
-      { status: 500, headers: { "Cache-Control": "no-store" } },
-    );
+  } catch (cause) {
+    if (cause instanceof Error && cause.name === "IdempotencyConflictError") return error("IDEMPOTENCY_CONFLICT", "Esta tentativa pertence a outra seleção.", 409);
+    if (cause instanceof Error && cause.name === "OrderNotPayableError") return error("ORDER_NOT_PAYABLE", "Pedido encerrado ou expirado. Consulte seus pedidos antes de iniciar outra compra.", 409);
+    return error("CHECKOUT_UNAVAILABLE", "Não foi possível abrir o pagamento. Tente novamente com a mesma seleção.", 503);
   }
 }

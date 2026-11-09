@@ -12,8 +12,10 @@ import {
 import type { StripeReconciliationClient } from "@/lib/payments/stripe";
 import { StripeUnavailableError } from "@/lib/payments/stripe";
 import { createFulfillmentForOrder } from "@/lib/fulfillment/fulfillment-service";
+import { isVipRank } from "@/lib/minecraft-bridge/vip";
+import { revokeVipEntitlementsForOrder, upsertVipEntitlementForPaidOrder } from "@/lib/minecraft-bridge/service";
 
-const STRIPE_ID_PATTERN = /^[A-Za-z0-9]{1,255}$/;
+const STRIPE_ID_PATTERN = /^[A-Za-z0-9_]{1,255}$/;
 const ORDER_NUMBER_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
 const WEBHOOK_SECRET_MIN_LENGTH = 8;
 const TIMESTAMP_TOLERANCE_SECONDS = 300;
@@ -44,7 +46,9 @@ export function parseStripeWebhookEvent(value: unknown): StripeWebhookEvent | nu
   if (typeof event.type !== "string" || event.type.length > 100) return null;
   if (!event.data || typeof event.data !== "object" || Array.isArray(event.data)) return null;
   const data = event.data as Record<string, unknown>;
-  if (!data.object || typeof data.object !== "object") return null;
+  if (!data.object || typeof data.object !== "object" || Array.isArray(data.object)) return null;
+  const object = data.object as Record<string, unknown>;
+  if (typeof object.id !== "string" || !STRIPE_ID_PATTERN.test(object.id)) return null;
   return { id: event.id, type: event.type, data: { object: data.object } };
 }
 
@@ -162,24 +166,8 @@ function extractOrderNumber(resource: unknown): string | null {
   return null;
 }
 
-function mapSubscriptionStatusToPayment(status: string): PaymentStatus {
-  switch (status) {
-    case "active":
-    case "trialing":
-      return PaymentStatus.APPROVED;
-    case "past_due":
-    case "unpaid":
-      return PaymentStatus.REJECTED;
-    case "canceled":
-    case "uncanceled":
-      return PaymentStatus.CANCELLED;
-    default:
-      return PaymentStatus.PENDING;
-  }
-}
-
 function nextOrderStatus(current: OrderStatus, payment: PaymentStatus): OrderStatus {
-  if (payment === PaymentStatus.REFUNDED && (current === OrderStatus.PAID || current === OrderStatus.FULFILLED)) {
+  if (payment === PaymentStatus.REFUNDED) {
     return OrderStatus.REFUNDED;
   }
   if (current === OrderStatus.FULFILLED) return current;
@@ -226,8 +214,28 @@ export async function reconcileStripeWebhook(
   metadata: StripeWebhookMetadata,
   now = new Date(),
 ): Promise<"processed" | "duplicate" | "ignored"> {
+  // Serialize redeliveries; all event/payment/order/fulfillment writes commit
+  // together. Unexpected failures roll back so Stripe can safely retry.
+  const result = await db.$transaction(async tx => {
+    await tx.$queryRaw`SELECT count(*)::int AS locked FROM (SELECT pg_advisory_xact_lock(hashtextextended(${event.id}, 0))) AS lock`;
+    try { return await reconcileInTransaction(tx as unknown as PrismaClient, stripe, event, now); }
+    catch (error) {
+      // Keep the retry marker on provider outages, but never partial payment writes.
+      if (error instanceof StripeUnavailableError) return "unavailable" as const;
+      throw error;
+    }
+  }, { timeout: 20000 });
+  if (result === "unavailable") throw new StripeUnavailableError();
+  return result;
+}
+
+async function reconcileInTransaction(
+  db: PrismaClient, stripe: StripeReconciliationClient, event: StripeWebhookEvent, now: Date,
+): Promise<"processed" | "duplicate" | "ignored"> {
   const key = await deduplicationKey(event.id);
-  try {
+  const previous = await db.paymentEvent.findUnique({ where: { deduplicationKey: key } });
+  if (previous && previous.status !== PaymentEventStatus.RETRY_PENDING) return "duplicate";
+  if (!previous) {
     await db.paymentEvent.create({
       data: {
         deduplicationKey: key,
@@ -242,28 +250,13 @@ export async function reconcileStripeWebhook(
         } as Prisma.InputJsonValue,
       },
     });
-  } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      const existing = await db.paymentEvent.findUnique({ where: { deduplicationKey: key } });
-      if (existing?.status !== PaymentEventStatus.RETRY_PENDING) return "duplicate";
-      const claimed = await db.paymentEvent.updateMany({
-        where: { id: existing!.id, status: PaymentEventStatus.RETRY_PENDING },
-        data: { status: PaymentEventStatus.PROCESSING },
-      });
-      if (claimed.count !== 1) return "duplicate";
-    } else {
-      throw error;
-    }
   }
 
   const acceptedTypes = new Set([
     "checkout.session.completed",
     "checkout.session.async_payment_succeeded",
     "checkout.session.async_payment_failed",
-    "invoice.paid",
-    "invoice.payment_failed",
-    "customer.subscription.updated",
-    "customer.subscription.deleted",
+    "checkout.session.expired",
     "charge.refunded",
   ]);
   if (!acceptedTypes.has(event.type)) {
@@ -282,6 +275,9 @@ export async function reconcileStripeWebhook(
   let paymentStatus: PaymentStatus;
   let remoteAmountCents: number | null = null;
   let remoteCurrency: string | null = null;
+  let sessionId: string | null = null;
+  let paymentId: string | null = null;
+  let paymentIntent: string | null = null;
 
   const resource = event.data.object as { id: string };
 
@@ -295,6 +291,13 @@ export async function reconcileStripeWebhook(
           return "ignored";
         }
         orderNumber = extractOrderNumber(session);
+        sessionId = session.id;
+        paymentId = session.metadata.paymentId ?? null;
+        paymentIntent = session.payment_intent;
+        if (session.id !== resource.id || session.client_reference_id !== orderNumber || session.amount_total === null || !Number.isSafeInteger(session.amount_total) || session.amount_total <= 0 || !session.currency) {
+          await recordPermanentMismatch(db, key, now, null, "INVALID_SESSION");
+          return "ignored";
+        }
         if (session.payment_status !== "paid") {
           await recordPermanentMismatch(db, key, now, null, "PAYMENT_NOT_PAID");
           return "ignored";
@@ -304,64 +307,25 @@ export async function reconcileStripeWebhook(
         remoteCurrency = session.currency ?? null;
         break;
       }
-      case "checkout.session.async_payment_failed": {
+      case "checkout.session.async_payment_failed":
+      case "checkout.session.expired": {
         const session = await stripe.getCheckoutSession(resource.id);
         if (!session) {
           await recordPermanentMismatch(db, key, now, null, "RESOURCE_NOT_FOUND");
           return "ignored";
         }
         orderNumber = extractOrderNumber(session);
-        paymentStatus = PaymentStatus.REJECTED;
+        sessionId = session.id;
+        paymentId = session.metadata.paymentId ?? null;
+        paymentIntent = session.payment_intent;
+        if (session.id !== resource.id || session.client_reference_id !== orderNumber || session.payment_status === "paid" ||
+            (event.type === "checkout.session.expired" && session.status !== "expired")) {
+          await recordPermanentMismatch(db, key, now, null, "INVALID_SESSION_STATE");
+          return "ignored";
+        }
+        paymentStatus = event.type === "checkout.session.expired" ? PaymentStatus.CANCELLED : PaymentStatus.REJECTED;
         remoteAmountCents = session.amount_total ?? null;
         remoteCurrency = session.currency ?? null;
-        break;
-      }
-      case "invoice.paid": {
-        const invoice = await stripe.getInvoice(resource.id);
-        if (!invoice) {
-          await recordPermanentMismatch(db, key, now, null, "RESOURCE_NOT_FOUND");
-          return "ignored";
-        }
-        orderNumber = extractOrderNumber(invoice);
-        paymentStatus = PaymentStatus.APPROVED;
-        remoteAmountCents = Math.round(invoice.amount_paid / 100) * 100;
-        remoteCurrency = invoice.currency ?? null;
-        break;
-      }
-      case "invoice.payment_failed": {
-        const invoice = await stripe.getInvoice(resource.id);
-        if (!invoice) {
-          await recordPermanentMismatch(db, key, now, null, "RESOURCE_NOT_FOUND");
-          return "ignored";
-        }
-        orderNumber = extractOrderNumber(invoice);
-        paymentStatus = PaymentStatus.REJECTED;
-        remoteAmountCents = Math.round(invoice.amount_paid / 100) * 100;
-        remoteCurrency = invoice.currency ?? null;
-        break;
-      }
-      case "customer.subscription.updated": {
-        const subscription = await stripe.getSubscription(resource.id);
-        if (!subscription) {
-          await recordPermanentMismatch(db, key, now, null, "RESOURCE_NOT_FOUND");
-          return "ignored";
-        }
-        orderNumber = extractOrderNumber(subscription);
-        paymentStatus = mapSubscriptionStatusToPayment(subscription.status);
-        remoteAmountCents = null;
-        remoteCurrency = null;
-        break;
-      }
-      case "customer.subscription.deleted": {
-        const subscription = await stripe.getSubscription(resource.id);
-        if (!subscription) {
-          await recordPermanentMismatch(db, key, now, null, "RESOURCE_NOT_FOUND");
-          return "ignored";
-        }
-        orderNumber = extractOrderNumber(subscription);
-        paymentStatus = PaymentStatus.CANCELLED;
-        remoteAmountCents = null;
-        remoteCurrency = null;
         break;
       }
       case "charge.refunded": {
@@ -371,8 +335,14 @@ export async function reconcileStripeWebhook(
           return "ignored";
         }
         orderNumber = extractOrderNumber(charge);
+        paymentId = charge.metadata.paymentId ?? null;
+        paymentIntent = charge.payment_intent;
+        if (charge.id !== resource.id || !charge.refunded || !Number.isSafeInteger(charge.amount) || charge.amount <= 0) {
+          await recordPermanentMismatch(db, key, now, null, "REFUND_REQUIRES_REVIEW");
+          return "ignored";
+        }
         paymentStatus = PaymentStatus.REFUNDED;
-        remoteAmountCents = Math.round(charge.amount / 100) * 100;
+        remoteAmountCents = charge.amount;
         remoteCurrency = charge.currency ?? null;
         break;
       }
@@ -407,16 +377,26 @@ export async function reconcileStripeWebhook(
     return "ignored";
   }
 
-  const payment = await db.payment.findFirst({
-    where: { order: { orderNumber } },
+  const paymentScope = sessionId
+    ? [{ providerOrderId: sessionId }, ...(paymentId ? [{ id: paymentId, providerOrderId: null }] : [])]
+    : [...(paymentId ? [{ id: paymentId }] : []), ...(paymentIntent ? [{ providerPaymentId: paymentIntent }] : [])];
+  let payment = await db.payment.findFirst({
+    where: { order: { orderNumber }, ...(paymentScope.length > 0 ? { OR: paymentScope } : {}) },
     include: { order: true },
   });
+  if (payment) {
+    await db.$queryRaw`SELECT id FROM "Order" WHERE id = ${payment.orderId} FOR UPDATE`;
+    payment = await db.payment.findUnique({ where: { id: payment.id }, include: { order: true } });
+  }
 
   let mismatch: string | null = null;
   if (!payment) mismatch = "PAYMENT_NOT_FOUND";
   else if (payment.provider !== PaymentProvider.STRIPE) mismatch = "WRONG_PROVIDER";
+  else if (paymentId && payment.id !== paymentId) mismatch = "PAYMENT_ID_MISMATCH";
+  else if (paymentIntent && payment.providerPaymentId && payment.providerPaymentId !== paymentIntent) mismatch = "PAYMENT_INTENT_MISMATCH";
+  else if (remoteAmountCents !== null && remoteAmountCents !== payment.order.totalCents) mismatch = "AMOUNT_MISMATCH";
   else if (remoteAmountCents !== null && payment.amountCents !== null && remoteAmountCents !== payment.amountCents) mismatch = "AMOUNT_MISMATCH";
-  else if (remoteCurrency !== null && payment.currency !== null && remoteCurrency !== payment.currency) mismatch = "CURRENCY_MISMATCH";
+  else if (remoteCurrency !== null && payment.currency !== null && remoteCurrency.toUpperCase() !== payment.currency.toUpperCase()) mismatch = "CURRENCY_MISMATCH";
 
   if (mismatch) {
     await recordPermanentMismatch(db, key, now, payment, mismatch);
@@ -424,79 +404,85 @@ export async function reconcileStripeWebhook(
   }
 
   const verifiedPayment = payment!;
-  const orderStatus = nextOrderStatus(verifiedPayment.order.status, paymentStatus);
+  const orderStatus = event.type === "checkout.session.expired" && verifiedPayment.order.status === OrderStatus.PENDING_PAYMENT
+    ? OrderStatus.EXPIRED : nextOrderStatus(verifiedPayment.order.status, paymentStatus);
+  if (verifiedPayment.order.status === OrderStatus.REFUNDED && paymentStatus !== PaymentStatus.REFUNDED) {
+    await db.paymentEvent.update({ where: { deduplicationKey: key }, data: { status: PaymentEventStatus.IGNORED, processedAt: now } });
+    return "ignored";
+  }
   const protectsApprovedPayment = verifiedPayment.status === PaymentStatus.APPROVED && (
     paymentStatus === PaymentStatus.PENDING ||
     paymentStatus === PaymentStatus.REJECTED ||
     paymentStatus === PaymentStatus.CANCELLED
   );
 
-  await db.$transaction(async (tx) => {
-    await tx.payment.update({
-      where: { id: verifiedPayment.id },
+  await db.payment.update({
+    where: { id: verifiedPayment.id },
+    data: {
+      status: protectsApprovedPayment ? PaymentStatus.APPROVED : paymentStatus,
+      providerStatus: event.type,
+      ...(sessionId ? { providerOrderId: sessionId } : {}),
+      ...(paymentIntent ? { providerPaymentId: paymentIntent } : {}),
+      providerStatusDetail: null,
+      amountCents: remoteAmountCents ?? verifiedPayment.amountCents,
+      currency: remoteCurrency?.toUpperCase() ?? verifiedPayment.currency,
+      approvedAt:
+        paymentStatus === PaymentStatus.APPROVED
+          ? verifiedPayment.approvedAt ?? now
+          : verifiedPayment.approvedAt,
+      lastSyncedAt: now,
+    },
+  });
+  let orderStatusChanged = false;
+  if (orderStatus !== verifiedPayment.order.status) {
+    await db.order.update({
+      where: { id: verifiedPayment.orderId },
       data: {
-        status: protectsApprovedPayment ? PaymentStatus.APPROVED : paymentStatus,
-        providerStatus: event.type,
-        providerStatusDetail: null,
-        amountCents: remoteAmountCents ?? verifiedPayment.amountCents,
-        currency: remoteCurrency ?? verifiedPayment.currency,
-        approvedAt:
-          paymentStatus === PaymentStatus.APPROVED
-            ? verifiedPayment.approvedAt ?? now
-            : verifiedPayment.approvedAt,
-        lastSyncedAt: now,
+        status: orderStatus,
+        paidAt:
+          orderStatus === OrderStatus.PAID
+            ? verifiedPayment.order.paidAt ?? now
+            : verifiedPayment.order.paidAt,
       },
     });
-    let orderStatusChanged = false;
-    if (orderStatus !== verifiedPayment.order.status) {
-      await tx.order.update({
-        where: { id: verifiedPayment.orderId },
-        data: {
-          status: orderStatus,
-          paidAt:
-            orderStatus === OrderStatus.PAID
-              ? verifiedPayment.order.paidAt ?? now
-              : verifiedPayment.order.paidAt,
-        },
-      });
-      orderStatusChanged = true;
-    }
+    orderStatusChanged = true;
+  }
 
-    // Create fulfillment record when order first becomes PAID.
-    if (orderStatusChanged && orderStatus === OrderStatus.PAID) {
-      const existingFulfillment = await tx.fulfillment.findUnique({
-        where: { orderId: verifiedPayment.orderId },
-      });
-      if (!existingFulfillment) {
-        const order = verifiedPayment.order;
-        const type: "rank" | "coins" =
-          order.rankSlug.startsWith("coins-") ? "coins" : "rank";
-        await createFulfillmentForOrder(
-          tx as unknown as PrismaClient,
-          {
-            id: order.id,
-            orderNumber: order.orderNumber,
-            rankSlug: order.rankSlug,
-            rankName: order.rankName,
-            minecraftUsername: order.minecraftUsername,
-            totalCents: order.totalCents,
-            currency: order.currency,
-          },
-          type,
-        );
+  // Create fulfillment + VIP entitlement/delivery when order first becomes PAID.
+  // Cash delivery is disabled. Verified VIP ranks always create a fulfillment record;
+  // bridge entitlement/delivery is created only when the order is linked to a website user.
+  if (orderStatusChanged && orderStatus === OrderStatus.PAID) {
+    const order = verifiedPayment.order;
+    if (isVipRank(order.rankSlug)) {
+      let fulfillment = await db.fulfillment.findUnique({ where: { orderId: verifiedPayment.orderId } });
+      if (!fulfillment) {
+        const created = await createFulfillmentForOrder(db as unknown as PrismaClient, {
+          id: order.id, orderNumber: order.orderNumber, rankSlug: order.rankSlug, rankName: order.rankName,
+          minecraftUsername: order.minecraftUsername, totalCents: order.totalCents, currency: order.currency,
+        }, "rank");
+        fulfillment = created.fulfillment;
+      }
+      if (order.userId) {
+        await upsertVipEntitlementForPaidOrder(db as unknown as PrismaClient, {
+          id: order.id, userId: order.userId, orderNumber: order.orderNumber, rankSlug: order.rankSlug,
+          rankName: order.rankName, minecraftUsername: order.minecraftUsername, totalCents: order.totalCents, currency: order.currency,
+        }, fulfillment.id, now);
       }
     }
+  }
 
-    await tx.paymentEvent.update({
-      where: { deduplicationKey: key },
-      data: {
-        status: PaymentEventStatus.PROCESSED,
-        processedAt: now,
-        attemptCount: { increment: 1 },
-        lastErrorCode: null,
-      },
-    });
+  if (orderStatusChanged && orderStatus === OrderStatus.REFUNDED) {
+    await revokeVipEntitlementsForOrder(db as unknown as PrismaClient, verifiedPayment.orderId, "REFUNDED", now);
+  }
+
+  await db.paymentEvent.update({
+    where: { deduplicationKey: key },
+    data: {
+      status: PaymentEventStatus.PROCESSED,
+      processedAt: now,
+      attemptCount: { increment: 1 },
+      lastErrorCode: null,
+    },
   });
-
   return "processed";
 }

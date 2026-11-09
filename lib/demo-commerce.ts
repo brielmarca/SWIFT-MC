@@ -1,11 +1,21 @@
 import "server-only";
+import { purchasesEnabled } from "@/lib/purchase-gate";
 
-// Deliberately unconditional: credentials or environment flags cannot enable payments.
+// Legacy name kept for route compatibility. Purchases are blocked unless
+// PURCHASES_ENABLED=true, which must only be set after staging validation.
 export function demoCommerceBlocked(request?: Request) {
-  // Do not read the body, credentials, or database configuration.
   void request;
+  if (!purchasesEnabled()) {
+    return Response.json(
+      {
+        error: "PURCHASES_DISABLED",
+        message: "Compras indisponíveis até a validação final de pagamento e entrega em homologação.",
+      },
+      { status: 503, headers: { "Cache-Control": "no-store" } },
+    );
+  }
   return Response.json(
-    { error: "DEMO_ONLY", message: "Pedidos e pagamentos reais estão desativados." },
+    { error: "PURCHASES_DISABLED", message: "Compras ainda não estão liberadas neste ambiente." },
     { status: 503, headers: { "Cache-Control": "no-store" } },
   );
 }

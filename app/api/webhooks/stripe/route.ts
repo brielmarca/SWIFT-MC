@@ -1,5 +1,6 @@
 import { getStripeWebhookConfig } from "@/lib/server-env";
-import { getPrisma } from "@/lib/prisma";
+import { getWorkersEnv } from "@/lib/auth-api/get-env";
+import { withAuthPrisma } from "@/lib/auth-infrastructure/prisma";
 import { createStripeClient } from "@/lib/payments/stripe";
 import {
   parseStripeWebhookEvent,
@@ -71,19 +72,30 @@ export async function POST(request: Request): Promise<Response> {
 
   metadata.eventId = event.id;
 
-  const db = getPrisma();
+  // The Worker runtime has no DATABASE_URL; the database is reached only
+  // through the Hyperdrive binding. Fail closed before any side effect.
+  const env = await getWorkersEnv();
+  if (!env.AUTH_HYPERDRIVE) {
+    return Response.json(
+      { error: "WEBHOOK_DATABASE_UNAVAILABLE" },
+      { status: 503, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+
   const stripe = createStripeClient(config.secretKey, fetch);
 
   try {
-    const result = await reconcileStripeWebhook(db, stripe, event, metadata);
-    const body: Record<string, boolean> = { received: true };
-    if (result === "duplicate") body.duplicate = true;
-    if (result === "ignored") body.ignored = true;
-    if (result === "processed") body.processed = true;
-    return Response.json(
-      body,
-      { status: 200, headers: { "Cache-Control": "no-store" } },
-    );
+    return await withAuthPrisma(env, async (db) => {
+      const result = await reconcileStripeWebhook(db, stripe, event, metadata);
+      const body: Record<string, boolean> = { received: true };
+      if (result === "duplicate") body.duplicate = true;
+      if (result === "ignored") body.ignored = true;
+      if (result === "processed") body.processed = true;
+      return Response.json(
+        body,
+        { status: 200, headers: { "Cache-Control": "no-store" } },
+      );
+    });
   } catch (error) {
     if (error instanceof Error && error.name === "StripeUnavailableError") {
       return Response.json(
@@ -91,6 +103,7 @@ export async function POST(request: Request): Promise<Response> {
         { status: 503, headers: { "Cache-Control": "no-store" } },
       );
     }
+    console.error("stripe-webhook-failure", error);
     return Response.json(
       { error: "INTERNAL_ERROR" },
       { status: 500, headers: { "Cache-Control": "no-store" } },

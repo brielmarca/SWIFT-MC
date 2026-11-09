@@ -1,21 +1,38 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { headers } from "next/headers";
+import { notFound } from "next/navigation";
 import { Footer } from "@/components/footer";
-import { SiteHeader } from "@/components/site-header";
+import { AuthHeader } from "@/components/auth-header";
+import { CheckoutReturn } from "@/components/checkout-return";
+import { requireAuthPage } from "@/lib/auth/page-guard";
 
-export const metadata: Metadata = { title: "Pagamentos pausados | SWIFT MC" };
+export const metadata: Metadata = { title: "Status do pagamento | Swift MC", robots: { index: false, follow: false } };
 
-export default function CheckoutReturnPage() {
+export const dynamic = "force-dynamic";
+
+const ORDER_NUMBER_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
+
+export default async function CheckoutReturnPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ result: string }>;
+  searchParams: Promise<{ order?: string | string[] }>;
+}) {
+  const { result } = await params;
+  if (result !== "success" && result !== "cancel") notFound();
+
+  const cookieHeader = (await headers()).get("cookie");
+  await requireAuthPage(cookieHeader, `/checkout/return/${result}`);
+
+  const order = (await searchParams).order;
+  const orderNumber = typeof order === "string" && ORDER_NUMBER_PATTERN.test(order) ? order : null;
+
   return (
     <>
-      <SiteHeader />
+      <AuthHeader />
       <main id="main-content" className="site-container min-h-[75vh] py-20">
-        <section className="glass-panel mx-auto max-w-3xl p-8 text-center sm:p-12">
-          <p className="eyebrow">Loja SWIFT MC</p>
-          <h1 className="mt-4 text-3xl font-extrabold uppercase text-ink">Pagamentos pausados</h1>
-          <p className="mt-4 text-sm leading-6 text-muted">Você pode explorar os ranks e salvar sua seleção no carrinho. Esta página não consulta nem confirma pagamentos ou ativação de ranks.</p>
-          <Link href="/store" className="button-primary mt-8">Voltar para a loja</Link>
-        </section>
+        <CheckoutReturn result={result} orderNumber={orderNumber} />
       </main>
       <Footer />
     </>
