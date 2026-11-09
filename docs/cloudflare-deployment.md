@@ -38,6 +38,20 @@ git diff --check
 - `dev:vinext` runs Vite/Workers development on port 3001.
 - `deploy:vinext` runs `vinext-cloudflare deploy`, which builds and deploys the entry Worker using this configuration. It requires Cloudflare authentication and the correct account. Running the audit/build commands does not deploy anything.
 
+### Isolated staging deployment
+
+Deploy the same release candidate to a separate staging Worker instead of `swift-mc`:
+
+```sh
+CF_WORKER_NAME=swift-mc-staging npm run build:vinext
+npx cf deploy --prebuilt --mode production --worker swift-mc-staging
+```
+
+- `CF_WORKER_NAME` changes only the Worker name recorded in Build Output; bindings, assets, routes and the production domain are unaffected. Names that are not valid Cloudflare Worker names fall back to `swift-mc`, so a stray variable cannot rename the production Worker.
+- Reach staging only through its own hostname (for example `swift-mc-staging.<account>.workers.dev`). Never attach the production domain, custom domain or zone route to the staging Worker.
+- Staging runs with no runtime secrets and no Hyperdrive binding unless they are provisioned for staging. Email delivery, database-backed authentication and Bridge calls then fail gracefully; public pages render without a database.
+- `PURCHASES_ENABLED` must stay unset/false in every environment until payment-to-Minecraft delivery is validated separately.
+
 Generated `.cloudflare/`, `.vinext/`, `.next/`, `.wrangler/`, `dist/`, `out/`, and `node_modules/` are ignored. Do not commit them. `.env*` and `.dev.vars*` are ignored, except the placeholder-only `.env.example`.
 
 ## Environment reference

@@ -34,6 +34,21 @@ test("Workers config emits allowlisted variables and secret declarations, never 
   }
 });
 
+test("CF_WORKER_NAME overrides the Worker name only for valid isolated names", () => {
+  const saved = process.env.CF_WORKER_NAME;
+  try {
+    process.env.CF_WORKER_NAME = "swift-mc-staging";
+    assert.equal(config({ mode: "production", isPreview: false }).worker.name, "swift-mc-staging");
+    process.env.CF_WORKER_NAME = "Invalid Name!";
+    assert.equal(config({ mode: "production", isPreview: false }).worker.name, "swift-mc");
+    delete process.env.CF_WORKER_NAME;
+    assert.equal(config({ mode: "production", isPreview: false }).worker.name, "swift-mc");
+  } finally {
+    if (saved === undefined) delete process.env.CF_WORKER_NAME;
+    else process.env.CF_WORKER_NAME = saved;
+  }
+});
+
 test("internal job secret is declared and fulfillment bindings stay optional", () => {
   const saved = process.env.MINECRAFT_FULFILLMENT_URL;
   try {

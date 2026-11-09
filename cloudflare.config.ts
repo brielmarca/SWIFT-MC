@@ -13,6 +13,14 @@ export default defineConfig(({ mode }) => {
   const dataApiUrl = env.MINECRAFT_DATA_API_URL?.trim() || "";
   const fulfillmentUrl = env.MINECRAFT_FULFILLMENT_URL?.trim() || "";
   const stagingDiagnostics = mode === "auth-staging";
+  // Isolated staging deployments may override the Worker name (e.g.
+  // CF_WORKER_NAME=swift-mc-staging). Only valid Cloudflare Worker names are
+  // accepted; anything else falls back to the default so a stray build
+  // environment variable cannot silently rename the production Worker.
+  const nameOverride = process.env.CF_WORKER_NAME?.trim() || "";
+  const workerName = /^[a-z0-9][a-z0-9-]{0,62}$/.test(nameOverride)
+    ? nameOverride
+    : stagingDiagnostics ? "swift-mc-auth-staging" : "swift-mc";
   if (existsSync("app/auth-infrastructure-probe") && !stagingDiagnostics) {
     throw new Error("Remove staging diagnostic routes before a normal Worker build");
   }
@@ -21,7 +29,7 @@ export default defineConfig(({ mode }) => {
   }
   return {
     worker: defineWorker({
-      name: stagingDiagnostics ? "swift-mc-auth-staging" : "swift-mc",
+      name: workerName,
       entrypoint: "vinext/server/fetch-handler",
       compatibilityDate: "2026-10-07",
       compatibilityFlags: ["nodejs_compat"],
