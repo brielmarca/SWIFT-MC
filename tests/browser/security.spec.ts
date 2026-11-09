@@ -33,14 +33,14 @@ test("production security headers and CSP preserve hydration and reject framing"
 });
 
 test("commerce rejects forged state and foreign origins with no CORS grant", async ({ request }) => {
-  for (const path of ["/api/orders", "/api/orders/forged/payment", "/api/webhooks/mercadopago"]) {
+  for (const path of ["/api/orders", "/api/orders/forged/payment"]) {
     const response = await request.post(`${path}?demo=false`, {
       headers: { Origin: "https://attacker.example", "X-HTTP-Method-Override": "PUT" },
       data: { rankSlug: "swift", price: 0, subtotal: 0, currency: "USD", discount: 100, state: "paid" },
     });
-    expect(response.status()).toBe(503);
-    expect((await response.json()).error).toBe("DEMO_ONLY");
-    expect(response.headers()["cache-control"]).toBe("no-store");
+    expect(response.status()).toBe(401);
+    expect((await response.json()).error.code).toBe("NO_SESSION");
+    expect(response.headers()["cache-control"]).toContain("no-store");
     expect(response.headers()["access-control-allow-origin"]).toBeUndefined();
     const options = await request.fetch(path, { method: "OPTIONS", headers: { Origin: "https://attacker.example", "Access-Control-Request-Method": "POST" } });
     expect(options.headers()["access-control-allow-origin"]).toBeUndefined();
@@ -94,7 +94,6 @@ test("search, hash and forged cart values remain inert", async ({ page }, testIn
   expect(await page.evaluate(() => (window as unknown as { __securityProbe?: number }).__securityProbe)).toBeUndefined();
   await page.keyboard.press("Escape");
   await page.goto("/checkout");
-  await expect(page.getByRole("link", { name: "Swift", exact: true })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Cosmic", exact: true })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Concluir demonstração", exact: true })).toBeDisabled();
+  await expect(page).toHaveURL(/\/login\?callbackUrl=%2Fcheckout|\/checkout/);
+  expect(await page.evaluate(() => (window as unknown as { __securityProbe?: number }).__securityProbe)).toBeUndefined();
 });

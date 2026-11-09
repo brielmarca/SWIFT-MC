@@ -53,18 +53,15 @@ test("filtered section links, hash history and keyboard tabs", async ({ page }) 
 for (const [route, section, subtopic] of [
   // JOGAR
   ["/play", "Jogar", "Como jogar"],
-  ["/status", "Jogar", "Status"],
-  ["/online", "Jogar", "Online"],
-  ["/leaderboards", "Jogar", "Ranking"],
+  ["/status", "Jogar", "Status e conexão"],
+  ["/online", "Jogar", "Status e conexão"],
   // LOJA
   ["/store", "Loja", "VIPs"],
   ["/ranks/swift", "Loja", "VIPs"],
   // COMUNIDADE
-  ["/community", "Comunidade", "Visão geral"],
   ["/news", "Comunidade", "Notícias"],
   ["/news/temporada-4-sobrevivencia", "Comunidade", "Notícias"],
-  ["/events", "Comunidade", "Eventos"],
-  ["/player", "Comunidade", "Jogadores"],
+  ["/lore", "Comunidade", "Lore"],
   // RECURSOS
   ["/wiki", "Recursos", "Wiki"],
   ["/wiki/como-entrar-no-servidor", "Recursos", "Wiki"],
