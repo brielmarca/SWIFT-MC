@@ -1,7 +1,8 @@
 import "server-only";
 import {
   AuthUser, AuthIdentity, PasswordCredential, AuthSession, AuthBrowserContext,
-  OAuthTransaction, EmailChallenge, AuthAuditRecord, AuthProvider, OAuthIntent, EmailChallengePurpose,
+  OAuthTransaction, EmailChallenge, AuthAuditRecord, AuthProvider, AuthRole, AuthStatus,
+  OAuthIntent, EmailChallengePurpose,
 } from "./types";
 
 /**
@@ -20,7 +21,7 @@ import {
 export type {
   AuthUser, AuthIdentity, PasswordCredential, AuthSession, AuthBrowserContext,
   OAuthTransaction, EmailChallenge, MinecraftIdentity, AuthAuditRecord,
-  AuthProvider, OAuthIntent, EmailChallengePurpose,
+  AuthProvider, AuthRole, AuthStatus, OAuthIntent, EmailChallengePurpose,
 } from "./types";
 
 export interface UserRepository {
@@ -29,11 +30,28 @@ export interface UserRepository {
   /** Read the canonical user by normalized email. */
   findByNormalizedEmail(emailNormalized: string): Promise<AuthUser | null>;
   /**
+   * Create a new user. Server-controlled fields only: role, status, authVersion.
+   */
+  createUser(params: {
+    emailNormalized: string | null;
+    displayName: string;
+    role: AuthRole;
+    status: AuthStatus;
+    authVersion: number;
+    emailVerifiedAt: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
+  }): Promise<AuthUser>;
+  /**
    * Security-version mutation contract.
    * Atomically bumps authVersion only when the current value equals expectedAuthVersion.
-   * Returns true when the bump was applied, false when a concurrent change occurred.
+   * Returns false when a concurrent change occurred (zero rows matched).
    */
   bumpAuthVersion(userId: string, expectedAuthVersion: number): Promise<boolean>;
+  /**
+   * Updates a user's emailVerifiedAt timestamp after successful verification.
+   */
+  updateEmailVerifiedAt(userId: string, emailVerifiedAt: Date): Promise<void>;
 }
 
 export interface IdentityRepository {
@@ -43,13 +61,40 @@ export interface IdentityRepository {
   findByUserAndProvider(userId: string, provider: AuthProvider): Promise<AuthIdentity | null>;
   /** Resolve the owning user for an identity id. */
   resolveOwner(identityId: string): Promise<{ userId: string; user: AuthUser } | null>;
+  /** Create a new provider identity. */
+  createIdentity(params: {
+    userId: string;
+    provider: AuthProvider;
+    providerSubject: string;
+    createdAt: Date;
+  }): Promise<AuthIdentity>;
+}
+
+export interface LoginAttemptRepository {
+  /** Atomically enforce lockout and record verification against the same hash.
+   * Five consecutive failures lock the credential for 15 minutes. Attempts
+   * during lockout cannot clear or extend it; expiry/success resets the count.
+   * Returns true only for a valid, unlocked, unchanged credential.
+   */
+  recordLoginAttempt(identityId: string, expectedPasswordHash: string, passwordOk: boolean): Promise<boolean>;
 }
 
 export interface PasswordCredentialRepository {
   /** Find the password credential for an EMAIL_PASSWORD identity. */
   findByIdentity(identityId: string): Promise<PasswordCredential | null>;
-  /** Replace the stored password hash (called on password change/reset/enroll). */
-  replacePasswordHash(identityId: string, passwordHash: string): Promise<void>;
+  /** Create a new password credential (hash only, never plaintext). */
+  createPasswordHash(identityId: string, passwordHash: string): Promise<void>;
+  /**
+   * Replaces the stored password hash only when it still equals
+   * expectedPasswordHash: a single conditional UPDATE whose WHERE clause carries
+   * the previously verified credential state. Returns false when the stored
+   * credential changed concurrently (zero rows matched), so a request verified
+   * against a stale hash fails without modifying the newer credential. This is
+   * the only credential-replacement primitive; password change/reset must run it
+   * inside the caller's transaction together with the authVersion increment and
+   * session revocation.
+   */
+  replacePasswordHashIfUnchanged(identityId: string, expectedPasswordHash: string, passwordHash: string): Promise<boolean>;
 }
 
 export interface SessionRepository {

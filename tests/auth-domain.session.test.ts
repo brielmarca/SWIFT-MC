@@ -7,6 +7,7 @@ import {
 } from "@/lib/auth-domain/session-service";
 import {
   type SessionRepository, type UserRepository, type AuthUser, type AuthSession,
+  type AuthRole, type AuthStatus,
 } from "@/lib/auth-domain/repositories";
 import { Clock } from "@/lib/auth-domain/clock";
 
@@ -57,7 +58,22 @@ class FakeUserRepository implements UserRepository {
   users = new Map<string, AuthUser>();
   async findById(userId: string): Promise<AuthUser | null> { return this.users.get(userId) ?? null; }
   async findByNormalizedEmail(): Promise<AuthUser | null> { return null; }
+  async createUser(params: {
+    emailNormalized: string | null;
+    displayName: string;
+    role: AuthRole;
+    status: AuthStatus;
+    authVersion: number;
+    createdAt: Date;
+    updatedAt: Date;
+  }): Promise<AuthUser> {
+    const id = `user_${this.users.size + 1}`;
+    const user: AuthUser = { id, ...params, emailVerifiedAt: null };
+    this.users.set(id, user);
+    return user;
+  }
   async bumpAuthVersion(): Promise<boolean> { return true; }
+  async updateEmailVerifiedAt(): Promise<void> {}
   add(user: AuthUser) { this.users.set(user.id, user); }
 }
 

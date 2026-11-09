@@ -20,7 +20,10 @@ test("audit event catalog contains canonical events", () => {
   assert.equal(AUTH_AUDIT_EVENTS.OAUTH_FAILED, "OAUTH_FAILED");
   assert.equal(AUTH_AUDIT_EVENTS.IDENTITY_LINKED, "IDENTITY_LINKED");
   assert.equal(AUTH_AUDIT_EVENTS.IDENTITY_UNLINKED, "IDENTITY_UNLINKED");
-  assert.equal(Object.keys(AUTH_AUDIT_EVENTS).length, 13);
+  assert.equal(AUTH_AUDIT_EVENTS.REGISTRATION_REQUESTED, "REGISTRATION_REQUESTED");
+  assert.equal(AUTH_AUDIT_EVENTS.REGISTRATION_COMPLETED, "REGISTRATION_COMPLETED");
+  assert.equal(AUTH_AUDIT_EVENTS.EMAIL_VERIFIED, "EMAIL_VERIFIED");
+  assert.equal(Object.keys(AUTH_AUDIT_EVENTS).length, 16);
 });
 
 test("audit outcomes are success/failure/rate_limited", () => {

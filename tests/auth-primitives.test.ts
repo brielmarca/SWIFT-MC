@@ -62,7 +62,7 @@ test("all auth routes require authentication (no real auth creation)", async () 
     method: "POST",
     headers: { cookie: "" },
   }));
-  assert.equal(webhookResponse.status, 503);
   const body = await webhookResponse.json();
-  assert.equal(body.error, "DEMO_ONLY");
+  assert.equal(webhookResponse.status, 503);
+  assert.equal(body.error.code, "PURCHASES_DISABLED");
 });

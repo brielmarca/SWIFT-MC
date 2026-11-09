@@ -1,12 +1,20 @@
 "use client";
 
-import { ChevronDown, Menu, Search, ShoppingBag, X } from "lucide-react";
+import { ChevronDown, Menu, Search, ShoppingBag, User, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useId, useRef, useState } from "react";
 import { getNavigationGroup, isNavigationItemActive, navigationGroups, type NavigationItem } from "@/lib/navigation";
 import { useCart } from "./cart-provider";
 import { Logo } from "./logo";
 import { SiteSearchDialog, useSiteSearchHotkeys } from "./site-search";
+import { LogoutButton } from "./auth/logout-button";
+
+export type AuthUser = {
+  id: string;
+  emailNormalized: string | null;
+  displayName: string;
+  role: string;
+};
 
 function ContextualNav({ pathname }: { pathname: string }) {
   const group = getNavigationGroup(pathname);
@@ -36,11 +44,13 @@ function MobileNav({
   onClose,
   pathname,
   openSearch,
+  authUser,
 }: {
   isOpen: boolean;
   onClose: () => void;
   pathname: string;
   openSearch: () => void;
+  authUser?: AuthUser;
 }) {
   if (!isOpen) return null;
 
@@ -60,6 +70,7 @@ function MobileNav({
           <MobileNavGroup label={group.label} items={group.items} pathname={pathname} onClose={onClose} />
         </div>
       ))}
+      {authUser && <div className="border-t border-white/[0.06] pt-3 sm:hidden"><LogoutButton /></div>}
     </nav>
   );
 }
@@ -112,7 +123,35 @@ function MobileNavGroup({
   );
 }
 
-export function SiteHeader() {
+function AuthActions({ authUser }: { authUser?: AuthUser }) {
+  if (authUser) {
+    return (
+      <div className="flex items-center gap-2">
+        <a
+          href="/account"
+          className="icon-button"
+          aria-label={`Conta: ${authUser.displayName}`}
+        >
+          <User size={18} aria-hidden="true" />
+        </a>
+        <div className="hidden sm:block"><LogoutButton compact /></div>
+      </div>
+    );
+  }
+
+  return (
+    <a
+      href="/login"
+      className="flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-sm font-semibold transition-colors hover:bg-white/5 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet"
+      aria-label="Entrar na conta"
+    >
+      <User size={18} aria-hidden="true" />
+      <span className="hidden sm:inline">Entrar</span>
+    </a>
+  );
+}
+
+export function SiteHeader({ authUser }: { authUser?: AuthUser } = {}) {
   const [open, setOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const { itemCount, openCart, isOpen: cartOpen } = useCart();
@@ -173,6 +212,7 @@ export function SiteHeader() {
             <span className="hidden sm:inline">Carrinho</span>
             {itemCount > 0 && <span className="cart-count" aria-hidden="true">{itemCount}</span>}
           </button>
+          <AuthActions authUser={authUser} />
           <button
             type="button"
             onClick={() => setOpen((value) => !value)}
@@ -188,7 +228,7 @@ export function SiteHeader() {
       </div>
 
       <ContextualNav pathname={pathname} />
-      <MobileNav isOpen={open} onClose={() => setOpen(false)} pathname={pathname} openSearch={openSearch} />
+      <MobileNav isOpen={open} onClose={() => setOpen(false)} pathname={pathname} openSearch={openSearch} authUser={authUser} />
 
       {searchOpen && <SiteSearchDialog onClose={() => setSearchOpen(false)} />}
     </header>

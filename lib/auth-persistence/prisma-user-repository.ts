@@ -1,6 +1,6 @@
 import "server-only";
 import { PrismaClient } from "@prisma/client";
-import { UserRepository, type AuthUser } from "@/lib/auth-domain/repositories";
+import { UserRepository, type AuthUser, type AuthRole, type AuthStatus } from "@/lib/auth-domain/repositories";
 import { mapUser } from "./mappers";
 
 export class PrismaUserRepository implements UserRepository {
@@ -16,6 +16,31 @@ export class PrismaUserRepository implements UserRepository {
     return record ? mapUser(record) : null;
   }
 
+  async createUser(params: {
+    emailNormalized: string | null;
+    displayName: string;
+    role: AuthRole;
+    status: AuthStatus;
+    authVersion: number;
+    emailVerifiedAt: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
+  }): Promise<AuthUser> {
+    const record = await this.prisma.user.create({
+      data: {
+        emailNormalized: params.emailNormalized,
+        displayName: params.displayName,
+        role: params.role,
+        status: params.status,
+        authVersion: params.authVersion,
+        emailVerifiedAt: params.emailVerifiedAt,
+        createdAt: params.createdAt,
+        updatedAt: params.updatedAt,
+      },
+    });
+    return mapUser(record);
+  }
+
   /**
    * Atomically bumps authVersion only when the current value equals expected.
    * Equivalent to: UPDATE ... WHERE id = ? AND authVersion = ? SET authVersion = authVersion + 1
@@ -27,5 +52,12 @@ export class PrismaUserRepository implements UserRepository {
       data: { authVersion: { increment: 1 } },
     });
     return result.count === 1;
+  }
+
+  async updateEmailVerifiedAt(userId: string, emailVerifiedAt: Date): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { emailVerifiedAt },
+    });
   }
 }

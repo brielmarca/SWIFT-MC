@@ -6,18 +6,18 @@ import "./auth.css";
 export function AuthShell({ children }: { children: ReactNode }) {
   return (
     <main id="main-content" className="auth-shell">
-      <section className="auth-brand" aria-label="SwiftMC">
+      <section className="auth-brand" aria-label="Swift MC">
         <div className="auth-wordmark"><Image src="/brand/emblem.png" alt="" width={48} height={48} />SWIFT <span>MC</span></div>
         <div className="auth-brand-content">
           <Image className="auth-artwork" src="/brand/emblem.png" alt="" width={440} height={440} priority />
           <p className="auth-eyebrow">SEU PRÓXIMO CAPÍTULO</p>
           <h2>Sua jornada<br />continua aqui.</h2>
-          <p>Entre na sua conta e continue sua experiência no SwiftMC.</p>
+          <p>Entre na sua conta e continue sua experiência na Swift MC.</p>
         </div>
         <span className="auth-brand-signature" aria-hidden="true">SWIFTMC / PLAY YOUR WAY</span>
       </section>
       <section className="auth-panel" aria-label="Acesso à conta">
-        <Link className="auth-back" href="/">← Voltar ao SwiftMC</Link>
+        <Link className="auth-back" href="/">← Voltar à Swift MC</Link>
         <div className="auth-panel-content">{children}</div>
         <p className="auth-preview">Experiência em preparação · Acesso ainda indisponível</p>
       </section>

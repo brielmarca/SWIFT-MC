@@ -28,4 +28,21 @@ export class PrismaIdentityRepository implements IdentityRepository {
     if (!record || !record.user) return null;
     return { userId: record.userId, user: mapUser(record.user) };
   }
+
+  async createIdentity(params: {
+    userId: string;
+    provider: AuthIdentity["provider"];
+    providerSubject: string;
+    createdAt: Date;
+  }): Promise<AuthIdentity> {
+    const record = await this.prisma.authIdentity.create({
+      data: {
+        userId: params.userId,
+        provider: params.provider,
+        providerSubject: params.providerSubject,
+        createdAt: params.createdAt,
+      },
+    });
+    return mapAuthIdentity(record);
+  }
 }

@@ -1,19 +1,39 @@
 import { expect, test } from "@playwright/test";
 
+const resetToken = "A".repeat(43);
+const email = "ui-only@example.test";
+const password = "UI-only password 123!";
 const routes = [
-  { path: "/login", title: "Bem-vindo de volta", action: "Entrar" },
-  { path: "/register", title: "Entre para o SwiftMC", action: "Criar conta" },
-  { path: "/forgot-password", title: "Recupere sua conta", action: "Enviar instruções" },
-  { path: "/reset-password", title: "Defina uma nova senha", action: "Redefinir senha" },
+  { path: "/login", title: "Bem-vindo de volta", action: "Entrar", endpoint: "/api/login", body: { email, password } },
+  { path: "/register", title: "Entre para o Swift MC", action: "Criar conta", endpoint: "/api/register", body: { email } },
+  { path: "/forgot-password", title: "Recupere sua conta", action: "Enviar instruções", endpoint: "/api/password-reset/request", body: { email } },
+  { path: "/reset-password", title: "Defina uma nova senha", action: "Redefinir senha", endpoint: "/api/password-reset/complete", body: { email, newPassword: password, challengeToken: resetToken } },
 ];
 
+test("login honors safe callbacks and rejects external or encoded redirects", async ({ page }) => {
+  await page.route("**/api/login", route => route.fulfill({ json: { ok: true } }));
+  for (const [callback, destination] of [
+    ["/rules", "/rules"],
+    ["https://attacker.example", "/"],
+    ["//attacker.example", "/"],
+    ["/%2f%2fattacker.example", "/"],
+    ["/\\attacker.example", "/"],
+  ]) {
+    await page.goto(`/login?callbackUrl=${encodeURIComponent(callback)}`);
+    await page.getByLabel("Email", { exact: true }).fill(email);
+    await page.getByLabel("Senha", { exact: true }).fill(password);
+    await page.getByRole("button", { name: "Entrar", exact: true }).click();
+    await expect(page).toHaveURL(destination);
+  }
+});
+
 for (const route of routes) {
-  test(`${route.path}: isolated responsive UI and fail-closed submission`, async ({ page, context }, testInfo) => {
-    const requests: string[] = [];
-    page.on("request", (request) => {
-      if (request.url().includes("/api/") || request.method() === "POST" || request.url().includes("discord.com")) requests.push(request.url());
+  test(`${route.path}: isolated responsive UI and API submission`, async ({ page }, testInfo) => {
+    await page.route(`**${route.endpoint}`, async (intercept) => {
+      await intercept.fulfill({ status: 429, json: { error: { code: "RATE_LIMITED", message: "Tente novamente mais tarde." } } });
     });
-    await page.goto(route.path);
+    const url = route.path === "/reset-password" ? `${route.path}?token=${resetToken}` : route.path;
+    await page.goto(url);
     await expect(page.getByRole("heading", { name: route.title, exact: true })).toBeVisible();
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
     await expect(page.getByRole("navigation")).toHaveCount(0);
@@ -21,26 +41,30 @@ for (const route of routes) {
     await expect(page.getByRole("button", { name: /carrinho/i })).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     if (testInfo.project.name === "desktop") {
-      const brand = await page.getByRole("region", { name: "SwiftMC", exact: true }).boundingBox();
+      const brand = await page.getByRole("region", { name: "Swift MC", exact: true }).boundingBox();
       expect(brand!.width / 1440).toBeCloseTo(.57, 2);
     }
-    for (const control of await page.locator("input, button, a").all()) {
+    for (const control of await page.getByRole("main").locator("input, button, a").all()) {
       expect((await control.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     }
     const submit = page.getByRole("button", { name: route.action, exact: true });
     await expect(submit).toBeEnabled();
     await submit.click();
     await expect(page.locator('[aria-invalid="true"]').first()).toBeFocused();
-    if (route.path !== "/reset-password") await page.getByLabel("Email", { exact: true }).fill("ui-only@example.test");
-    for (const input of await page.locator('input[autocomplete$="password"]').all()) await input.fill("UI-only password 123!");
+    await page.getByLabel("Email", { exact: true }).fill(email);
+    for (const input of await page.locator('input[autocomplete$="password"]').all()) await input.fill(password);
+    const requestPromise = page.waitForRequest(request => new URL(request.url()).pathname === route.endpoint && request.method() === "POST");
     await submit.click();
-    await expect(page.getByRole("form").getByRole("alert")).toHaveText("Autenticação ainda não disponível.");
-    await expect(submit).toBeDisabled();
-    await expect(page).toHaveURL(route.path);
-    for (const input of await page.locator("input").all()) await expect(input).toHaveValue("");
+    const submitted = await requestPromise;
+    expect(submitted.postDataJSON()).toEqual(route.body);
+    const csrf = (await page.context().cookies()).find(cookie => cookie.name === "__Host-swiftmc_csrf");
+    expect(csrf).toMatchObject({ secure: true, httpOnly: false, sameSite: "Lax", path: "/" });
+    expect(submitted.headers()["x-csrf-token"]).toBe(csrf!.value);
+    await expect(page.getByRole("form").getByRole("alert")).toHaveText("Tente novamente mais tarde.");
+    await expect(page.getByLabel("Email", { exact: true })).toHaveValue(email);
+    await expect(submit).toBeEnabled();
+    await expect(page).toHaveURL(url);
     expect(await page.evaluate(() => ({ local: { ...localStorage }, session: { ...sessionStorage } }))).toEqual({ local: {}, session: {} });
-    expect(await context.cookies()).toEqual([]);
-    expect(requests).toEqual([]);
     await page.reload();
     await expect(page.getByRole("form").getByRole("alert")).toHaveCount(0);
     for (const input of await page.locator("input").all()) await expect(input).toHaveValue("");
@@ -51,7 +75,7 @@ test("keyboard navigation, password visibility, and auth links", async ({ page }
   await page.goto("/login");
   await expect(page.getByRole("button", { name: "Entrar", exact: true })).toBeEnabled();
   await page.keyboard.press("Tab");
-  await expect(page.getByRole("link", { name: "← Voltar ao SwiftMC" })).toBeFocused();
+  await expect(page.getByRole("link", { name: "← Voltar à Swift MC" })).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(page.getByRole("button", { name: "Continuar com Discord" })).toBeFocused();
   await page.keyboard.press("Tab");
@@ -77,27 +101,25 @@ test("keyboard navigation, password visibility, and auth links", async ({ page }
   await expect(page).toHaveURL("/login");
 });
 
-test("Discord never starts OAuth or creates browser state", async ({ page, context }) => {
+test("Discord button is disabled without OAuth backend", async ({ page, context }) => {
   await page.goto("/login");
   const requests: string[] = [];
   page.on("request", (request) => {
-    // Ignore framework asset/link prefetches; capture OAuth, API calls and navigations.
     if (new URL(request.url()).origin !== "http://127.0.0.1:3100" || request.url().includes("/api/") || request.method() === "POST" || request.isNavigationRequest()) requests.push(request.url());
   });
   await page.getByRole("button", { name: "Continuar com Discord" }).click();
-  await expect(page.getByRole("form").getByRole("alert")).toHaveText("Autenticação ainda não disponível.");
   await expect(page.getByRole("button", { name: "Continuar com Discord" })).toBeDisabled();
   await expect(page).toHaveURL("/login");
   expect(context.pages()).toHaveLength(1);
   expect(requests).toEqual([]);
-  expect(await context.cookies()).toEqual([]);
+    expect((await context.cookies()).map(cookie => cookie.name)).toEqual(["__Host-swiftmc_csrf"]);
   expect(await page.evaluate(() => [localStorage.length, sessionStorage.length])).toEqual([0, 0]);
 });
 
-for (const route of ["/register", "/reset-password"]) {
+for (const route of ["/reset-password"]) {
   test(`${route}: password requirements and confirmation validation`, async ({ page }) => {
     await page.goto(route);
-    if (route === "/register") await page.getByLabel("Email", { exact: true }).fill("validation@example.test");
+    await page.getByLabel("Email", { exact: true }).fill("validation@example.test");
     const password = page.locator('input[name="password"]');
     await password.fill("short");
     await page.locator('input[name="confirmation"]').fill("different");
@@ -106,6 +128,11 @@ for (const route of ["/register", "/reset-password"]) {
     await expect(page.getByText("As senhas precisam ser iguais.")).toBeVisible();
     await expect(password).toBeFocused();
     await expect(page.getByRole("form").getByRole("alert")).toHaveCount(0);
+    await password.fill("Valid password 123!");
+    await page.locator('input[name="confirmation"]').fill("");
+    await page.locator('button[type="submit"]').click();
+    await expect(page.getByText("As senhas precisam ser iguais.")).toBeVisible();
+    await expect(page.locator('input[name="confirmation"]')).toBeFocused();
   });
 }
 
@@ -115,7 +142,33 @@ test("without JavaScript forms cannot submit credentials", async ({ browser }) =
   for (const route of routes) {
     await page.goto(`http://127.0.0.1:3100${route.path}`);
     await expect(page.getByRole("button", { name: route.action, exact: true })).toBeDisabled();
-    await expect(page.locator("input").first()).toBeDisabled();
+    for (const input of await page.locator("input").all()) await expect(input).toBeDisabled();
+    await expect(page.getByRole("form")).toHaveAttribute("method", "post");
+    await expect(page.getByRole("form")).toHaveAttribute("action", route.endpoint);
   }
   await context.close();
+});
+
+test("reset rejects missing or malformed link tokens without sending credentials", async ({ page }) => {
+  const posts: string[] = [];
+  page.on("request", request => { if (request.method() === "POST") posts.push(request.url()); });
+  for (const query of ["", "?token=invalid!"]) {
+    await page.goto(`/reset-password${query}`);
+    await page.getByLabel("Email", { exact: true }).fill(email);
+    await page.getByLabel("Nova senha", { exact: true }).fill(password);
+    await page.getByLabel("Confirmar nova senha", { exact: true }).fill(password);
+    await page.getByRole("button", { name: "Redefinir senha", exact: true }).click();
+    await expect(page.getByRole("form").getByRole("alert")).toHaveText("Link de redefinição inválido. Solicite novas instruções.");
+  }
+  expect(posts).toEqual([]);
+});
+
+test("forgot-password sends only email and displays a generic acknowledgement", async ({ page }) => {
+  await page.route("**/api/password-reset/request", route => route.fulfill({ json: { ok: true, acknowledgement: "Se for possível, enviaremos as instruções para o email informado." } }));
+  await page.goto("/forgot-password");
+  await page.getByLabel("Email", { exact: true }).fill(email);
+  await page.getByRole("button", { name: "Enviar instruções", exact: true }).click();
+  await expect(page.getByRole("status")).toHaveText("Se for possível, enviaremos as instruções para o email informado.");
+  await expect(page).toHaveURL("/forgot-password");
+  await expect(page.getByRole("form").getByRole("alert")).toHaveCount(0);
 });

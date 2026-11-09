@@ -1,4 +1,4 @@
-# SwiftMC authentication — Phase A runtime feasibility
+# Swift MC authentication — Phase A runtime feasibility
 
 Local evidence collected 2026-10-20. This is a feasibility reference for the maintainers deciding whether to begin Phase B, not an authentication implementation or production certification.
 

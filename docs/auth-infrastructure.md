@@ -38,14 +38,15 @@ No auth schema, login UI, sessions, or rate-limit enforcement is implemented.
    a credential-bearing connection string into a recorded terminal.
 3. Record the actual resource ID, environment and redacted configuration evidence.
    Do not record passwords/connection strings. Set the non-secret build variable
-   `AUTH_HYPERDRIVE_ID` to this real ID for the `auth-staging` build. The config
-   emits `bindings.hyperdrive({ id })` as `AUTH_HYPERDRIVE` only in that mode.
-4. In the deployed staging Worker's **Bindings**, verify `AUTH_HYPERDRIVE` points
+   `AUTH_HYPERDRIVE_ID` to this real ID. `cloudflare.config.ts` reads it through
+   the build-env allowlist and emits `bindings.hyperdrive({ id })` as `AUTH_HYPERDRIVE`
+   for any build mode (including production) when the variable is set. No resource
+   ID is hardcoded in the repository.
+4. In the deployed Worker's **Bindings**, verify `AUTH_HYPERDRIVE` points
    to that exact resource. Check the resource still reports caching disabled.
 5. Repeat with a different production resource, role and database when production
-   provisioning is authorized. Production binding is deliberately not declared
-   yet: add `AUTH_HYPERDRIVE: bindings.hyperdrive({ id: realProductionId })` to the
-   production branch of `cloudflare.config.ts` only after verifying that resource.
+   provisioning is authorized. Supply the production resource ID through the
+   `AUTH_HYPERDRIVE_ID` build variable; never paste a real ID into source.
    Do not rely on a dashboard-only binding surviving source-driven redeployment.
 
 There are no committed resource IDs. HTTP no-store, cache TTL zero, SQL tricks,
@@ -222,18 +223,13 @@ future account identity rules. Never trust arbitrary `X-Forwarded-For`.
 untrusted direct path/subrequest able to supply it. Reject or conservatively deny
 requests when that trust cannot be established.
 
-In each actual app Worker, add independent 32-byte random runtime secrets through
-**Settings → Variables and Secrets → Add → Secret**:
-
-- `AUTH_RATE_LIMIT_KEY`: HMAC key; rotation must avoid silently resetting all
-  authoritative limits (plan overlapping versioned counters).
-- `AUTH_ENCRYPTION_KEY`: future encryption key; define versioning and old-key
-  retention for the eventual data lifetime before consuming it.
-
-Add matching `bindings.secret()` declarations only when the resources/secrets
-are ready. Never use NEXT_PUBLIC_, config text bindings, Vite define or client
-props. Staging and production have independent secrets and namespaces. No auth
-key is required to render today's public storefront.
+`AUTH_RATE_LIMIT_KEY` and `AUTH_ENCRYPTION_KEY` are **not wired by implemented
+code** and are not declared as Worker bindings in `cloudflare.config.ts`. They
+remain future operational guidance only. Add matching `bindings.secret()`
+declarations only when the resources/secrets are ready and actually consumed by
+code. Never use NEXT_PUBLIC_, config text bindings, Vite define or client props.
+Staging and production have independent secrets and namespaces. No auth key is
+required to render today's public storefront.
 
 ## 5. HTTPS cookies and edge cache verification (future session implementation)
 

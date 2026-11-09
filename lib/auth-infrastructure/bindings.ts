@@ -8,8 +8,8 @@ export interface AuthBindings {
     idFromName(name: string): unknown;
     get(id: unknown): { fetch(request: Request): Promise<Response> };
   };
-  AUTH_RATE_LIMIT_KEY?: string;
-  AUTH_ENCRYPTION_KEY?: string;
+  RESEND_API_KEY?: string;
+  EMAIL_FROM?: string;
 }
 
 export interface DiagnosticBindings extends AuthBindings {

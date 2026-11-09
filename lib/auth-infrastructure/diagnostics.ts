@@ -15,7 +15,7 @@ function authorized(request: Request, env: DiagnosticBindings) {
 
 /** No request-controlled work factors, SQL, passwords, or iteration counts. */
 export async function runAuthDiagnostic(request: Request, env: DiagnosticBindings) {
-  const headers = { "Cache-Control": "private, no-store" };
+  const headers = { "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" };
   const url = new URL(request.url);
   if (!authorized(request, env) || url.protocol !== "https:") return new Response(null, { status: 404, headers });
   if (request.method !== "POST" || url.search || request.body !== null) return new Response(null, { status: 400, headers });
