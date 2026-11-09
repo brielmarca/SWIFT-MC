@@ -9,9 +9,17 @@ export default defineConfig(({ mode }) => {
     "MINECRAFT_HOST", "MINECRAFT_PORT", "MINECRAFT_PUBLIC_ADDRESS", "MINECRAFT_DATA_API_URL",
     "AUTH_HYPERDRIVE_ID", "APP_URL", "EMAIL_FROM", "MINECRAFT_FULFILLMENT_URL",
     "MINECRAFT_BRIDGE_SERVER_ID", "MINECRAFT_BRIDGE_ALLOWED_SERVER_IDS",
+    "AUTH_RATE_LIMIT_NAMESPACE_ID",
   ]);
   const dataApiUrl = env.MINECRAFT_DATA_API_URL?.trim() || "";
   const fulfillmentUrl = env.MINECRAFT_FULFILLMENT_URL?.trim() || "";
+  // Cloudflare requires the rate-limit binding's `namespace` to be an
+  // account-unique positive integer that the account owner defines; names like
+  // "auth" are rejected by the deploy API (error 10021). Non-numeric input
+  // falls back to the default so a bad build variable cannot break deploys.
+  const rateLimitNamespaceRaw =
+    env.AUTH_RATE_LIMIT_NAMESPACE_ID?.trim() || process.env.AUTH_RATE_LIMIT_NAMESPACE_ID?.trim() || "";
+  const rateLimitNamespaceId = /^[0-9]{1,10}$/.test(rateLimitNamespaceRaw) ? rateLimitNamespaceRaw : "1001";
   const stagingDiagnostics = mode === "auth-staging";
   // Isolated staging deployments may override the Worker name (e.g.
   // CF_WORKER_NAME=swift-mc-staging). Only valid Cloudflare Worker names are
@@ -40,7 +48,7 @@ export default defineConfig(({ mode }) => {
         ...(env.AUTH_HYPERDRIVE_ID?.trim() ? {
           AUTH_HYPERDRIVE: bindings.hyperdrive({ id: env.AUTH_HYPERDRIVE_ID.trim() }),
         } : {}),
-        AUTH_RATE_LIMIT: bindings.rateLimit({ namespace: "auth", simple: { limit: 10, period: 60 } }),
+        AUTH_RATE_LIMIT: bindings.rateLimit({ namespace: rateLimitNamespaceId, simple: { limit: 10, period: 60 } }),
         ...(stagingDiagnostics ? {
           AUTH_DIAGNOSTICS_ENVIRONMENT: bindings.text("staging"),
           AUTH_DIAGNOSTICS_ENABLED: bindings.text("1"),

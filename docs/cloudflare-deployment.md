@@ -43,11 +43,13 @@ git diff --check
 Deploy the same release candidate to a separate staging Worker instead of `swift-mc`:
 
 ```sh
-CF_WORKER_NAME=swift-mc-staging npm run build:vinext
+CF_WORKER_NAME=swift-mc-staging AUTH_RATE_LIMIT_NAMESPACE_ID=1002 npm run build:vinext
 npx cf deploy --prebuilt --mode production --worker swift-mc-staging
 ```
 
 - `CF_WORKER_NAME` changes only the Worker name recorded in Build Output; bindings, assets, routes and the production domain are unaffected. Names that are not valid Cloudflare Worker names fall back to `swift-mc`, so a stray variable cannot rename the production Worker.
+- Cloudflare rate-limit bindings require `namespace` to be an account-unique positive integer (a name such as `auth` is rejected with API error 10021). The build defaults to `1001`; staging uses `1002` above so staging and production counters never interact. Bindings that share a namespace share counters by design.
+- Deploying a brand-new Worker requires every declared secret to exist; supply placeholder (empty) staging-only values with `cf deploy --secrets-file` when staging has no real secrets yet. Empty secrets fail closed: email stays disabled, the internal job route rejects requests and the Bridge stays off.
 - Reach staging only through its own hostname (for example `swift-mc-staging.<account>.workers.dev`). Never attach the production domain, custom domain or zone route to the staging Worker.
 - Staging runs with no runtime secrets and no Hyperdrive binding unless they are provisioned for staging. Email delivery, database-backed authentication and Bridge calls then fail gracefully; public pages render without a database.
 - `PURCHASES_ENABLED` must stay unset/false in every environment until payment-to-Minecraft delivery is validated separately.
@@ -70,6 +72,8 @@ Generated `.cloudflare/`, `.vinext/`, `.next/`, `.wrangler/`, `dist/`, `out/`, a
 | `NEXT_PUBLIC_SITE_URL` | **Build environment**, before either build | `https://swiftmc.com.br` when missing/invalid | Public canonical HTTPS origin for metadata, social previews and sitemap. No credentials, custom port, path, query, local/private host. Rebuild after changes. |
 | `MINECRAFT_DATA_API_URL` | Build/deploy environment or ignored `.env.production.local`; emitted as a Worker text binding | Blank disables stats, online list, and leaderboard integration | Server-only base URL. Use HTTPS without credentials, query, or fragment. |
 | `MINECRAFT_DATA_API_TOKEN` | **Runtime Secret** on Worker `swift-mc` | Missing/invalid token produces `unavailable`, without contacting the data API or Mojang for stats | Private bearer token; never use `NEXT_PUBLIC_` or a text binding |
+| `CF_WORKER_NAME` | **Build environment** for `build:vinext` only | Falls back to `swift-mc` unless the value is a valid Cloudflare Worker name | Non-secret. Isolated staging deploys set `swift-mc-staging`; never points routes or domains at the staging Worker |
+| `AUTH_RATE_LIMIT_NAMESPACE_ID` | **Build environment** for `build:vinext` only | `1001` when unset or not a positive integer (Cloudflare rejects non-numeric IDs with error 10021) | Non-secret account-unique integer for the `AUTH_RATE_LIMIT` binding. Use a distinct value per Worker so environments do not share counters |
 
 `cloudflare.config.ts` uses an explicit non-secret allowlist when loading configuration. It also sets the runtime `NODE_ENV` binding to `production` for builds, ensuring the localhost HTTP exception cannot be used in production. Values in a developer's shell are not automatically runtime bindings.
 

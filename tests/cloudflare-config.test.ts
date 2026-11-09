@@ -49,6 +49,29 @@ test("CF_WORKER_NAME overrides the Worker name only for valid isolated names", (
   }
 });
 
+test("rate limit binding uses an account-unique numeric namespace id", () => {
+  const saved = process.env.AUTH_RATE_LIMIT_NAMESPACE_ID;
+  try {
+    delete process.env.AUTH_RATE_LIMIT_NAMESPACE_ID;
+    let rateLimit = config({ mode: "production", isPreview: false }).worker.env.AUTH_RATE_LIMIT;
+    assert.equal(rateLimit.type, "rate-limit");
+    assert.match(String((rateLimit as { namespace?: string }).namespace), /^[0-9]{1,10}$/);
+    assert.equal((rateLimit as { namespace?: string }).namespace, "1001");
+    assert.deepEqual((rateLimit as { simple?: unknown }).simple, { limit: 10, period: 60 });
+
+    process.env.AUTH_RATE_LIMIT_NAMESPACE_ID = "not-a-number";
+    rateLimit = config({ mode: "production", isPreview: false }).worker.env.AUTH_RATE_LIMIT;
+    assert.equal((rateLimit as { namespace?: string }).namespace, "1001");
+
+    process.env.AUTH_RATE_LIMIT_NAMESPACE_ID = "1002";
+    rateLimit = config({ mode: "production", isPreview: false }).worker.env.AUTH_RATE_LIMIT;
+    assert.equal((rateLimit as { namespace?: string }).namespace, "1002");
+  } finally {
+    if (saved === undefined) delete process.env.AUTH_RATE_LIMIT_NAMESPACE_ID;
+    else process.env.AUTH_RATE_LIMIT_NAMESPACE_ID = saved;
+  }
+});
+
 test("internal job secret is declared and fulfillment bindings stay optional", () => {
   const saved = process.env.MINECRAFT_FULFILLMENT_URL;
   try {
