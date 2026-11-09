@@ -1,6 +1,75 @@
 # P5 regression and launch validation — 2026-11-09
 
-## Decision
+## RC release & staging validation — 2026-11-09 (update)
+
+**RC commit (HEAD):** `69687d2` on `main` (`origin/main`), 12 commits ahead of the previous pushed state. Working tree clean.
+
+### Commits (dependency-ordered, explicit path staging)
+
+1. `ead5427` Update dependencies, tooling overrides and ignore rules
+2. `4ea495b` Add account and bridge database schema with migrations
+3. `81b9cfb` Add account authentication, sessions and email verification
+4. `7c6a2a5` Add Minecraft Bridge API, service and Paper plugin source
+5. `433ec9d` Gate purchases behind PURCHASES_ENABLED and finalize Stripe checkout
+6. `7882164` Fix legacy fulfillment queue to process unscheduled pending rows
+7. `0a41ab0` Ship P5 storefront, content, legal placeholders and cash demo
+8. `b032530` Add validation harness, journeys and launch-safety checks
+9. `812bedd` Configure Cloudflare Worker bindings and deployment docs
+10. `7f01fb5` Allow build-critical install scripts for reproducible npm ci
+11. `a3e6070` Allow isolated staging Worker name via CF_WORKER_NAME
+12. `69687d2` Use account-unique numeric namespace for AUTH_RATE_LIMIT binding
+
+Import sanity check: all inter-commit imports resolve (no module reference in any commit points to a file absent from that commit).
+
+### Clean-checkout validation (`/tmp/opencode/rc-clone` concept; validated against RC at 69687d2)
+
+- `npm ci` (0 vulnerabilities); `npm test` **393 pass**; `npm run lint` pass; `npm run build` pass; `npm run build:vinext` + `postbuild:vinext` pass; `npm run typecheck` / `npx tsc --noEmit` pass.
+- `npm run test:db` **88 pass, 0 failed/skipped** (8 migrations, isolated PG 17; all app tables empty after run; cluster removed). Required `PG_BIN=/tmp/opencode/postgresql/root/usr/lib/postgresql/17/bin PG_LIB=/tmp/opencode/postgresql/root/usr/lib/x86_64-linux-gnu LD_LIBRARY_PATH=$PG_LIB`.
+- Playwright **Next 142 pass + 20 fixture skips**, **Vinext 142 pass + 20 fixture skips**; `scripts/test-header-browser.mjs` **10 pass**; `scripts/test-journeys.mjs` **2 pass** (with same PG env).
+
+### Isolated Cloudflare staging deployment
+
+- **Worker:** `swift-mc-staging` (version `0d160c11-9f4f-433a-9287-5e60464a9dd4`), **URL:** https://swift-mc-staging.brielmarca.workers.dev
+- **Build:** `CF_WORKER_NAME=swift-mc-staging AUTH_RATE_LIMIT_NAMESPACE_ID=1002 npm run build:vinext` (namespace 1002 keeps staging/production rate-limit counters isolated; binding requires an account-unique positive integer, not a name).
+- **Secrets:** brand-new worker required all declared secrets at deploy → placeholder **empty** staging-only values supplied via a temporary secrets file (outside repo; removed). Empty secrets fail closed: email disabled, internal job route rejects, Bridge off; no secret values are reported.
+- **No Hyperdrive / no APP_URL binding value / no real RESEND/Stripe/bridge credentials** in staging. Public pages render; MINECRAFT_HOST unset so status is unavailable/offline-style.
+
+### Runtime checks (staging)
+
+| Check | Result |
+| --- | --- |
+| `GET /` | 200; `X-Robots-Tag: noindex, nofollow` |
+| `GET /login` | 200 |
+| `GET /account` | 307 → `/login?callbackUrl=%2Faccount` |
+| `POST /api/checkout/stripe` `{}` | 200 JSON `{"error":{"code":"PURCHASES_DISABLED",...}}` (blocked before auth/DB/provider) |
+| Static asset (`/_next/static/chunks/*`) | 200 |
+| HTTPS (workers.dev) | Served over HTTPS |
+
+### Production safety
+
+- **`swift-mc` (production-named worker) was not modified**; latest deployment remains `1bc5d54b-bbb7-491b-9038-28190bc44a92` (2026-11-03, Hyperdrive binding) and `https://swift-mc.brielmarca.workers.dev/` returns 200.
+- No production domain (`swiftmc.com.br`, on a different Cloudflare account), no zone routes, no production secrets/DB/DNS were touched. Staging is reachable only via its own `workers.dev` hostname.
+- `PURCHASES_ENABLED` remains unset/false.
+
+### Blocking issues before live production / payments
+
+1. Staging has **no Hyperdrive/Postgres, no real APP_URL, no real RESEND, no Stripe test keys, no Bridge secret** — DB-backed auth, email, and integrations cannot be exercised there until provisioned.
+2. `GET /api/server/status` on staging resolves to a 404/HTML response in this configuration (no MINECRAFT_HOST + SSR routing) — verify status route behavior with real server config.
+3. **No live Paper/LuckPerms/SwiftCash** linking/delivery/retry/restart validation.
+4. **Privacy/terms/refund policies are preliminary/unapproved** placeholders.
+5. **SwiftCash jar provenance**: `minecraft/SwiftMCBridge-0.2.0/libs/SwiftCash-0.2.0.jar` is gitignored (sha256 `8b74322a…`), no published checksum/provenance → plugin not reproducibly buildable from a clean checkout until a trusted dependency source is provisioned.
+6. Stripe **test-mode** end-to-end (checkout/webhook/refund/fulfillment) + explicit rollout decision required before enabling purchases.
+7. Final public-domain cutover requires access to the **account that owns `swiftmc.com.br`** (DNS is on a different Cloudflare account than the one used for staging).
+
+### Exact steps to finish production deployment (after blockers resolved)
+
+1. On the account/zone that owns `swiftmc.com.br`, provision Hyperdrive for the production Postgres, create required Workers Rate Limit namespace (or set `AUTH_RATE_LIMIT_NAMESPACE_ID`), and deploy runtime secrets (`RESEND_API_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `INTERNAL_JOB_SECRET`, `MINECRAFT_BRIDGE_SECRET` — real values, never committed). Set `APP_URL=https://swiftmc.com.br`.
+2. Build/deploy **`69687d2`** (or later reviewed RC): `npm run build:vinext && npx cf deploy --prebuilt --mode production --worker swift-mc` (default worker name; default namespace 1001). Keep `PURCHASES_ENABLED` unset.
+3. Run staging-like runtime checks on the production hostname (TLS/cookies, noindex on preview only, `/login`, `/account` redirect, checkout 503, auth/email, Bridge, server status).
+4. Validate Paper/LuckPerms/SwiftCash linking + fulfillment end-to-end; complete Stripe test-mode webhook/refund/fulfillment acceptance.
+5. Publish approved legal policies; only then set `PURCHASES_ENABLED=true` in a controlled, reviewed rollout with monitoring.
+
+## P5 regression baseline (historical, 2026-11-09 earlier pass)
 
 Local website regression checks pass. Payments remain disabled; nothing was
 deployed. This is not approval for public commerce or proof of production
