@@ -16,7 +16,7 @@ if (consistent) {
         url.pathname === "/swiftmc_test" && !url.search && !url.hash;
     } else if (mode === "local") {
       valid = url.hostname === "localhost" && url.username === "swiftmc_test" &&
-        url.pathname === "/swiftmc_test" &&
+        url.pathname === "/swiftmc_staging" &&
         /^\/tmp\/swiftmc-pg-test-[A-Za-z0-9]+$/.test(url.searchParams.get("host") ?? "");
     }
   } catch { valid = false; }

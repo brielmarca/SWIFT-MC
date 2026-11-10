@@ -96,7 +96,10 @@ export async function withAuthTransaction<T>(
   return withAuthPrisma(env, async (prisma) => {
     return prisma.$transaction(async (tx) => {
       return callback(buildAuthServices(tx as unknown as PrismaClient));
-    });
+    // Credential hashing shares Node's bounded worker pool. Concurrent scrypt
+    // operations can exceed Prisma's 5s default before the conditional write.
+    // Keep the atomic security mutations intact with a bounded 15s budget.
+    }, { timeout: 15_000, maxWait: 5_000 });
   });
 }
 

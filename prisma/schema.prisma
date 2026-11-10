@@ -9,6 +9,14 @@ datasource db {
   directUrl = env("DIRECT_DATABASE_URL")
 }
 
+model AuthRateBucket {
+  key    String @id
+  window BigInt
+  count  Int
+
+  @@index([window])
+}
+
 enum OrderStatus {
   PENDING_PAYMENT
   PAID
@@ -80,6 +88,7 @@ model Order {
   subtotalCents          Int
   discountCents          Int             @default(0)
   totalCents             Int
+  cashAmount             Int             @default(0)
   checkoutIdempotencyKey String          @unique
   expiresAt              DateTime        @db.Timestamptz(3)
   paidAt                 DateTime?       @db.Timestamptz(3)

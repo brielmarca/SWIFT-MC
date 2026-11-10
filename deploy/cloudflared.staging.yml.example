@@ -1,0 +1,8 @@
+tunnel: REPLACE_WITH_STAGING_TUNNEL_UUID
+credentials-file: /etc/swiftmc-staging/tunnel.json
+ingress:
+  - hostname: staging-origin.YOUR-DOMAIN
+    service: http://127.0.0.1:3100
+    originRequest:
+      connectTimeout: 5s
+  - service: http_status:404

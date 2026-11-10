@@ -94,6 +94,7 @@ export async function createOrder(
         subtotalCents: rank.priceCents,
         discountCents: 0,
         totalCents,
+        cashAmount: input.cashAmount ?? 0,
         checkoutIdempotencyKey: idempotencyKey,
         expiresAt: new Date(now.getTime() + (options.lifetimeMs ?? ORDER_LIFETIME_MS)),
       },

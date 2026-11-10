@@ -4,6 +4,7 @@ import test, { after, before, mock } from "node:test";
 import { OrderStatus, PaymentProvider, PaymentStatus } from "@prisma/client";
 
 import { createTestPrisma, hasDatabase } from "@/tests/integration/helpers";
+import { MINECRAFT_NAMESPACE } from "@/lib/minecraft-bridge/vip";
 
 const db = createTestPrisma();
 const databaseOptions = { skip: !hasDatabase ? "DATABASE_URL is not configured" : false };
@@ -12,6 +13,7 @@ const secretKey = "sk_test_stripe_integration_test_key";
 const originalFetch = globalThis.fetch;
 const createdOrderIds: string[] = [];
 const createdEventIds = new Set<string>();
+const createdUserIds: string[] = [];
 
 // Exercise the production handler with the runner's isolated PostgreSQL client
 // through the same Hyperdrive-style binding path the Worker runtime uses.
@@ -34,11 +36,15 @@ after(async () => {
   globalThis.fetch = originalFetch;
   if (!db) return;
   if (createdOrderIds.length > 0) {
+    await db.bridgeDelivery.deleteMany({ where: { orderId: { in: createdOrderIds } } });
     await db.paymentEvent.deleteMany({ where: { provider: PaymentProvider.STRIPE, providerEventId: { in: [...createdEventIds] } } });
     await db.fulfillment.deleteMany({ where: { orderId: { in: createdOrderIds } } });
     await db.payment.deleteMany({ where: { orderId: { in: createdOrderIds } } });
     await db.order.deleteMany({ where: { id: { in: createdOrderIds } } });
   }
+  await db.minecraftIdentity.deleteMany({ where: { userId: { in: createdUserIds } } });
+  await db.minecraftDeliverySequence.deleteMany({ where: { accountId: { in: createdUserIds } } });
+  await db.user.deleteMany({ where: { id: { in: createdUserIds } } });
   await db.$disconnect();
 });
 
@@ -175,6 +181,26 @@ test("expired signatures and modified raw bodies are rejected before any side ef
   assert.equal(calls, 0);
   assert.equal(await db.paymentEvent.count({ where: { providerEventId: { in: ["evt_expired", "evt_tampered"] } } }), 0);
   assert.equal((await db.order.findUniqueOrThrow({ where: { id: order.id } })).status, "PENDING_PAYMENT");
+});
+
+test("Cash paid webhook queues exactly one persisted credit; refund cancels undelivered credit", databaseOptions, async () => {
+  assert.ok(db);
+  const user = await db.user.create({ data: { displayName: "Cash", emailNormalized: `${randomUUID()}@example.test`, status: "ACTIVE" } });
+  createdUserIds.push(user.id);
+  await db.minecraftIdentity.create({ data: { userId: user.id, namespace: MINECRAFT_NAMESPACE, subject: randomUUID(), lastKnownUsername: "CashPlayer", verifiedAt: new Date(), verificationMethod: "bridge_link" } });
+  const order = await fixture(OrderStatus.PENDING_PAYMENT, { rankSlug: "cash-100", totalCents: 999 });
+  await db.order.update({ where: { id: order.id }, data: { userId: user.id, cashAmount: 110 } });
+  const sessionId = `cs_${randomUUID().replaceAll("-", "")}`;
+  mockStripe({ id: sessionId, object: "checkout.session", mode: "payment", status: "complete", payment_status: "paid", amount_total: 999, currency: "brl", client_reference_id: order.orderNumber, payment_intent: order.providerPaymentId, metadata: { orderNumber: order.orderNumber, paymentId: order.payments[0].id } });
+  for (let i = 0; i < 2; i++) assert.equal((await POST(stripeRequest("checkout.session.completed", "evt_cash_paid", { id: sessionId }))).status, 200);
+  const deliveries = await db.bridgeDelivery.findMany({ where: { orderId: order.id } });
+  assert.equal(deliveries.length, 1);
+  assert.equal(deliveries[0].cashAmount, 110);
+  assert.equal(deliveries[0].kind, "CASH");
+  const chargeId = `ch_${randomUUID().replaceAll("-", "")}`;
+  mockStripe({ id: chargeId, status: "succeeded", amount: 999, currency: "brl", refunded: true, payment_intent: order.providerPaymentId, metadata: { orderNumber: order.orderNumber, paymentId: order.payments[0].id } });
+  assert.equal((await POST(stripeRequest("charge.refunded", "evt_cash_refund", { id: chargeId }))).status, 200);
+  assert.equal((await db.bridgeDelivery.findUniqueOrThrow({ where: { deliveryId: deliveries[0].deliveryId } })).status, "CANCELLED_REFUND");
 });
 
 test("checkout.session.completed marks payment approved and order paid", databaseOptions, async () => {

@@ -1,0 +1,17 @@
+node_modules
+.git
+.next
+.vinext
+.cloudflare
+dist
+.env*
+**/*.env
+**/*.env.*
+**/*.pem
+**/*.key
+**/*.zip
+**/*.pdf
+test-results
+playwright-report
+minecraft
+stitch_nexus_mc_premium_store

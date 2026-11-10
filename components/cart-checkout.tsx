@@ -2,8 +2,9 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useCart } from "./cart-provider";
+import { TestPurchaseButton } from "./test-purchase-button";
 
-export function CartCheckout({ email, verified }: { email: string; verified: boolean }) {
+export function CartCheckout({ email, verified, testPurchases = false }: { email: string; verified: boolean; testPurchases?: boolean }) {
   const { items, ready } = useCart();
   const [selection, setSelection] = useState("");
   const rank = items.find(item => item.slug === selection) ?? items[0];
@@ -17,10 +18,10 @@ export function CartCheckout({ email, verified }: { email: string; verified: boo
       <p className="text-sm text-muted">Conta: {email}. O nome do jogador será confirmado com a identidade Minecraft vinculada antes de qualquer compra.</p>
       <p className="font-bold">Total desta seleção: {rank.price} · BRL</p>
     </div>
-    <div role="status" className="rounded-xl border border-amber-300/20 bg-amber-400/10 p-4 text-sm leading-6 text-amber-100">
+    {testPurchases ? <TestPurchaseButton slug={rank.slug} type="vip" disabled={!verified} /> : <div role="status" className="rounded-xl border border-amber-300/20 bg-amber-400/10 p-4 text-sm leading-6 text-amber-100">
       <strong>Compras indisponíveis no momento.</strong> A finalização com Stripe e a entrega no servidor Minecraft só serão liberadas após validação completa em homologação.
       {!verified ? " Verifique seu email para deixar sua conta pronta quando as compras forem liberadas." : ""}
-    </div>
+    </div>}
     <div className="flex flex-wrap gap-3">
       <Link href="/store" className="button-primary">Voltar à loja</Link>
       <Link href="/account/orders" className="button-secondary">Consultar meus pedidos</Link>

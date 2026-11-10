@@ -210,7 +210,7 @@ export async function startStripeCheckout(
 
   const lineItems = [
     {
-      name: `Rank ${order.rankName}`,
+      name: order.cashAmount > 0 ? order.rankName : `Rank ${order.rankName}`,
       unitAmountCents: order.totalCents,
       currency: order.currency.toLowerCase(),
       quantity: 1,

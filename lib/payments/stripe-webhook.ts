@@ -13,7 +13,7 @@ import type { StripeReconciliationClient } from "@/lib/payments/stripe";
 import { StripeUnavailableError } from "@/lib/payments/stripe";
 import { createFulfillmentForOrder } from "@/lib/fulfillment/fulfillment-service";
 import { isVipRank } from "@/lib/minecraft-bridge/vip";
-import { revokeVipEntitlementsForOrder, upsertVipEntitlementForPaidOrder } from "@/lib/minecraft-bridge/service";
+import { queueCashForPaidOrder, revokeVipEntitlementsForOrder, upsertVipEntitlementForPaidOrder } from "@/lib/minecraft-bridge/service";
 
 const STRIPE_ID_PATTERN = /^[A-Za-z0-9_]{1,255}$/;
 const ORDER_NUMBER_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
@@ -448,11 +448,10 @@ async function reconcileInTransaction(
     orderStatusChanged = true;
   }
 
-  // Create fulfillment + VIP entitlement/delivery when order first becomes PAID.
-  // Cash delivery is disabled. Verified VIP ranks always create a fulfillment record;
-  // bridge entitlement/delivery is created only when the order is linked to a website user.
+  // All delivery writes share the payment transaction; provider retries cannot double-credit.
   if (orderStatusChanged && orderStatus === OrderStatus.PAID) {
     const order = verifiedPayment.order;
+    if (order.cashAmount > 0) await queueCashForPaidOrder(db, order);
     if (isVipRank(order.rankSlug)) {
       let fulfillment = await db.fulfillment.findUnique({ where: { orderId: verifiedPayment.orderId } });
       if (!fulfillment) {
@@ -472,6 +471,9 @@ async function reconcileInTransaction(
   }
 
   if (orderStatusChanged && orderStatus === OrderStatus.REFUNDED) {
+    // The plugin cannot debit Cash. Cancel pending credits and retain acknowledged
+    // deliveries for manual refund reconciliation; never send a negative credit.
+    await db.bridgeDelivery.updateMany({ where: { orderId: verifiedPayment.orderId, kind: "CASH", status: "PENDING" }, data: { status: "CANCELLED_REFUND" } });
     await revokeVipEntitlementsForOrder(db as unknown as PrismaClient, verifiedPayment.orderId, "REFUNDED", now);
   }
 

@@ -2,6 +2,7 @@ import "server-only";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 import type { AuthBindings } from "./bindings";
+import { getPrisma } from "@/lib/prisma";
 
 const HYPERDRIVE_HOST_SUFFIX = ".hyperdrive.db";
 
@@ -55,6 +56,7 @@ export async function withAuthPrisma<T>(
   env: Pick<AuthBindings, "AUTH_HYPERDRIVE">,
   callback: (client: PrismaClient) => Promise<T>,
 ): Promise<T> {
+  if (process.env.BACKEND_RUNTIME === "node") return callback(getPrisma());
   const client = createAuthPrisma(env);
   try {
     return await callback(client);

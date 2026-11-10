@@ -141,7 +141,7 @@ async function attachLinkedUuidToPendingEntitlements(tx: Db, userId: string, uui
 export async function listPendingBridgeDeliveries(db: Db, serverId: string, limit = 80) {
   const take = Math.max(1, Math.min(PENDING_LIMIT_MAX, limit));
   const rows = await db.bridgeDelivery.findMany({
-    where: { status: "PENDING", kind: "VIP" },
+    where: { status: "PENDING", kind: { in: ["VIP", "CASH"] } },
     orderBy: [{ accountId: "asc" }, { sequence: "asc" }],
     take,
   });
@@ -170,7 +170,7 @@ export async function acknowledgeBridgeDelivery(db: Db, input: { deliveryId: str
   if (!/^[A-Za-z0-9_.:-]{1,191}$/.test(input.deliveryId)) throw new BridgeValidationError("Delivery ID ou sequência inválida");
   if (!Number.isSafeInteger(input.sequence) || input.sequence <= 0) throw new BridgeValidationError("Delivery ID ou sequência inválida");
   const updated = await db.bridgeDelivery.updateMany({
-    where: { deliveryId: input.deliveryId, sequence: BigInt(input.sequence), status: "PENDING", kind: "VIP" },
+    where: { deliveryId: input.deliveryId, sequence: BigInt(input.sequence), status: "PENDING", kind: { in: ["VIP", "CASH"] } },
     data: { status: "ACKED", ackedAt: now, serverId: input.serverId },
   });
   if (updated.count !== 1) {
@@ -249,4 +249,18 @@ export async function revokeVipEntitlementsForOrder(db: Db, orderId: string, rea
   for (const accountId of new Set(ents.map(e => e.userId))) {
     await queueVipSnapshot(db, accountId, now);
   }
+}
+
+/** Called within the payment transaction. Stable delivery ID deduplicates retries. */
+export async function queueCashForPaidOrder(db: Db, order: { id: string; userId: string | null; cashAmount: number }): Promise<void> {
+  if (!order.userId || order.cashAmount <= 0) throw new BridgeValidationError("Cash sem destinatário");
+  const identity = await db.minecraftIdentity.findFirst({ where: { userId: order.userId, namespace: MINECRAFT_NAMESPACE } });
+  if (!identity) throw new BridgeValidationError("Conta Minecraft não vinculada");
+  const deliveryId = `cash_${order.id}`;
+  if (await db.bridgeDelivery.findUnique({ where: { deliveryId } })) return;
+  await db.bridgeDelivery.create({ data: {
+    deliveryId, orderId: order.id, accountId: order.userId, playerUuid: identity.subject,
+    kind: "CASH", action: "CREDIT", cashAmount: order.cashAmount,
+    sequence: await nextSequence(db, order.userId), status: "PENDING",
+  } });
 }

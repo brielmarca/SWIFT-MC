@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { ChevronDown, Gift, Info, ShoppingBag } from "lucide-react";
 import { useRef, useState } from "react";
 import type { CashPackage } from "@/data/cash-packages";
@@ -8,7 +9,7 @@ import type { CashPackage } from "@/data/cash-packages";
 const currency = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const quantity = new Intl.NumberFormat("pt-BR");
 
-export function CashPackageCard({ pack }: { pack: CashPackage }) {
+export function CashPackageCard({ pack, testPurchases = false }: { pack: CashPackage; testPurchases?: boolean }) {
   const [showDetails, setShowDetails] = useState(false);
   const previewRef = useRef<HTMLDialogElement>(null);
   const name = `${quantity.format(pack.amount)} Cash`;
@@ -39,10 +40,10 @@ export function CashPackageCard({ pack }: { pack: CashPackage }) {
         <div className="mt-5">
           <p className="text-xs text-muted"><span className="sr-only">Preço original: </span><s>{currency.format(pack.originalPrice / 100)}</s></p>
           <p className="mt-1 text-3xl font-extrabold tabular-nums text-ultraviolet"><span className="sr-only">Preço promocional: </span>{currency.format(pack.price / 100)}</p>
-          <p className="mt-2 text-xs leading-5 text-muted">{quantity.format(pack.amount + pack.bonus)} Cash no total · Compra indisponível</p>
+          <p className="mt-2 text-xs leading-5 text-muted">{quantity.format(pack.amount + pack.bonus)} Cash no total · {testPurchases ? "Pagamento de teste" : "Compra indisponível"}</p>
         </div>
         <div className="mt-5 grid gap-2">
-          <button
+           {testPurchases ? <Link className="button-primary w-full px-4" href={`/checkout?cash=${pack.amount}`}>Comprar em teste</Link> : <button
             type="button"
             className="button-primary w-full px-4"
             aria-label={`Compra indisponível — ${name}`}
@@ -50,7 +51,7 @@ export function CashPackageCard({ pack }: { pack: CashPackage }) {
             onClick={() => previewRef.current?.showModal()}
           >
             <ShoppingBag size={16} aria-hidden="true" /> Compra indisponível
-          </button>
+           </button>}
           <button
             type="button"
             className="button-secondary w-full px-4"
@@ -71,7 +72,7 @@ export function CashPackageCard({ pack }: { pack: CashPackage }) {
             {pack.survivalOnly && <li>Pacote exclusivo para o Survival.</li>}
             <li>50% de desconto sobre o preço original.</li>
           </ul>
-          <p className="mt-2">Nenhum pedido é criado e nenhum Cash é creditado nesta fase.</p>
+          <p className="mt-2">{testPurchases ? "Entrega apenas na conta Minecraft vinculada no servidor de staging." : "Nenhum pedido é criado e nenhum Cash é creditado nesta fase."}</p>
         </div>
         <dialog
           ref={previewRef}

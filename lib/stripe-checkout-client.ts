@@ -3,7 +3,7 @@ import { extractCsrfTokenFromCookie } from "@/lib/auth-client";
 import { isStripeCheckoutUrl } from "@/lib/payments/stripe-url";
 
 export type StripeCheckoutRequest = {
-  type: "vip"; rankSlug: string; minecraftUsername: string; idempotencyKey: string;
+  type: "vip" | "cash"; rankSlug: string; idempotencyKey: string;
 };
 export type StripeCheckoutResponse = { checkoutUrl: string; orderNumber: string };
 export class StripeCheckoutError extends Error {

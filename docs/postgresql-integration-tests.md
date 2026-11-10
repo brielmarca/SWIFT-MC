@@ -61,7 +61,7 @@ to its versioned binary directory and use the same `npm run test:db` command.
 2. Starts PostgreSQL with `listen_addresses=''`: no TCP listener. Connections use
    the Unix socket in that private directory. Local trust authentication is
    confined to this disposable cluster.
-3. Creates role/database `swiftmc_test` and supplies matching `DATABASE_URL`,
+3. Creates role `swiftmc_test` and database `swiftmc_staging`, supplying matching `DATABASE_URL`,
    `DIRECT_DATABASE_URL`, and `TEST_DATABASE_URL` to test subprocesses. Supplied
    shell database URLs are ignored; no application `.env` file is loaded.
 4. Applies the real `prisma/schema.prisma` migrations with `prisma migrate deploy`.

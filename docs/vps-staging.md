@@ -1,0 +1,184 @@
+# VPS staging backend
+
+## Architecture and audit
+
+The initial worktree was clean at `56c3801`. Existing authentication, sessions,
+Resend, orders, Stripe reconciliation, and Paper Bridge implementations are reused.
+The original compose file is a **local PostgreSQL 16 development service**, not
+evidence of the VPS layout. The previous deployment report records an unconfigured
+staging Worker. No SSH target/access was supplied or used; the VPS's current state
+has not been independently verified.
+
+New path: **browser → staging Cloudflare Worker → staging Cloudflare Tunnel →
+Next.js Node server on 127.0.0.1:3100 → existing PostgreSQL 17 on loopback**.
+The gateway serves the existing frontend and APIs from one origin, including SSR
+and static assets; no CORS or cross-site cookies are needed. This staging topology
+renders the frontend on Node. The existing Vinext Worker build remains supported.
+
+Only `swiftmc_staging/public` is accepted by the Node deployment, including migration
+tooling. Compose has no PostgreSQL service, published ports, or database volumes.
+Use a dedicated staging DB role, with no production permissions. Migration and
+runtime URLs may use separate staging roles. The owner must provision the staging
+database/roles if absent; scripts neither create nor reset existing databases.
+
+## VPS deployment commands
+
+Prerequisites: Linux, Docker Engine + Compose v2, PostgreSQL 17 reachable on loopback,
+the existing staging DB and role, `cloudflared` at `/usr/bin/cloudflared`, a new
+staging-only tunnel/hostname, and a checkout of these changes. Run from that checkout.
+Do not use `compose.yaml`, production Worker commands, or a production tunnel.
+
+```sh
+bash scripts/audit-staging-vps.sh
+install -m 600 deploy/staging.env.example deploy/staging.env
+${EDITOR:-vi} deploy/staging.env
+openssl rand -hex 32
+# Put the generated value in BACKEND_PROXY_SECRET privately; do not commit it.
+# Fill the staging URLs, role/password, Resend sender/key, Stripe TEST keys,
+# webhook signing secret, and a separate random staging Bridge secret.
+STAGING_IMAGE_TAG=staging-20261110 bash scripts/deploy-staging.sh
+docker compose -f compose.staging.yaml ps
+curl --fail http://127.0.0.1:3100/api/health/ready
+```
+
+The audit uses `PGSERVICE=swiftmc_staging` when psql is available; configure that
+service privately first. Inspect its output before deployment: PostgreSQL must
+not listen on `0.0.0.0` or `::`. If it already does, stop and have its owner correct
+that existing infrastructure separately. No firewall or PostgreSQL config is changed.
+
+Provision a **new** tunnel under the account controlling the staging hostname:
+
+```sh
+cloudflared tunnel login
+cloudflared tunnel create swiftmc-vps-staging
+cloudflared tunnel route dns swiftmc-vps-staging staging-origin.YOUR-DOMAIN
+sudo install -d -m 755 /etc/swiftmc-staging
+sudo install -m 600 "$HOME/.cloudflared/TUNNEL_UUID.json" /etc/swiftmc-staging/tunnel.json
+sudo install -m 644 deploy/cloudflared.staging.yml.example /etc/swiftmc-staging/config.yml
+sudo ${EDITOR:-vi} /etc/swiftmc-staging/config.yml
+sudo install -m 644 deploy/swiftmc-staging-tunnel.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now swiftmc-staging-tunnel.service
+```
+
+Replace `TUNNEL_UUID` and `staging-origin.YOUR-DOMAIN` with the newly provisioned
+staging values. Adjust the cloudflared binary path if necessary. No public inbound
+application or database port is required. Use a private staging-only tunnel
+credential. No tunnel, DNS record, service, or Worker was provisioned during this task.
+
+From a trusted workstation with Cloudflare access:
+
+```sh
+${EDITOR:-vi} deploy/wrangler.staging.jsonc
+# Set APP_URL to the actual new worker hostname; BACKEND_ORIGIN to the tunnel hostname.
+npx wrangler@4.160.0 deploy --config deploy/wrangler.staging.jsonc
+npx wrangler@4.160.0 secret put BACKEND_PROXY_SECRET --config deploy/wrangler.staging.jsonc
+# Paste the same private value as the VPS. The gateway fails closed until supplied.
+curl --fail https://swift-mc-vps-staging.YOUR-SUBDOMAIN.workers.dev/api/health/ready
+```
+
+The gateway uses a distinct Worker name, no zone routes, and no database/payment
+secrets. Its origin key is runtime-only. `APP_URL` on the VPS must exactly equal
+the gateway origin. Existing frontend fetches remain same-origin.
+
+## Payments and Minecraft
+
+Keep `PURCHASES_ENABLED=false` permanently for this deployment. After adding test
+credentials and configuring the staging Paper plugin, set only
+`STRIPE_TEST_PURCHASES_ENABLED=true`, then rerun the deployment command. Checkout
+accepts `sk_test_`/`rk_test_`; signed webhook events must explicitly have
+`livemode=false`. Live keys cause startup/configuration failure.
+
+Stripe **test** webhook endpoint: `APP_URL/api/webhooks/stripe`. Subscribe to
+`checkout.session.completed`, `checkout.session.async_payment_succeeded`,
+`checkout.session.async_payment_failed`, `checkout.session.expired`, `charge.refunded`.
+Use the test endpoint's signing secret. Test checkout does not mark an order paid;
+only signed, provider-reconciled events do so.
+
+Paper Bridge base URL: `APP_URL`, server ID **swift-staging**, separate Bearer secret.
+Link through the account UI and staging plugin. VIPs use existing snapshot semantics;
+Cash uses persisted amount+bonus and stable `cash_<orderId>` delivery IDs. The plugin's
+SwiftCash idempotency key prevents duplicate credit. Refunds cancel pending Cash
+deliveries; already-credited Cash requires manual reconciliation because the existing
+plugin supports CREDIT only. A credit fetched just before refund can still be applied;
+record and reconcile this race on the staging server. No automatic debit is implemented.
+Legacy fulfillment push is rejected in this deployment to avoid duplicate delivery.
+
+## Endpoints
+
+| Method | Path | Contract |
+|---|---|---|
+| GET | `/api/health/live`, `/api/health/ready` | Liveness; DB/schema readiness (503 on failure) |
+| POST | `/api/register`, `/api/verify-email`, `/api/auth/resend-verification` | Existing registration/verification flows |
+| POST | `/api/login`, `/api/logout` | Secure opaque sessions; Origin and CSRF validation |
+| GET | `/api/session` | Session status |
+| POST | `/api/password-reset/request`, `/api/password-reset/complete` | Email reset flow |
+| GET/POST | `/api/user/profile` | Own profile |
+| POST | `/api/user/password` | Atomic password change and session revocation |
+| GET | `/api/user/orders`, `/api/user/orders/:orderNumber` | Owner-scoped history |
+| POST | `/api/checkout/stripe` | `{type:"vip"|"cash",rankSlug,idempotencyKey:UUID}` |
+| POST | `/api/webhooks/stripe` | Raw-body HMAC, test events, idempotent reconciliation |
+| POST | `/api/user/minecraft/link-code` | One-use link code |
+| GET | `/api/user/minecraft/status` | Own linked identity |
+| GET | `/v1/bridge/pending`, `/v1/bridge/status` | Authenticated plugin reads |
+| POST | `/v1/bridge/link`, `/v1/bridge/ack` | Authenticated plugin linking/ACK |
+| GET | `/api/server-status` | Minecraft status (not `/api/server/status`) |
+
+Bridge routes also exist under `/api/v1/bridge/*`. Browser mutations require
+`Origin: APP_URL`, secure session cookies where applicable, and matching
+`X-CSRF-Token`. Cash slugs: `cash-50`, `cash-100`, `cash-300`, `cash-500`, `cash-1000`.
+Prices and bonuses come from the server catalog. `/store` links Cash to
+`/checkout?cash=100`; VIPs use the existing cart. Legacy demo order routes stay blocked.
+
+## Verification and rollback
+
+```sh
+npm test
+npm run lint
+BUILD_VPS=true npm run build
+node scripts/test-staging-api.mjs
+npm run build:vinext
+npm run typecheck
+# With PG_BIN/PG_LIB configured as in postgresql-integration-tests.md:
+npm run test:db
+```
+
+DB tests own a fresh Unix-socket-only cluster and use `swiftmc_staging`, never the
+VPS database. Providers/email are mocked. Do not run the two builds concurrently.
+API smoke checks intentionally use an unreachable database and verify fail-closed
+responses; they do not prove external provider connectivity.
+
+Rollback the application to a retained staging image without reverting schemas:
+
+```sh
+STAGING_IMAGE_TAG=PREVIOUS_STAGING_TAG docker compose -f compose.staging.yaml up -d --no-build --no-deps --wait backend
+```
+
+Both migrations are additive; retain the rate table and Cash snapshot column on
+rollback. Never run `down -v`, `migrate reset`, or delete database files. Snapshot
+the staging database with existing backup tooling before applying migrations.
+
+## Validation record — 2026-11-10
+
+- Unit/security tests: **399 passed**, no failures/skips.
+- PostgreSQL 17.10: **91 passed twice**, no failures/skips; ten migrations applied,
+  application tables empty after both passes; disposable cluster removed.
+- `BUILD_VPS=true npm run build`, `npm run build:vinext`, lint, typecheck: passed.
+- Local HTTP API smoke: ten assertions passed (plus liveness startup check),
+  including origin protection, failed-DB rate limiting, secure CSRF cookies,
+  signed-webhook rejection, Bridge rejection, and account redirect.
+- Wrangler **4.160.0** gateway deploy **dry run**: passed. No Worker uploaded.
+- Docker build/Compose runtime: **not run**, Docker is unavailable locally.
+- VPS audit, tunnel/systemd startup, real Stripe test checkout/webhook delivery,
+  Resend delivery, and Paper/LuckPerms/SwiftCash end-to-end: **not verified**.
+  These require staging access, credentials, and a running staging Minecraft server.
+- Cash refund debit/reconciliation remains manual after delivery; see above.
+
+Key modified areas: `lib/auth-api/`, `lib/auth-infrastructure/`, `lib/prisma.ts`,
+`lib/staging-config.ts`, `lib/server-env.ts`, `lib/purchase-gate.ts`, `lib/orders/`,
+`lib/payments/`, `lib/minecraft-bridge/service.ts`, checkout/store pages and
+components, `middleware.ts`, `next.config.ts`, `prisma/schema.prisma` and the two
+`20261110*` migrations. Added deploy artifacts are `Dockerfile.staging`,
+`.dockerignore`, `compose.staging.yaml`, `deploy/*`, and the staging audit/deploy/API
+scripts. Regression coverage is in `tests/staging-backend.test.ts` and the database
+integration tests. The DB runner/helper now select the disposable staging DB name.

@@ -12,7 +12,7 @@ import { getLinkedMinecraftIdentityForUser, orderIdentityLabel } from "@/lib/min
 import { purchasesEnabled, purchasesDisabledResponse } from "@/lib/purchase-gate";
 
 const inputSchema = z.object({
-  type: z.literal("vip"),
+  type: z.enum(["vip", "cash"]),
   rankSlug: z.string().max(32),
   idempotencyKey: z.uuid(),
 }).strict();
@@ -32,6 +32,7 @@ export async function POST(request: Request): Promise<Response> {
   if (!auth.user.emailVerifiedAt || !auth.user.emailNormalized) return error("EMAIL_NOT_VERIFIED", "Verifique seu email antes de comprar.", 403);
   const input = inputSchema.safeParse(await request.json().catch(() => null));
   if (!input.success) return error("INVALID_INPUT", "Selecione um VIP válido.", 400);
+  if ((input.data.type === "cash") !== input.data.rankSlug.startsWith("cash-")) return error("INVALID_INPUT", "Produto inválido.", 400);
   let secretKey: string;
   try { secretKey = getStripeConfig().secretKey; }
   catch { return error("CHECKOUT_UNAVAILABLE", "Pagamento indisponível. Tente novamente mais tarde.", 503); }

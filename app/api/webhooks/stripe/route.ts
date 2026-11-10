@@ -1,4 +1,4 @@
-import { getStripeWebhookConfig } from "@/lib/server-env";
+import { getStripeWebhookConfig, stripeTestEventsOnly } from "@/lib/server-env";
 import { getWorkersEnv } from "@/lib/auth-api/get-env";
 import { withAuthPrisma } from "@/lib/auth-infrastructure/prisma";
 import { createStripeClient } from "@/lib/payments/stripe";
@@ -55,7 +55,11 @@ export async function POST(request: Request): Promise<Response> {
 
   let event: { id: string; type: string; data: { object: unknown } };
   try {
-    const parsedEvent = parseStripeWebhookEvent(JSON.parse(rawBody));
+    const payload = JSON.parse(rawBody);
+    if (stripeTestEventsOnly() && payload.livemode !== false) {
+      return Response.json({ error: "TEST_EVENTS_ONLY" }, { status: 400 });
+    }
+    const parsedEvent = parseStripeWebhookEvent(payload);
     if (!parsedEvent) {
       return Response.json(
         { error: "INVALID_EVENT_PAYLOAD" },

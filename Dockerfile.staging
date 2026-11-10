@@ -1,0 +1,28 @@
+FROM node:24.21.0-bookworm-slim AS dependencies
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
+COPY package.json package-lock.json ./
+COPY prisma ./prisma
+RUN npm ci && npx prisma generate
+
+FROM dependencies AS build
+COPY . .
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN BUILD_VPS=true npm run build
+
+FROM dependencies AS migrations
+COPY lib/staging-config.ts ./staging-config.ts
+COPY deploy/staging-preflight.mjs deploy/migrate-staging.mjs ./
+USER node
+CMD ["node", "migrate-staging.mjs"]
+
+FROM node:24.21.0-bookworm-slim AS runtime
+WORKDIR /app
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 HOSTNAME=127.0.0.1 PORT=3100
+COPY --from=build --chown=node:node /app/.next/standalone ./
+COPY --from=build --chown=node:node /app/.next/static ./.next/static
+COPY --from=build --chown=node:node /app/public ./public
+COPY --chown=node:node lib/staging-config.ts ./staging-config.ts
+COPY --chown=node:node deploy/staging-preflight.mjs ./
+USER node
+CMD ["node", "--import", "./staging-preflight.mjs", "server.js"]

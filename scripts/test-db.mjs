@@ -72,7 +72,7 @@ if (!remote) checkPrerequisites();
 const directory = mkdtempSync(join(tmpdir(), remote ? "swiftmc-prisma-test-" : "swiftmc-pg-test-"));
 const bin = globalThis.process.env.PG_BIN;
 const executable = (name) => bin ? join(bin, name) : name;
-const url = suppliedUrl ?? `postgresql://swiftmc_test@localhost:5432/swiftmc_test?host=${encodeURIComponent(directory)}`;
+const url = suppliedUrl ?? `postgresql://swiftmc_test@localhost:5432/swiftmc_staging?host=${encodeURIComponent(directory)}`;
 const env = {
   PATH: globalThis.process.env.PATH, HOME: globalThis.process.env.HOME,
   LD_LIBRARY_PATH: globalThis.process.env.PG_LIB,
@@ -135,7 +135,7 @@ try {
     run(executable("initdb"), ["-D", join(directory, "data"), "-U", "swiftmc_test", "--auth=trust", "--no-locale", "--encoding=UTF8"]);
     run(executable("pg_ctl"), ["-D", join(directory, "data"), "-l", join(directory, "postgres.log"), "-o", `-k ${directory} -c listen_addresses=''`, "-w", "start"]);
     started = true;
-    run(executable("createdb"), ["-h", directory, "-U", "swiftmc_test", "swiftmc_test"]);
+    run(executable("createdb"), ["-h", directory, "-U", "swiftmc_test", "swiftmc_staging"]);
   }
   const config = join(directory, "prisma.config.ts");
   writeFileSync(config, `export default { schema: ${JSON.stringify(resolve("prisma/schema.prisma"))} };\n`);

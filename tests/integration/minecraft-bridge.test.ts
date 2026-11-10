@@ -7,6 +7,7 @@ import { createTestPrisma, hasDatabase } from "@/tests/integration/helpers";
 import { acknowledgeBridgeDelivery, bindMinecraftLinkCode, generateMinecraftLinkCode, getBridgeLinkStatus, listPendingBridgeDeliveries, queueVipSnapshot, revokeVipEntitlementsForOrder, upsertVipEntitlementForPaidOrder } from "@/lib/minecraft-bridge/service";
 import { verifyBridgeRequest } from "@/lib/minecraft-bridge/auth";
 import { MINECRAFT_NAMESPACE } from "@/lib/minecraft-bridge/vip";
+import { queueCashForPaidOrder } from "@/lib/minecraft-bridge/service";
 
 const db = createTestPrisma();
 const databaseOptions = { skip: !hasDatabase ? "DATABASE_URL is not configured" : false };
@@ -32,6 +33,27 @@ async function user() {
   created.userIds.push(u.id); return u;
 }
 const uuid = (n: number) => `12345678-1234-4234-8234-${String(n).padStart(12, "0")}`;
+
+test("Cash credits use persisted amount, stable delivery ID and duplicate-safe ACK", databaseOptions, async () => {
+  assert.ok(db);
+  const a = await user();
+  const { code } = await generateMinecraftLinkCode(db, a.id);
+  await bindMinecraftLinkCode(db, { code, playerUuid: uuid(50), nickname: "CashPlayer" });
+  const { order } = await paidVipOrder(a, "cash-100", 999);
+  const snapshot = await db.order.update({ where: { id: order.id }, data: { cashAmount: 110 } });
+  await db.$transaction(tx => queueCashForPaidOrder(tx, snapshot));
+  await db.$transaction(tx => queueCashForPaidOrder(tx, snapshot));
+  assert.equal(await db.bridgeDelivery.count({ where: { orderId: order.id, kind: "CASH" } }), 1);
+  const pending = await listPendingBridgeDeliveries(db, "swift-staging");
+  const delivery = pending.deliveries.find(d => d.deliveryId === `cash_${order.id}`)!;
+  assert.equal(delivery.cashAmount, 110);
+  assert.equal(delivery.action, "CREDIT");
+  assert.equal(delivery.playerUuid, uuid(50));
+  const ack = { deliveryId: delivery.deliveryId, sequence: delivery.sequence, status: "completed", serverId: "swift-staging" };
+  assert.equal((await acknowledgeBridgeDelivery(db, ack)).httpStatus, 200);
+  assert.equal((await acknowledgeBridgeDelivery(db, ack)).duplicate, true);
+  assert.ok(!(await listPendingBridgeDeliveries(db, "swift-staging")).deliveries.some(d => d.deliveryId === delivery.deliveryId));
+});
 
 async function paidVipOrder(u: { id: string }, rankSlug = "swift", totalCents = 1990) {
   assert.ok(db);

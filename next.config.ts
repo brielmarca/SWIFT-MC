@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: process.env.BUILD_VPS === "true" ? "standalone" : undefined,
   poweredByHeader: false,
   async headers() {
     // Static Next/RSC and vinext bootstrap scripts require inline scripts today.

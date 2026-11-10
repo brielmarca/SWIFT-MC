@@ -25,3 +25,4 @@ yarn-error.log*
 # Local-only generated Phase A routes; remove before normal builds/deployment.
 /app/runtime-feasibility/
 /app/auth-infrastructure-probe/
+/deploy/staging.env

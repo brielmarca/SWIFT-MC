@@ -11,6 +11,10 @@ import type { AuthBindings } from "@/lib/auth-infrastructure/bindings";
  * (e.g. AUTH_HYPERDRIVE) return a 503 when it is absent.
  */
 export async function getWorkersEnv(): Promise<Partial<AuthBindings> & { APP_URL?: string }> {
+  if (process.env.BACKEND_RUNTIME === "node") {
+    const { getNodeAuthBindings } = await import("@/lib/auth-infrastructure/node-bindings");
+    return getNodeAuthBindings();
+  }
   try {
     // cloudflare:workers is a virtual module injected by @cloudflare/vite-plugin
     // in the Workers runtime. It is unavailable during `next build`, so the

@@ -2,6 +2,7 @@ import "server-only";
 
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
+import { assertStagingDatabase } from "./staging-config";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -14,7 +15,8 @@ function createPrismaClient(): PrismaClient {
     throw new Error("DATABASE_URL is required.");
   }
 
-  return new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+  if (process.env.BACKEND_RUNTIME === "node") assertStagingDatabase(connectionString);
+  return new PrismaClient({ adapter: new PrismaPg({ connectionString, max: 10, connectionTimeoutMillis: 3000, query_timeout: 5000 }) });
 }
 
 // Route modules are loaded independently of whether their handlers are called.

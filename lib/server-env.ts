@@ -87,11 +87,19 @@ export type StripeWebhookConfig = {
   webhookSecret: string;
 };
 
+export function stripeTestEventsOnly(): boolean {
+  return process.env.BACKEND_RUNTIME === "node";
+}
+
 export function getStripeConfig(): StripeConfig {
   const secretKey = process.env.STRIPE_SECRET_KEY;
 
   if (!secretKey) {
     throw new Error("STRIPE_SECRET_KEY is required.");
+  }
+
+  if (process.env.BACKEND_RUNTIME === "node" && !/^(sk|rk)_test_/.test(secretKey)) {
+    throw new Error("Only Stripe test keys are permitted on the staging backend.");
   }
 
   if (!/^(sk|rk)_live_/.test(secretKey) && !/^(sk|rk)_test_/.test(secretKey)) {
@@ -102,7 +110,7 @@ export function getStripeConfig(): StripeConfig {
 }
 
 export function getStripeWebhookConfig(): StripeWebhookConfig {
-  const secretKey = process.env.STRIPE_SECRET_KEY;
+  const secretKey = getStripeConfig().secretKey;
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
   if (!secretKey) {

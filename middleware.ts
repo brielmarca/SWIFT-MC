@@ -6,6 +6,12 @@ const AUTH_PAGES = ['/login', '/register', '/forgot-password', '/reset-password'
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+  if (process.env.BACKEND_RUNTIME === 'node' && !pathname.startsWith('/api/health/')) {
+    const expected = process.env.BACKEND_PROXY_SECRET
+    if (!expected || expected.length < 32 || request.headers.get('x-swift-backend-key') !== expected) {
+      return NextResponse.json({ error: { code: 'ORIGIN_UNAUTHORIZED' } }, { status: 403 })
+    }
+  }
   const isAuthPage = AUTH_PAGES.includes(pathname)
   const response = NextResponse.next()
   // Canonical metadata may still point to production on preview deployments.

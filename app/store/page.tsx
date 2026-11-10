@@ -68,3 +68,4 @@ export default function StorePage() {
     </>
   );
 }
+export const dynamic = "force-dynamic";
