@@ -7,12 +7,19 @@ import { createHmac } from 'node:crypto';
 const { fetch } = globalThis;
 
 // Read-only HTTP validation against a locally spawned build, with no real DB/provider.
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+const caDir = mkdtempSync(join(tmpdir(), 'swiftmc-api-ca-'));
+const caPath = join(caDir, 'origin-ca.pem');
+writeFileSync(caPath, '-----BEGIN CERTIFICATE-----\nTEST\n-----END CERTIFICATE-----\n');
 const origin = 'http://127.0.0.1:3197';
 const secret = 'local-api-validation-only-'.repeat(3);
 const child = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'start', '--hostname', '127.0.0.1', '--port', '3197'], {
   stdio: ['ignore', 'ignore', 'ignore'],
   env: { ...process.env, APP_ENV: 'staging', BACKEND_RUNTIME: 'node', APP_URL: 'https://stage.example.test',
-    DATABASE_URL: 'postgresql://test:test@127.0.0.1:9/swiftmc_staging', DIRECT_DATABASE_URL: '',
+    DATABASE_URL: 'postgresql://test:test@127.0.0.1:9/swiftmc_staging?sslmode=verify-full', DIRECT_DATABASE_URL: '',
+    DATABASE_SSL_CA_PATH: caPath, DATABASE_SSL_SERVERNAME: 'postgres.swiftmc.internal',
     PURCHASES_ENABLED: 'false', STRIPE_TEST_PURCHASES_ENABLED: 'true', STRIPE_SECRET_KEY: 'sk_test_local_validation',
     STRIPE_WEBHOOK_SECRET: 'whsec_local_validation', BACKEND_PROXY_SECRET: secret,
     MINECRAFT_BRIDGE_SERVER_ID: 'swift-staging', MINECRAFT_BRIDGE_ALLOWED_SERVER_IDS: 'swift-staging',

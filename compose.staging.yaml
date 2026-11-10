@@ -13,6 +13,9 @@ services:
     environment:
       HOSTNAME: 127.0.0.1
       PORT: "3100"
+    volumes:
+      # Trusted PostgreSQL CA (e.g. Cloudflare Origin CA); mode 444, not committed.
+      - ./deploy/certs:/run/secrets/db-certs:ro
     restart: unless-stopped
     init: true
     read_only: true
@@ -42,6 +45,8 @@ services:
       target: migrations
     env_file: deploy/staging.env
     network_mode: host
+    volumes:
+      - ./deploy/certs:/run/secrets/db-certs:ro
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
     restart: "no"

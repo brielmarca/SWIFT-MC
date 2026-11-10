@@ -13,12 +13,14 @@ RUN BUILD_VPS=true npm run build
 FROM dependencies AS migrations
 COPY lib/staging-config.ts ./staging-config.ts
 COPY deploy/staging-preflight.mjs deploy/migrate-staging.mjs ./
+RUN mkdir -p /run/secrets/db-certs && chown node:node /run/secrets/db-certs
 USER node
 CMD ["node", "migrate-staging.mjs"]
 
 FROM node:24.21.0-bookworm-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 HOSTNAME=127.0.0.1 PORT=3100
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*   && mkdir -p /run/secrets/db-certs && chown node:node /run/secrets/db-certs
 COPY --from=build --chown=node:node /app/.next/standalone ./
 COPY --from=build --chown=node:node /app/.next/static ./.next/static
 COPY --from=build --chown=node:node /app/public ./public

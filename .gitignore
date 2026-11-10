@@ -26,3 +26,6 @@ yarn-error.log*
 /app/runtime-feasibility/
 /app/auth-infrastructure-probe/
 /deploy/staging.env
+
+# Staging database TLS material (CA/keys never committed)
+deploy/certs/

@@ -1,6 +1,7 @@
 import "server-only";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
+import { readFileSync } from "node:fs";
 import type { AuthBindings } from "./bindings";
 import { getPrisma } from "@/lib/prisma";
 
@@ -21,7 +22,7 @@ export function buildPgConfig(connectionString: string) {
     max: number;
     connectionTimeoutMillis: number;
     query_timeout: number;
-    ssl?: { rejectUnauthorized: boolean };
+    ssl?: { rejectUnauthorized: boolean; ca?: string; servername?: string };
   } = {
     connectionString,
     max: 1,
@@ -37,6 +38,12 @@ export function buildPgConfig(connectionString: string) {
   // requirement that the Hyperdrive origin must present a valid certificate.
   if (isHyperdriveConnection(connectionString)) {
     config.ssl = { rejectUnauthorized: true };
+  } else if (process.env.BACKEND_RUNTIME === "node" && process.env.DATABASE_SSL_CA_PATH && process.env.DATABASE_SSL_SERVERNAME) {
+    config.ssl = {
+      ca: readFileSync(process.env.DATABASE_SSL_CA_PATH, "utf8"),
+      servername: process.env.DATABASE_SSL_SERVERNAME,
+      rejectUnauthorized: true,
+    };
   }
 
   return config;

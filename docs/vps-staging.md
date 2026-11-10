@@ -21,6 +21,12 @@ Use a dedicated staging DB role, with no production permissions. Migration and
 runtime URLs may use separate staging roles. The owner must provision the staging
 database/roles if absent; scripts neither create nor reset existing databases.
 
+Runtime and migration connections use full PostgreSQL TLS verification (`sslmode=verify-full`,
+`rejectUnauthorized: true`) with a trusted CA mounted read-only from `deploy/certs` to
+`/run/secrets/db-certs` in both containers. `DATABASE_SSL_CA_PATH` and `DATABASE_SSL_SERVERNAME`
+are required; the server name must match the certificate presented by PostgreSQL (Cloudflare
+Origin CA) while the transport remains on loopback. Certificate/key material is never committed.
+
 ## VPS deployment commands
 
 Prerequisites: Linux, Docker Engine + Compose v2, PostgreSQL 17 reachable on loopback,
@@ -30,12 +36,15 @@ Do not use `compose.yaml`, production Worker commands, or a production tunnel.
 
 ```sh
 bash scripts/audit-staging-vps.sh
+install -d -m 700 deploy/certs
+# Install the trusted PostgreSQL CA (e.g. Cloudflare Origin CA) as a file, not a secret in git/env:
+install -m 444 /path/to/postgres-origin-ca.pem deploy/certs/origin-ca.pem
 install -m 600 deploy/staging.env.example deploy/staging.env
 ${EDITOR:-vi} deploy/staging.env
 openssl rand -hex 32
 # Put the generated value in BACKEND_PROXY_SECRET privately; do not commit it.
-# Fill the staging URLs, role/password, Resend sender/key, Stripe TEST keys,
-# webhook signing secret, and a separate random staging Bridge secret.
+# Fill staging-only DB role/password, DATABASE_SSL_SERVERNAME (must match the PostgreSQL TLS certificate),
+# APP_URL, Resend sender/key, Stripe TEST keys, webhook signing secret, and a separate random staging Bridge secret.
 STAGING_IMAGE_TAG=staging-20261110 bash scripts/deploy-staging.sh
 docker compose -f compose.staging.yaml ps
 curl --fail http://127.0.0.1:3100/api/health/ready
