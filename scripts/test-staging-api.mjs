@@ -18,8 +18,8 @@ const secret = 'local-api-validation-only-'.repeat(3);
 const child = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'start', '--hostname', '127.0.0.1', '--port', '3197'], {
   stdio: ['ignore', 'ignore', 'ignore'],
   env: { ...process.env, APP_ENV: 'staging', BACKEND_RUNTIME: 'node', APP_URL: 'https://stage.example.test',
-    DATABASE_URL: 'postgresql://test:test@127.0.0.1:9/swiftmc_staging?sslmode=verify-full', DIRECT_DATABASE_URL: '',
-    DATABASE_SSL_CA_PATH: caPath, DATABASE_SSL_SERVERNAME: 'postgres.swiftmc.internal',
+    DATABASE_URL: 'postgresql://test:test@db-staging.swiftmc.com.br:9/swiftmc_staging?sslmode=verify-full&hostaddr=127.0.0.1', DIRECT_DATABASE_URL: '',
+    DATABASE_SSL_CA_PATH: caPath, DATABASE_SSL_SERVERNAME: 'db-staging.swiftmc.com.br',
     PURCHASES_ENABLED: 'false', STRIPE_TEST_PURCHASES_ENABLED: 'true', STRIPE_SECRET_KEY: 'sk_test_local_validation',
     STRIPE_WEBHOOK_SECRET: 'whsec_local_validation', BACKEND_PROXY_SECRET: secret,
     MINECRAFT_BRIDGE_SERVER_ID: 'swift-staging', MINECRAFT_BRIDGE_ALLOWED_SERVER_IDS: 'swift-staging',

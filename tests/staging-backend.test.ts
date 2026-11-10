@@ -16,20 +16,33 @@ const caPath = join(caDir, "origin-ca.pem");
 writeFileSync(caPath, "-----BEGIN CERTIFICATE-----\nTEST\n-----END CERTIFICATE-----\n");
 const env = {
   BACKEND_RUNTIME: "node", APP_ENV: "staging", APP_URL: "https://stage.example.test",
-  DATABASE_URL: "postgresql://staging:password@127.0.0.1:5432/swiftmc_staging?schema=public&sslmode=verify-full",
-  DATABASE_SSL_CA_PATH: caPath, DATABASE_SSL_SERVERNAME: "postgres.swiftmc.internal",
+  DATABASE_URL: "postgresql://staging:password@db-staging.swiftmc.com.br:5432/swiftmc_staging?schema=public&sslmode=verify-full&hostaddr=127.0.0.1",
+  DIRECT_DATABASE_URL: "postgresql://staging:password@db-staging.swiftmc.com.br:5432/swiftmc_staging?schema=public&sslmode=verify-full&hostaddr=127.0.0.1",
+  DATABASE_SSL_CA_PATH: caPath, DATABASE_SSL_SERVERNAME: "db-staging.swiftmc.com.br",
   PURCHASES_ENABLED: "false", BACKEND_PROXY_SECRET: "a".repeat(64),
   MINECRAFT_BRIDGE_SERVER_ID: "swift-staging", MINECRAFT_BRIDGE_ALLOWED_SERVER_IDS: "swift-staging",
 };
 test("staging preflight rejects production, alternate DB selectors, live keys and live delivery", () => {
   assert.doesNotThrow(() => assertStagingEnvironment(env));
+  // Loopback host form is accepted and SSL URL params are stripped for the driver.
+  assert.equal(
+    assertStagingDatabase("postgresql://user@127.0.0.1:5432/swiftmc_staging?schema=public&sslmode=verify-full"),
+    "postgresql://user@127.0.0.1:5432/swiftmc_staging?schema=public",
+  );
+  // Certificate-hostname form preserves loopback transport via hostaddr.
+  assert.equal(
+    assertStagingDatabase(env.DATABASE_URL),
+    "postgresql://staging:password@127.0.0.1:5432/swiftmc_staging?schema=public",
+  );
   for (const database of ["swiftmc", "swiftmc_test", "postgres", "swiftmc_staging/other"]) {
-    assert.throws(() => assertStagingDatabase(`postgresql://user@localhost/${database}`));
+    assert.throws(() => assertStagingDatabase(`postgresql://user@localhost/${database}?sslmode=verify-full`));
   }
-  for (const query of ["host=public.example", "dbname=swiftmc", "schema=other", "options=-csearch_path=other", "sslmode=disable", "sslmode=require"]) {
-    assert.throws(() => assertStagingDatabase(`postgresql://user@localhost/swiftmc_staging?${query}`));
+  for (const query of ["host=public.example", "dbname=swiftmc", "schema=other", "options=-csearch_path=other", "sslmode=disable", "sslmode=require", "sslrootcert=/tmp/ca.pem"]) {
+    assert.throws(() => assertStagingDatabase(`postgresql://user@127.0.0.1:5432/swiftmc_staging?${query}`));
   }
-  for (const override of [{ APP_ENV: "production" }, { APP_URL: "https://swiftmc.com.br" }, { STRIPE_SECRET_KEY: "sk_live_no" }, { PURCHASES_ENABLED: "true" }, { MINECRAFT_BRIDGE_SERVER_ID: "swift-survival" }, { MINECRAFT_FULFILLMENT_URL: "https://live.example" }, { DATABASE_SSL_CA_PATH: "" }, { DATABASE_SSL_SERVERNAME: "" }]) {
+  assert.throws(() => assertStagingDatabase("postgresql://user@db-staging.swiftmc.com.br:5432/swiftmc_staging?schema=public&sslmode=verify-full"));
+  assert.throws(() => assertStagingDatabase("postgresql://user@db-staging.swiftmc.com.br:5432/swiftmc_staging?schema=public&sslmode=verify-full&hostaddr=8.8.8.8"));
+  for (const override of [{ APP_ENV: "production" }, { APP_URL: "https://swiftmc.com.br" }, { STRIPE_SECRET_KEY: "sk_live_no" }, { PURCHASES_ENABLED: "true" }, { MINECRAFT_BRIDGE_SERVER_ID: "swift-survival" }, { MINECRAFT_FULFILLMENT_URL: "https://live.example" }, { DATABASE_SSL_CA_PATH: "" }, { DATABASE_SSL_SERVERNAME: "" }, { DATABASE_SSL_SERVERNAME: "wrong.example" }]) {
     assert.throws(() => assertStagingEnvironment({ ...env, ...override }));
   }
 });

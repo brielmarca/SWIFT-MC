@@ -3,6 +3,10 @@ import { readFileSync } from "node:fs";
 
 export type StagingDatabaseTls = { ca: string; servername: string };
 
+export const STAGING_DB_NAME = "swiftmc_staging";
+export const STAGING_DB_CERT_HOSTNAME = "db-staging.swiftmc.com.br";
+const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost", "[::1]"]);
+
 export function stagingDatabaseTls(
   env: Record<string, string | undefined> = process.env,
 ): StagingDatabaseTls {
@@ -18,28 +22,42 @@ export function stagingDatabaseTls(
   }
 }
 
-export function assertStagingDatabase(value: string | undefined): string {
+export function stagingDatabaseConnection(value: string | undefined) {
+  let url: URL;
   try {
-    const url = new URL(value ?? "");
-    const allowed = new Set(["schema", "sslmode", "sslrootcert"]);
-    if (
-      !["postgres:", "postgresql:"].includes(url.protocol) ||
-      url.pathname !== "/swiftmc_staging" ||
-      !["127.0.0.1", "localhost", "[::1]"].includes(url.hostname) ||
-      url.username === "" ||
-      url.hash ||
-      [...url.searchParams.keys()].some((key) => !allowed.has(key)) ||
-      (url.searchParams.has("schema") && url.searchParams.get("schema") !== "public") ||
-      (url.searchParams.has("sslmode") && url.searchParams.get("sslmode") !== "verify-full")
-    ) {
-      throw new Error();
-    }
-    return value!;
+    url = new URL(value ?? "");
   } catch {
-    throw new Error(
-      "Only the swiftmc_staging PostgreSQL database (public schema, loopback, verified TLS) is permitted.",
-    );
+    throw new Error("Only the swiftmc_staging PostgreSQL database (public schema, loopback, verified TLS) is permitted.");
   }
+  const allowed = new Set(["schema", "sslmode", "hostaddr"]);
+  const loopbackHost = LOOPBACK_HOSTS.has(url.hostname);
+  const hostaddr = url.searchParams.get("hostaddr");
+  const certHost = url.hostname === STAGING_DB_CERT_HOSTNAME && hostaddr !== null && LOOPBACK_HOSTS.has(hostaddr);
+  if (
+    !["postgres:", "postgresql:"].includes(url.protocol) ||
+    url.pathname !== `/${STAGING_DB_NAME}` ||
+    !(loopbackHost || certHost) ||
+    url.username === "" ||
+    url.hash ||
+    [...url.searchParams.keys()].some((key) => !allowed.has(key)) ||
+    (url.searchParams.has("schema") && url.searchParams.get("schema") !== "public") ||
+    url.searchParams.get("sslmode") !== "verify-full"
+  ) {
+    throw new Error("Only the swiftmc_staging PostgreSQL database (public schema, loopback, verified TLS) is permitted.");
+  }
+  const runtimeUrl = new URL(url.toString());
+  runtimeUrl.searchParams.delete("sslmode");
+  runtimeUrl.searchParams.delete("hostaddr");
+  // Force loopback transport for the driver even when URL hostname is used for certificate verification.
+  if (certHost) runtimeUrl.hostname = hostaddr!;
+  const migrationUrl = new URL(url.toString());
+  migrationUrl.searchParams.set("sslmode", "verify-full");
+  if (loopbackHost) migrationUrl.searchParams.set("hostaddr", url.hostname);
+  return { runtimeUrl: runtimeUrl.toString(), migrationUrl: migrationUrl.toString(), certHostname: certHost ? STAGING_DB_CERT_HOSTNAME : undefined };
+}
+
+export function assertStagingDatabase(value: string | undefined): string {
+  return stagingDatabaseConnection(value).runtimeUrl;
 }
 
 export function assertStagingEnvironment(env: Record<string, string | undefined>): void {
@@ -48,7 +66,11 @@ export function assertStagingEnvironment(env: Record<string, string | undefined>
   }
   assertStagingDatabase(env.DATABASE_URL);
   if (env.DIRECT_DATABASE_URL) assertStagingDatabase(env.DIRECT_DATABASE_URL);
-  stagingDatabaseTls(env);
+  const tls = stagingDatabaseTls(env);
+  const db = stagingDatabaseConnection(env.DATABASE_URL);
+  if (db.certHostname && tls.servername !== db.certHostname) {
+    throw new Error("DATABASE_SSL_SERVERNAME must match the database certificate hostname.");
+  }
   const origin = new URL(env.APP_URL ?? "");
   if (
     origin.protocol !== "https:" ||

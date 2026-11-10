@@ -9,14 +9,14 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrismaClient(): PrismaClient {
-  const connectionString = process.env.DATABASE_URL;
+  const raw = process.env.DATABASE_URL;
 
-  if (!connectionString) {
+  if (!raw) {
     throw new Error("DATABASE_URL is required.");
   }
 
   const nodeRuntime = process.env.BACKEND_RUNTIME === "node";
-  if (nodeRuntime) assertStagingDatabase(connectionString);
+  const connectionString = nodeRuntime ? assertStagingDatabase(raw) : raw;
   const ssl = nodeRuntime ? { ...stagingDatabaseTls(), rejectUnauthorized: true as const } : undefined;
   return new PrismaClient({
     adapter: new PrismaPg({
