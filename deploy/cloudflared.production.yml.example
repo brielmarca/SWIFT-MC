@@ -1,0 +1,8 @@
+tunnel: REPLACE_WITH_PRODUCTION_TUNNEL_UUID
+credentials-file: /etc/swiftmc-production/tunnel.json
+ingress:
+  - hostname: origin.swiftmc.com.br
+    service: http://127.0.0.1:3101
+    originRequest:
+      connectTimeout: 5s
+  - service: http_status:404
