@@ -63,7 +63,7 @@ class FakeUserRepository implements UserRepository {
     updatedAt: Date;
   }): Promise<AuthUser> {
     const id = `user_${this.users.size + 1}`;
-    const user: AuthUser = { id, ...params, emailVerifiedAt: params.emailVerifiedAt ?? null };
+    const user: AuthUser = { id, ...params, phoneE164: null, emailVerifiedAt: params.emailVerifiedAt ?? null };
     this.users.set(id, user);
     return user;
   }
@@ -75,6 +75,12 @@ class FakeUserRepository implements UserRepository {
     return true;
   }
   async updateEmailVerifiedAt(): Promise<void> {}
+  async updateProfile(userId: string, data: { displayName: string; phoneE164: string | null }): Promise<AuthUser> {
+    const u = this.users.get(userId); if (!u) throw new Error("missing"); u.displayName = data.displayName; u.phoneE164 = data.phoneE164; return u;
+  }
+  async updateEmail(userId: string, emailNormalized: string, emailVerifiedAt: Date): Promise<AuthUser> {
+    const u = this.users.get(userId); if (!u) throw new Error("missing"); u.emailNormalized = emailNormalized; u.emailVerifiedAt = emailVerifiedAt; return u;
+  }
   add(u: AuthUser) { this.users.set(u.id, u); }
 }
 
@@ -96,6 +102,12 @@ class FakeIdentityRepository implements IdentityRepository {
     const identity: AuthIdentity = { id, ...params, lastAuthenticatedAt: null };
     this.identities.set(id, identity);
     return identity;
+  }
+  async deleteByUserAndProvider(userId: string, provider: AuthProvider): Promise<void> {
+    for (const [id,i] of this.identities) if (i.userId===userId && i.provider===provider) this.identities.delete(id);
+  }
+  async updateProviderSubject(userId: string, provider: AuthProvider, providerSubject: string): Promise<void> {
+    for (const i of this.identities.values()) if (i.userId===userId && i.provider===provider) i.providerSubject = providerSubject;
   }
   add(i: AuthIdentity) { this.identities.set(i.id, i); }
 }
@@ -133,7 +145,7 @@ class FakeAuditRepository implements AuditRepository {
 }
 
 function baseUser(overrides: Partial<AuthUser> = {}): AuthUser {
-  return { id: "user_1", emailNormalized: "a@example.com", emailVerifiedAt: null, displayName: "A", role: "USER", status: "ACTIVE", authVersion: 1, createdAt: new Date(), updatedAt: new Date(), ...overrides };
+  return { id: "user_1", emailNormalized: "a@example.com", emailVerifiedAt: null, displayName: "A", role: "USER", status: "ACTIVE", phoneE164: null, authVersion: 1, createdAt: new Date(), updatedAt: new Date(), ...overrides };
 }
 
 function makeService(deps: Partial<PasswordLoginDeps> & { clock: FixedClock }) {

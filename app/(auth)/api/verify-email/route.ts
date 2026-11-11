@@ -74,17 +74,16 @@ export async function POST(request: Request): Promise<Response> {
     return jsonError("REQUEST_FAILED", "Invalid email address.", 400);
   }
 
-  // Rate limit verify-email by email and IP. Fail-closed.
+  // Rate limit verify-email by email and source IP. Fail-closed; missing
+  // trusted IP shares a bounded bucket instead of bypassing limits.
   try {
     const emailKey = opaqueKey(`auth:challenge:verify-email:${normalizedEmail}`);
     if (!(await rateLimiter.check({ key: emailKey }))) {
       return rateLimitResponse();
     }
-    if (clientIp) {
-      const ipKey = opaqueKey(`auth:challenge:verify-email:ip:${clientIp}`);
-      if (!(await rateLimiter.check({ key: ipKey }))) {
-        return rateLimitResponse();
-      }
+    const ipKey = opaqueKey(`auth:challenge:verify-email:ip:${clientIp ?? "unknown"}`);
+    if (!(await rateLimiter.check({ key: ipKey }))) {
+      return rateLimitResponse();
     }
   } catch {
     return rateLimitResponse();

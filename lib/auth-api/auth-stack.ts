@@ -8,7 +8,7 @@ import { createSessionService } from "@/lib/auth-domain/session-service";
 import { createRegistrationService } from "@/lib/auth-domain/registration";
 import { createPasswordResetService } from "@/lib/auth-domain/password-reset";
 import { SystemClock } from "@/lib/auth-domain/clock";
-import { PrismaPasswordCredentialRepository } from "@/lib/auth-persistence/prisma-password-repository";
+// PasswordCredentialRepository implements LoginAttemptRepository at runtime.
 import type { AuthBindings } from "@/lib/auth-infrastructure/bindings";
 
 export interface AuthServices {
@@ -34,7 +34,7 @@ export function buildAuthServices(prisma: Parameters<typeof createPrismaAuthRepo
   });
   return {
     loginService: createPasswordLoginService({
-      loginAttemptRepository: new PrismaPasswordCredentialRepository(prisma),
+      loginAttemptRepository: repos.passwordCredentialRepository as unknown as import("@/lib/auth-domain/repositories").LoginAttemptRepository,
       userRepository: repos.userRepository,
       identityRepository: repos.identityRepository,
       passwordCredentialRepository: repos.passwordCredentialRepository,

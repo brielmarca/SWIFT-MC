@@ -1,11 +1,8 @@
 name: swiftmc-staging
 services:
   backend:
-    image: swiftmc-backend-staging:${STAGING_IMAGE_TAG:-local}
-    build:
-      context: .
-      dockerfile: Dockerfile.staging
-      target: runtime
+    image: ${STAGING_IMAGE:-ghcr.io/brielmarca/swiftmc-staging:${STAGING_IMAGE_TAG:?Set STAGING_IMAGE_TAG to an immutable tag}}
+    pull_policy: always
     env_file: deploy/staging.env
     # Linux VPS: reuse the EXISTING loopback-only PostgreSQL listener.
     # This does not create a DB service, volume, network or published port.
@@ -37,12 +34,11 @@ services:
       timeout: 10s
       start_period: 30s
       retries: 3
+
   migrate:
     profiles: [tools]
-    build:
-      context: .
-      dockerfile: Dockerfile.staging
-      target: migrations
+    image: ${STAGING_MIGRATE_IMAGE:-ghcr.io/brielmarca/swiftmc-staging-migrate:${STAGING_IMAGE_TAG:?Set STAGING_IMAGE_TAG to an immutable tag}}
+    pull_policy: always
     env_file: deploy/staging.env
     network_mode: host
     # Prisma migrate resolves the certificate hostname locally while using verified TLS.

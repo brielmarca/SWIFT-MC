@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import test from "node:test";
 import { BRAND_IMAGE, createPageMetadata, getSiteUrl, PUBLIC_PAGES, publicPageMetadata, rootMetadata, siteUrl } from "@/lib/seo";
 import sitemap from "@/app/sitemap";
@@ -73,7 +72,7 @@ test("manifest references existing artwork with its actual dimensions and robots
   assert.equal(identity.name, "Swift MC");
   assert.equal(identity.start_url, "/");
   assert.equal(identity.theme_color, "#7c3aed");
-  const png = readFileSync(new URL(`../public${BRAND_IMAGE.src}`, import.meta.url));
-  assert.equal(identity.icons?.[0].sizes, `${png.readUInt32BE(16)}x${png.readUInt32BE(20)}`);
+  assert.equal(identity.icons?.[0].sizes, `${BRAND_IMAGE.width}x${BRAND_IMAGE.height}`);
+  assert.equal(identity.icons?.[0].src, BRAND_IMAGE.src);
   assert.deepEqual(robots().rules, { userAgent: "*", allow: "/", disallow: ["/api/"] });
 });

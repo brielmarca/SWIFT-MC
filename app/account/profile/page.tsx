@@ -5,11 +5,11 @@ import { ArrowLeft } from "lucide-react";
 import { AuthHeader } from "@/components/auth-header";
 import { Footer } from "@/components/footer";
 import { requireAuthPage } from "@/lib/auth/page-guard";
-import { ProfileForm } from "@/components/account/profile-form";
+import { AccountSettings } from "@/components/account/account-settings";
 
 export const metadata: Metadata = {
-  title: "Editar perfil | Swift MC",
-  description: "Atualize seu nome de exibição na conta Swift MC.",
+  title: "Configurações da conta | Swift MC",
+  description: "Edite perfil, telefone, e-mail e contas vinculadas da sua conta Swift MC.",
 };
 
 export const dynamic = "force-dynamic";
@@ -32,12 +32,12 @@ export default async function ProfilePage() {
           </Link>
           <header className="mb-6 max-w-3xl border-l-2 border-violet pl-4 sm:mb-8 sm:pl-5">
             <p className="eyebrow">Sua conta Swift MC</p>
-            <h1 className="page-title mt-2">Editar perfil</h1>
+            <h1 className="page-title mt-2">Configurações da conta</h1>
             <p className="page-description">
-              Atualize seu nome de exibição. Seu endereço de e-mail não pode ser alterado nesta página.
+              Atualize perfil e telefone, solicite alteração segura de e-mail e gerencie contas vinculadas.
             </p>
           </header>
-          <ProfileForm initialDisplayName={user.displayName} initialEmail={user.emailNormalized!} />
+          <AccountSettings initialDisplayName={user.displayName} initialEmail={user.emailNormalized || ""} initialPhone={user.phoneE164} />
         </div>
       </main>
       <Footer />

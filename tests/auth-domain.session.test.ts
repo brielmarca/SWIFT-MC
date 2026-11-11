@@ -64,23 +64,26 @@ class FakeUserRepository implements UserRepository {
     role: AuthRole;
     status: AuthStatus;
     authVersion: number;
+    emailVerifiedAt: Date | null;
     createdAt: Date;
     updatedAt: Date;
   }): Promise<AuthUser> {
     const id = `user_${this.users.size + 1}`;
-    const user: AuthUser = { id, ...params, emailVerifiedAt: null };
+    const user: AuthUser = { id, ...params, phoneE164: null, emailVerifiedAt: params.emailVerifiedAt ?? null };
     this.users.set(id, user);
     return user;
   }
   async bumpAuthVersion(): Promise<boolean> { return true; }
   async updateEmailVerifiedAt(): Promise<void> {}
+  async updateProfile(userId: string, data: { displayName: string; phoneE164: string | null }): Promise<AuthUser> { const u=this.users.get(userId); if(!u) throw new Error("missing"); u.displayName=data.displayName; u.phoneE164=data.phoneE164; return u; }
+  async updateEmail(userId: string, emailNormalized: string, emailVerifiedAt: Date): Promise<AuthUser> { const u=this.users.get(userId); if(!u) throw new Error("missing"); u.emailNormalized=emailNormalized; u.emailVerifiedAt=emailVerifiedAt; return u; }
   add(user: AuthUser) { this.users.set(user.id, user); }
 }
 
 function baseUser(overrides: Partial<AuthUser> = {}): AuthUser {
   return {
     id: "user_1", emailNormalized: "a@example.com", emailVerifiedAt: null,
-    displayName: "A", role: "USER", status: "ACTIVE", authVersion: 1,
+    displayName: "A", role: "USER", status: "ACTIVE", phoneE164: null, authVersion: 1,
     createdAt: new Date("2026-01-01T00:00:00Z"), updatedAt: new Date("2026-01-01T00:00:00Z"),
     ...overrides,
   };

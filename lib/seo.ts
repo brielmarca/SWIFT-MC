@@ -34,10 +34,10 @@ export function siteUrl(path: string): string {
 }
 
 export const BRAND_IMAGE = {
-  src: "/brand/emblem.png",
+  src: "/brand/emblem.webp",
   alt: "Emblema roxo oficial da Swift MC",
-  width: 1316,
-  height: 1195,
+  width: 1200,
+  height: 1090,
 } as const;
 
 type PageMetadata = {
@@ -114,5 +114,5 @@ export const rootMetadata: Metadata = {
   title: { default: SITE_NAME, template: "%s | Swift MC" },
   applicationName: SITE_NAME,
   manifest: "/manifest.webmanifest",
-  icons: { icon: { url: BRAND_IMAGE.src, type: "image/png" }, apple: BRAND_IMAGE.src },
+  icons: { icon: { url: BRAND_IMAGE.src, type: "image/webp" }, apple: BRAND_IMAGE.src },
 };

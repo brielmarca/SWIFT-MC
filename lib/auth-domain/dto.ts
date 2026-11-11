@@ -56,6 +56,33 @@ export const PasswordResetCompleteRequestSchema = z.object({
 
 export type PasswordResetCompleteRequest = z.infer<typeof PasswordResetCompleteRequestSchema>;
 
+
+export const ProfileUpdateRequestSchema = z.object({
+  displayName: displayNameSchema,
+  phoneE164: z.union([z.string().min(8).max(20), z.null()]).optional(),
+}).strict();
+
+export const EmailChangeRequestSchema = z.object({
+  currentPassword: credentialSchema.optional(),
+  newEmail: z.string().min(1).max(254),
+}).strict();
+
+export const EmailChangeConfirmRequestSchema = z.object({
+  email: z.string().min(1).max(254),
+  challengeToken: challengeTokenSchema,
+  currentPassword: credentialSchema.optional(),
+}).strict();
+
+export const MinecraftUnlinkRequestSchema = z.object({
+  currentPassword: credentialSchema.optional(),
+}).strict();
+
+export const MinecraftCodeRequestSchema = z.object({}).strict();
+
+export const DiscordUnlinkRequestSchema = z.object({
+  currentPassword: credentialSchema.optional(),
+}).strict();
+
 export const PasswordChangeRequestSchema = z.object({
   currentPassword: credentialSchema,
   newPassword: passwordSchema,
@@ -103,3 +130,11 @@ export function validateResendVerification(input: unknown) {
 export function validateLogout(input: unknown) {
   return LogoutRequestSchema.safeParse(input);
 }
+
+export function validateProfileUpdate(input: unknown) { return ProfileUpdateRequestSchema.safeParse(input); }
+export function validateEmailChangeRequest(input: unknown) { return EmailChangeRequestSchema.safeParse(input); }
+export function validateEmailChangeConfirm(input: unknown) { return EmailChangeConfirmRequestSchema.safeParse(input); }
+export function validateMinecraftUnlink(input: unknown) { return MinecraftUnlinkRequestSchema.safeParse(input); }
+export function validateMinecraftCodeRequest(input: unknown) { return MinecraftCodeRequestSchema.safeParse(input); }
+export function validateDiscordUnlink(input: unknown) { return DiscordUnlinkRequestSchema.safeParse(input); }
+

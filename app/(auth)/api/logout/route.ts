@@ -49,13 +49,12 @@ export async function POST(request: Request): Promise<Response> {
 
   const clientIp = getClientIp(request.headers);
 
-  // Rate limit logout by IP. Fail-closed.
+  // Rate limit logout by source IP. Fail-closed; missing trusted IP shares a
+  // bounded bucket instead of bypassing limits.
   try {
-    if (clientIp) {
-      const ipKey = opaqueKey(`auth:user:logout:ip:${clientIp}`);
-      if (!(await rateLimiter.check({ key: ipKey }))) {
-        return rateLimitResponse();
-      }
+    const ipKey = opaqueKey(`auth:user:logout:ip:${clientIp ?? "unknown"}`);
+    if (!(await rateLimiter.check({ key: ipKey }))) {
+      return rateLimitResponse();
     }
   } catch {
     return rateLimitResponse();

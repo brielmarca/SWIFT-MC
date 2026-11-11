@@ -60,4 +60,20 @@ export class PrismaUserRepository implements UserRepository {
       data: { emailVerifiedAt },
     });
   }
+
+  async updateProfile(userId: string, data: { displayName: string; phoneE164: string | null }): Promise<AuthUser> {
+    const record = await this.prisma.user.update({
+      where: { id: userId },
+      data: { displayName: data.displayName, phoneE164: data.phoneE164 },
+    });
+    return mapUser(record);
+  }
+
+  async updateEmail(userId: string, emailNormalized: string, emailVerifiedAt: Date): Promise<AuthUser> {
+    const record = await this.prisma.user.update({
+      where: { id: userId },
+      data: { emailNormalized, emailVerifiedAt },
+    });
+    return mapUser(record);
+  }
 }

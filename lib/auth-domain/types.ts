@@ -12,6 +12,7 @@ export type AuthUser = {
   emailNormalized: string | null;
   emailVerifiedAt: Date | null;
   displayName: string;
+  phoneE164: string | null;
   role: AuthRole;
   status: AuthStatus;
   authVersion: number;
@@ -64,6 +65,7 @@ export type OAuthTransaction = {
   intent: OAuthIntent;
   linkUserId: string | null;
   initiatingSessionId: string | null;
+  pkceVerifierCiphertext: string;
   returnPath: string;
   expiresAt: Date;
   consumedAt: Date | null;
@@ -106,6 +108,7 @@ export type SessionIssueParams = {
   authVersion: number;
   rememberMe: boolean;
   isStaff: boolean;
+  mfaVerifiedAt?: Date | null;
 };
 
 export type SessionValidateParams = {

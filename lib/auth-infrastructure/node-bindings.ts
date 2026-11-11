@@ -7,7 +7,7 @@ import type { PrismaClient } from "@prisma/client";
 import type { BridgeBindings } from "@/lib/minecraft-bridge/auth";
 
 /** Reuses the auth capabilities on Node; counters are atomic and survive restarts. */
-export function getNodeAuthBindings(): AuthBindings & BridgeBindings & { APP_URL: string } {
+export function getNodeAuthBindings(): AuthBindings & BridgeBindings & { APP_URL: string; DISCORD_CLIENT_ID?: string; DISCORD_CLIENT_SECRET?: string; DISCORD_REDIRECT_URI?: string; AUTH_ENCRYPTION_KEY?: string; AUTH_ADMIN_MFA_REQUIRED?: string } {
   if (process.env.APP_ENV === "production") assertProductionEnvironment(process.env);
   else assertStagingEnvironment(process.env);
   return {
@@ -19,6 +19,11 @@ export function getNodeAuthBindings(): AuthBindings & BridgeBindings & { APP_URL
     MINECRAFT_BRIDGE_SERVER_ID: process.env.MINECRAFT_BRIDGE_SERVER_ID,
     MINECRAFT_BRIDGE_ALLOWED_SERVER_IDS: process.env.MINECRAFT_BRIDGE_ALLOWED_SERVER_IDS,
     AUTH_RATE_LIMIT: { limit: ({ key }) => checkPostgresRateLimit(getPrisma(), key) },
+    DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID,
+    DISCORD_CLIENT_SECRET: process.env.DISCORD_CLIENT_SECRET,
+    DISCORD_REDIRECT_URI: process.env.DISCORD_REDIRECT_URI,
+    AUTH_ENCRYPTION_KEY: process.env.AUTH_ENCRYPTION_KEY,
+    AUTH_ADMIN_MFA_REQUIRED: process.env.AUTH_ADMIN_MFA_REQUIRED,
   };
 }
 

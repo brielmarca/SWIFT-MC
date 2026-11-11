@@ -52,6 +52,8 @@ export interface UserRepository {
    * Updates a user's emailVerifiedAt timestamp after successful verification.
    */
   updateEmailVerifiedAt(userId: string, emailVerifiedAt: Date): Promise<void>;
+  updateProfile(userId: string, data: { displayName: string; phoneE164: string | null }): Promise<AuthUser>;
+  updateEmail(userId: string, emailNormalized: string, emailVerifiedAt: Date): Promise<AuthUser>;
 }
 
 export interface IdentityRepository {
@@ -68,6 +70,8 @@ export interface IdentityRepository {
     providerSubject: string;
     createdAt: Date;
   }): Promise<AuthIdentity>;
+  deleteByUserAndProvider(userId: string, provider: AuthProvider): Promise<void>;
+  updateProviderSubject(userId: string, provider: AuthProvider, providerSubject: string): Promise<void>;
 }
 
 export interface LoginAttemptRepository {
@@ -105,6 +109,7 @@ export interface SessionRepository {
     authVersion: number;
     idleExpiresAt: Date;
     absoluteExpiresAt: Date;
+    mfaVerifiedAt?: Date | null;
   }): Promise<AuthSession>;
   /** Look up a session by its token digest. */
   findByTokenDigest(tokenHash: string): Promise<AuthSession | null>;

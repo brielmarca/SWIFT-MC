@@ -98,13 +98,27 @@ export async function bindMinecraftLinkCode(db: PrismaClient, input: { code: str
       tx.minecraftIdentity.findUnique({ where: { namespace_subject: { namespace: MINECRAFT_NAMESPACE, subject: playerUuid } } }),
     ]);
 
-    // Prevent account hijacking / unauthorized relink. A website account keeps one
-    // Minecraft identity and a Minecraft UUID belongs to one website account.
+    // Prevent account hijacking / unauthorized relink. A Minecraft UUID belongs
+    // to one website account. Paid entitlements remain owned by the website account.
+    if (subjectOwner && subjectOwner.userId !== accountId) {
+      throw new BridgeValidationError("Conta/UUID já vinculado; solicite desvinculação autenticada");
+    }
+
+    const ownedEntitlementUuids = [...new Set((await tx.vipEntitlement.findMany({
+      where: { userId: accountId, minecraftUuid: { not: null } },
+      select: { minecraftUuid: true },
+    })).map(e => e.minecraftUuid).filter((v): v is string => !!v))];
+
     if (ownerIdentity && ownerIdentity.subject !== playerUuid) {
       throw new BridgeValidationError("Conta já vinculada a outro jogador; desvinculação segura necessária");
     }
-    if (subjectOwner && subjectOwner.userId !== accountId) {
-      throw new BridgeValidationError("Conta/UUID já vinculado; solicite desvinculação autenticada");
+    // Safe relink: if this account already owns paid/linked entitlements for a specific
+    // UUID, require relinking to that same UUID to preserve ownership and prevent transfer.
+    if (!ownerIdentity && ownedEntitlementUuids.length === 1 && ownedEntitlementUuids[0] !== playerUuid) {
+      throw new BridgeValidationError("Para preservar seus benefícios, vincule novamente o mesmo UUID da conta Minecraft.");
+    }
+    if (!ownerIdentity && ownedEntitlementUuids.length > 1) {
+      throw new BridgeValidationError("Vínculo precisa de suporte: múltiplos UUIDs associados a benefícios desta conta.");
     }
 
     if (ownerIdentity) {

@@ -207,12 +207,15 @@ model User {
   emailNormalized       String?             @unique @db.VarChar(254)
   emailVerifiedAt       DateTime?           @db.Timestamptz(3)
   displayName           String              @db.VarChar(100)
+  phoneE164             String?             @db.VarChar(20)
   role                  UserRole            @default(USER)
   status                UserStatus          @default(ACTIVE)
   authVersion           Int                 @default(1)
   createdAt             DateTime            @default(now()) @db.Timestamptz(3)
   updatedAt             DateTime            @updatedAt @db.Timestamptz(3)
   identities            AuthIdentity[]
+  provisionedAsAdmin    ProvisionedAdmin?
+  mfaCredential         MfaCredential?
   sessions              Session[]
   orders                Order[]
   oauthLinkTransactions OAuthTransaction[]
@@ -234,6 +237,7 @@ model AuthIdentity {
   lastAuthenticatedAt DateTime?           @db.Timestamptz(3)
   user                User                @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   passwordCredential  PasswordCredential?
+  mfaCredential       MfaCredential?
 
   @@unique([provider, providerSubject])
   @@unique([userId, provider])
@@ -407,6 +411,27 @@ model BridgeDelivery {
   @@index([status, accountId, sequence])
   @@index([orderId])
   @@index([entitlementId, status])
+}
+
+/// Admin bootstrap allowlist. Discord subject only; SQL rejects email/display-name values.
+model ProvisionedAdmin {
+  id                String    @id @default(cuid())
+  discordSubject    String    @unique @db.VarChar(255)
+  createdAt         DateTime  @default(now()) @db.Timestamptz(3)
+  claimedByUserId   String?   @unique
+  claimedAt         DateTime? @db.Timestamptz(3)
+  claimedByUser     User?     @relation(fields: [claimedByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+}
+
+model MfaCredential {
+  id                 String       @id @default(cuid())
+  userId             String       @unique
+  identityId         String       @unique
+  secretCiphertext   String       @db.VarChar(2048)
+  enabledAt          DateTime     @db.Timestamptz(3)
+  createdAt          DateTime     @default(now()) @db.Timestamptz(3)
+  user               User         @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  identity           AuthIdentity @relation(fields: [identityId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 }
 
 model AuthAuditEvent {

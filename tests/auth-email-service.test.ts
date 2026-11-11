@@ -71,6 +71,7 @@ test("EmailService delegates to provider", async () => {
   const provider = {
     sendVerificationEmail: async () => { called = true; },
     sendPasswordResetEmail: async () => { called = true; },
+    sendEmailChangeVerificationEmail: async () => { called = true; },
   };
   const service = new EmailService({ provider, appUrl: "https://swiftmc.example", fromEmail: "noreply@example.com" });
   await service.sendVerificationEmail({ to: "a@example.com", token: "tok" });

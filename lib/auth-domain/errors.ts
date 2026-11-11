@@ -1,6 +1,6 @@
 import "server-only";
 
-export type RollbackRequiredCode = "CHANGE_FAILED" | "RESET_FAILED";
+export type RollbackRequiredCode = "CHANGE_FAILED" | "RESET_FAILED" | "REQUEST_FAILED";
 
 /**
  * Signals that a credential-replacement flow has already performed at least one

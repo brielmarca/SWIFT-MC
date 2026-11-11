@@ -5,6 +5,7 @@ import { useId, useRef, useState, useSyncExternalStore, type FormEvent } from "r
 import { authAvailability } from "@/lib/auth-ui";
 import { extractCsrfTokenFromCookie } from "@/lib/auth-client";
 import { AuthField, AuthMessage, AuthSubmit, PasswordField } from "./auth-fields";
+import { DiscordAuthButton } from "./discord-auth-button";
 
 export type AuthMode = "login" | "register" | "forgot" | "reset" | "verify" | "verify-existing" | "resend";
 const submitLabels = { login: "Entrar", register: "Criar conta", forgot: "Enviar instruções", reset: "Redefinir senha", verify: "Concluir cadastro", "verify-existing": "Verificar email", resend: "Reenviar verificação" };
@@ -131,6 +132,8 @@ export function AuthForm({ mode, returnPath = "/" }: { mode: AuthMode; returnPat
   }
 
   return <>
+    {(mode === "login" || mode === "register") && <DiscordAuthButton returnPath={returnPath} label={mode === "login" ? "Entrar com Discord" : "Cadastrar com Discord"} />}
+    {(mode === "login" || mode === "register") && <div className="auth-divider"><span>ou</span></div>}
     <form method="post" action={endpointForMode[mode]} noValidate onSubmit={submit} onChange={() => { setErrors({}); setServerError(null); setAcknowledgement(null); }} aria-label={submitLabels[mode]}>
       <fieldset disabled={!hydrated || submitting} className="auth-fields">
         <AuthField id={`${fieldId}-email`} name="email" label="Email" type="email" autoComplete="email" autoCapitalize="none" spellCheck={false} required maxLength={254} placeholder="voce@exemplo.com" error={errors.email} />

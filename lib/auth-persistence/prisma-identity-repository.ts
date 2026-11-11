@@ -45,4 +45,15 @@ export class PrismaIdentityRepository implements IdentityRepository {
     });
     return mapAuthIdentity(record);
   }
+
+  async deleteByUserAndProvider(userId: string, provider: AuthIdentity["provider"]): Promise<void> {
+    await this.prisma.authIdentity.deleteMany({ where: { userId, provider } });
+  }
+
+  async updateProviderSubject(userId: string, provider: AuthIdentity["provider"], providerSubject: string): Promise<void> {
+    await this.prisma.authIdentity.update({
+      where: { userId_provider: { userId, provider } },
+      data: { providerSubject },
+    });
+  }
 }

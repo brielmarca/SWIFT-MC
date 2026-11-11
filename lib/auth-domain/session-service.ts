@@ -67,6 +67,7 @@ export function createSessionService(deps: SessionServiceDeps): SessionService {
         authVersion: params.authVersion,
         idleExpiresAt,
         absoluteExpiresAt,
+        mfaVerifiedAt: params.mfaVerifiedAt ?? null,
       });
 
       // The raw token is returned only to the immediate caller (cookie setter).

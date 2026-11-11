@@ -69,12 +69,16 @@ export async function POST(request: Request): Promise<Response> {
   const { email } = loginInput.data;
   const clientIp = getClientIp(request.headers);
 
-  // Rate limit by email and by email+IP. Fail-closed: if either check fails,
-  // reject the request. Keys are opaque hashes; raw identifiers never leave
-  // the server.
+  // Rate limit by source IP, email, and email+IP. Fail-closed: missing
+  // trusted IP must not bypass limiting and email-only checks do not stop
+  // password spraying across accounts.
   try {
     const emailKey = opaqueKey(`login:email:${email.toLowerCase().trim()}`);
     if (!(await rateLimiter.check({ key: emailKey }))) {
+      return rateLimitResponse();
+    }
+    const ipKey = opaqueKey(`login:ip:${clientIp ?? "unknown"}`);
+    if (!(await rateLimiter.check({ key: ipKey }))) {
       return rateLimitResponse();
     }
     if (clientIp) {

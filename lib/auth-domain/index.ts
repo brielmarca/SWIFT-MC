@@ -20,7 +20,7 @@ export type {
 export { AUTH_ROLES, AUTH_PERMISSIONS, hasPermission, isStaffRole } from "./types";
 
 export type {
-  UserRepository, IdentityRepository, PasswordCredentialRepository, SessionRepository,
+  UserRepository, IdentityRepository, PasswordCredentialRepository, LoginAttemptRepository, SessionRepository,
   BrowserContextRepository, OAuthTransactionRepository, EmailChallengeRepository, AuditRepository,
 } from "./repositories";
 

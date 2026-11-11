@@ -40,7 +40,11 @@ export async function proxyStagingRequest(request: Request, env: GatewayEnv, ups
     const response = await upstream(target, { method: request.method, headers, body, redirect: "manual", signal: AbortSignal.timeout(25_000) });
     const result = new Response(response.body, response);
     result.headers.set("X-Robots-Tag", "noindex, nofollow");
-    result.headers.set("Cache-Control", "private, no-store");
+    // Only successful, cookie-free public assets may retain upstream caching.
+    const publicAsset = /^\/(?:_next\/static\/|brand\/)/.test(url.pathname);
+    if (!publicAsset || !["GET", "HEAD"].includes(request.method) || response.status !== 200 || response.headers.has("set-cookie")) {
+      result.headers.set("Cache-Control", "private, no-store");
+    }
     // Absolute application redirects must remain on the public staging origin.
     const location = result.headers.get("location");
     if (location?.startsWith(origin.origin + "/")) result.headers.set("location", env.APP_URL + location.slice(origin.origin.length));

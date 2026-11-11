@@ -40,10 +40,10 @@ export function getMountSummary(slug: RankSlug): string {
 
 // Version filenames whenever artwork changes: this also changes optimizer/CDN cache keys.
 export const rankArtworkPaths: Record<RankSlug, string> = {
-  swift: "/brand/ranks/swift-v2.jpeg",
-  eclipse: "/brand/ranks/eclipse-v2.jpeg",
-  cosmic: "/brand/ranks/cosmic-v2.jpeg",
-  overdrive: "/brand/ranks/overdrive-v2.jpeg",
+  swift: "/brand/ranks/swift-v2.webp",
+  eclipse: "/brand/ranks/eclipse-v2.webp",
+  cosmic: "/brand/ranks/cosmic-v2.webp",
+  overdrive: "/brand/ranks/overdrive-v2.webp",
 };
 
 export type KitItem = {

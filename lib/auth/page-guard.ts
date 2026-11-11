@@ -9,6 +9,7 @@ export type AuthenticatedUser = {
   emailNormalized: string | null;
   emailVerifiedAt: Date | null;
   displayName: string;
+  phoneE164: string | null;
   role: string;
   status: string;
   createdAt: Date;

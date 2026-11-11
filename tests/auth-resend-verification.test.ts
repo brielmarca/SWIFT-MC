@@ -126,7 +126,7 @@ test("resend verification sends email and returns generic acknowledgement for un
   assert.equal(emailSendCalls.length, 1);
   assert.equal(emailSendCalls[0].to, "alice@example.com");
   assert.equal(emailSendCalls[0].token.length, 43);
-  assert.equal(keys.length, 1);
+  assert.equal(keys.length, 2);
   assert.equal(invalidateOutstandingCalls.length, 1);
   assert.equal(invalidateOutstandingCalls[0].email, "alice@example.com");
   assert.equal(invalidateOutstandingCalls[0].purpose, "REGISTER");

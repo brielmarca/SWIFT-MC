@@ -30,3 +30,7 @@ yarn-error.log*
 
 # Staging database TLS material (CA/keys never committed)
 deploy/certs/
+
+# Staging deploy runtime state/diagnostics (VPS)
+/deploy/.staging-state/
+/deploy/diagnostics/

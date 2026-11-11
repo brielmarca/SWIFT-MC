@@ -47,7 +47,7 @@ export default function StorePage() {
           <section id="vips" aria-label="VIPs mensais" className="relative flex items-center mt-16">
             <div className="absolute inset-0 z-0">
               <img
-                src="/brand/enderman.png"
+                src="/brand/enderman.webp"
                 alt=""
                 className="w-full h-full object-cover opacity-30"
                 aria-hidden="true"

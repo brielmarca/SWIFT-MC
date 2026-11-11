@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import Link from "next/link";
-import { User, ShieldCheck, Mail, Clock } from "lucide-react";
+import { User, ShieldCheck, Mail, Clock, Phone, Link2 } from "lucide-react";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { AuthHeader } from "@/components/auth-header";
 import { Footer } from "@/components/footer";
@@ -34,7 +34,6 @@ export default async function AccountPage() {
           </header>
 
           <section className="grid gap-6 lg:grid-cols-3">
-            {/* Profile card */}
             <section className="glass-panel flex flex-col gap-5 p-5 sm:p-6 lg:col-span-2">
               <div className="flex items-center gap-4">
                 <div className="shrink-0 rounded-full bg-violet/10 p-3">
@@ -64,6 +63,13 @@ export default async function AccountPage() {
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
+                  <Phone size={18} className="mt-1 shrink-0 text-muted" aria-hidden="true" />
+                  <div>
+                    <p className="micro-label">Telefone</p>
+                    <p className="font-medium text-ink">{user.phoneE164 || "Não informado"}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
                   <Clock size={18} className="mt-1 shrink-0 text-muted" aria-hidden="true" />
                   <div>
                     <p className="micro-label">Conta criada em</p>
@@ -85,19 +91,25 @@ export default async function AccountPage() {
                 </div>
               </dl>
 
-              <div className="mt-6 flex items-center gap-3">
+              <div className="mt-6 flex flex-wrap items-center gap-3">
                 <LogoutButton />
                 <Link
                   href="/account/profile"
                   className="flex items-center gap-2 rounded-lg border border-white/10 px-4 py-2 text-sm font-semibold transition-colors hover:bg-white/5 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet"
                 >
                   <User size={18} aria-hidden="true" />
-                  <span>Editar perfil</span>
+                  <span>Configurações da conta</span>
+                </Link>
+                <Link
+                  href="/account/profile#linked"
+                  className="flex items-center gap-2 rounded-lg border border-white/10 px-4 py-2 text-sm font-semibold transition-colors hover:bg-white/5 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet"
+                >
+                  <Link2 size={18} aria-hidden="true" />
+                  <span>Contas vinculadas</span>
                 </Link>
               </div>
             </section>
 
-            {/* Orders summary card */}
             <section className="glass-panel flex flex-col gap-5 p-5 sm:p-6 lg:col-span-1">
               <h2 className="text-lg font-bold text-ink">Meus pedidos</h2>
               <p className="text-sm text-muted">

@@ -1,0 +1,111 @@
+name: staging-image
+
+on:
+  push:
+    branches:
+      - deploy/p7-staging-vps
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+      - 'stitch_nexus_mc_premium_store/**'
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Optional immutable tag suffix (defaults to commit SHA)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging-image-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/swiftmc-staging
+
+jobs:
+  build-and-publish:
+    name: Build and publish immutable staging images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@c47758b77c9736f4b2ef4073d4d51994fabfe349 # v3.7.1
+
+      - name: Log in to GHCR
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute immutable image tag
+        id: tag
+        shell: bash
+        env:
+          INPUT_TAG: ${{ inputs.image_tag }}
+        run: |
+          set -euo pipefail
+          if [ -n "${INPUT_TAG:-}" ]; then
+            safe="$(printf '%s' "$INPUT_TAG" | tr -cd 'A-Za-z0-9._-' | cut -c1-40)"
+            [ -n "$safe" ] || { echo "invalid image_tag" >&2; exit 1; }
+            tag="staging-${safe}"
+          else
+            tag="staging-${GITHUB_SHA}"
+          fi
+          printf 'tag=%s\n' "$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push backend runtime image
+        uses: docker/build-push-action@4f58ea79222b3b9dc2c8bbdd6debcef730109a75 # v6.9.0
+        with:
+          context: .
+          file: Dockerfile.staging
+          target: runtime
+          push: true
+          platforms: linux/amd64
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.title=swiftmc-staging-backend
+          cache-from: type=gha,scope=staging-runtime
+          cache-to: type=gha,mode=max,scope=staging-runtime
+
+      - name: Build and push migrations image
+        uses: docker/build-push-action@4f58ea79222b3b9dc2c8bbdd6debcef730109a75 # v6.9.0
+        with:
+          context: .
+          file: Dockerfile.staging
+          target: migrations
+          push: true
+          platforms: linux/amd64
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-migrate:${{ steps.tag.outputs.tag }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.title=swiftmc-staging-migrate
+          cache-from: type=gha,scope=staging-migrate
+          cache-to: type=gha,mode=max,scope=staging-migrate
+
+      - name: Publish image metadata summary
+        shell: bash
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          {
+            echo "## Staging images published"
+            echo
+            echo "- Backend: \`${REGISTRY}/${IMAGE_NAME}:${TAG}\`"
+            echo "- Migrate: \`${REGISTRY}/${IMAGE_NAME}-migrate:${TAG}\`"
+            echo "- Commit: \`${GITHUB_SHA}\`"
+          } >> "$GITHUB_STEP_SUMMARY"

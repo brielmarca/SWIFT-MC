@@ -55,7 +55,7 @@ export function Hero() {
               <Zap size={14} className="text-ultraviolet" aria-hidden="true" /> Java 1.21.11
             </div>
             <Image
-              src="/brand/emblem.png"
+              src="/brand/emblem.webp"
               alt="Emblema roxo oficial da Swift MC"
               width={1316}
               height={1195}

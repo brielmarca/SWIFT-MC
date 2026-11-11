@@ -66,17 +66,16 @@ export async function POST(request: Request): Promise<Response> {
   catch { return jsonError("REQUEST_FAILED", "Invalid email address.", 400); }
   const clientIp = getClientIp(request.headers);
 
-  // Rate limit registration by email and IP. Fail-closed.
+  // Rate limit registration by email and source IP. Fail-closed; missing
+  // trusted IP shares a bounded bucket instead of bypassing limits.
   try {
     const emailKey = opaqueKey(`auth:challenge:register:${normalizedEmail}`);
     if (!(await rateLimiter.check({ key: emailKey }))) {
       return rateLimitResponse();
     }
-    if (clientIp) {
-      const ipKey = opaqueKey(`auth:challenge:register:ip:${clientIp}`);
-      if (!(await rateLimiter.check({ key: ipKey }))) {
-        return rateLimitResponse();
-      }
+    const ipKey = opaqueKey(`auth:challenge:register:ip:${clientIp ?? "unknown"}`);
+    if (!(await rateLimiter.check({ key: ipKey }))) {
+      return rateLimitResponse();
     }
   } catch {
     return rateLimitResponse();

@@ -10,6 +10,11 @@ export interface AuthBindings {
   };
   RESEND_API_KEY?: string;
   EMAIL_FROM?: string;
+  DISCORD_CLIENT_ID?: string;
+  DISCORD_CLIENT_SECRET?: string;
+  DISCORD_REDIRECT_URI?: string;
+  AUTH_ENCRYPTION_KEY?: string;
+  AUTH_ADMIN_MFA_REQUIRED?: string;
 }
 
 export interface DiagnosticBindings extends AuthBindings {

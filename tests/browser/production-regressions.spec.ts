@@ -96,7 +96,7 @@ for (const route of ["/", "/store", "/ranks/swift", "/ranks/eclipse", "/ranks/co
       const image = page.getByRole("img", { name: `Arte do rank ${slug}`, exact: false });
       await image.scrollIntoViewIfNeeded();
       await expect.poll(() => image.evaluate((node: HTMLImageElement) => node.complete && node.naturalWidth > 0)).toBe(true);
-      expect(decodeURIComponent(await image.evaluate((node: HTMLImageElement) => node.currentSrc))).toContain(`/brand/ranks/${slug}-v2.jpeg`);
+      expect(decodeURIComponent(await image.evaluate((node: HTMLImageElement) => node.currentSrc))).toContain(`/brand/ranks/${slug}-v2.webp`);
     }
   });
 }

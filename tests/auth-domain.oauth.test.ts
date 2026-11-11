@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createOAuthService, type OAuthDeps } from "@/lib/auth-domain/oauth";
 import {
-  type OAuthTransactionRepository, type BrowserContextRepository, type AuditRepository,
-  type OAuthTransaction, type AuthBrowserContext,
+  type OAuthTransactionRepository, type AuditRepository,
+  type OAuthTransaction,
 } from "@/lib/auth-domain/repositories";
 import { Clock } from "@/lib/auth-domain/clock";
 
@@ -18,7 +18,7 @@ class FakeOAuthTransactionRepository implements OAuthTransactionRepository {
   transactions = new Map<string, OAuthTransaction>();
   async create(params: Parameters<OAuthTransactionRepository["create"]>[0]): Promise<OAuthTransaction> {
     const now = this.clock.now();
-    const tx: OAuthTransaction = { id: "tx_1", stateHash: `state_${Math.random()}`, browserContextId: params.browserContextId, intent: params.intent, linkUserId: params.linkUserId, initiatingSessionId: params.initiatingSessionId, returnPath: params.returnPath, expiresAt: new Date(now.getTime() + 10 * 60 * 1000), consumedAt: null, createdAt: now };
+    const tx: OAuthTransaction = { id: "tx_1", stateHash: params.stateHash, browserContextId: params.browserContextId, intent: params.intent, linkUserId: params.linkUserId, initiatingSessionId: params.initiatingSessionId, pkceVerifierCiphertext: params.pkceVerifierCiphertext, returnPath: params.returnPath, expiresAt: new Date(now.getTime() + 10 * 60 * 1000), consumedAt: null, createdAt: now };
     this.transactions.set(tx.stateHash, tx);
     return tx;
   }
@@ -28,15 +28,6 @@ class FakeOAuthTransactionRepository implements OAuthTransactionRepository {
     tx.consumedAt = this.clock.now();
     return tx;
   }
-  async expire(): Promise<void> {}
-}
-
-class FakeBrowserContextRepository implements BrowserContextRepository {
-  async create(_params: { tokenHash: string; csrfTokenHash: string; expiresAt: Date }): Promise<AuthBrowserContext> {
-    return { id: "", tokenHash: _params.tokenHash, csrfTokenHash: _params.csrfTokenHash, expiresAt: _params.expiresAt, createdAt: new Date() };
-  }
-  async findByTokenHash(): Promise<AuthBrowserContext | null> { return null; }
-  async consume(): Promise<AuthBrowserContext | null> { return null; }
   async expire(): Promise<void> {}
 }
 
@@ -50,7 +41,6 @@ class FakeAuditRepository implements AuditRepository {
 function makeService(deps: Partial<OAuthDeps> & { clock: FixedClock }) {
   return createOAuthService({
     oauthTransactionRepository: deps.oauthTransactionRepository ?? new FakeOAuthTransactionRepository(deps.clock),
-    browserContextRepository: deps.browserContextRepository ?? new FakeBrowserContextRepository(),
     auditRepository: deps.auditRepository ?? new FakeAuditRepository(),
     clock: deps.clock,
   } as OAuthDeps);
@@ -66,6 +56,7 @@ test("OAuth LOGIN transaction starts with validated returnPath", async () => {
   if (!result.ok) throw new Error("unreachable");
   assert.equal(result.transaction.returnPath, "/account");
   assert.equal(result.transaction.intent, "LOGIN");
+  assert.ok(result.state.length >= 43);
 });
 
 test("OAuth LINK requires initiating identity/session", async () => {
@@ -109,10 +100,10 @@ test("OAuth transaction is single-use: consumed and expired cannot replay", asyn
   assert.equal(started.ok, true);
   if (!started.ok) throw new Error("unreachable");
 
-  const first = await repo.consume(started.stateHash);
-  assert.ok(first);
-  const second = await repo.consume(started.stateHash);
-  assert.equal(second, null, "consumed transaction cannot be replayed");
+  const first = await svc.consumeOAuthTransaction({ state: started.state, browserContextId: "ctx_1", requestId: "req_2" });
+  assert.equal(first.ok, true);
+  const second = await svc.consumeOAuthTransaction({ state: started.state, browserContextId: "ctx_1", requestId: "req_3" });
+  assert.equal(second.ok, false);
 });
 
 test("LOGIN and LINK are distinct intents", async () => {

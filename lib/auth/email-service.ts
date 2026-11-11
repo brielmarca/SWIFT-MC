@@ -12,6 +12,11 @@ export type EmailProvider = {
     token: string;
     appUrl: string;
   }): Promise<void>;
+  sendEmailChangeVerificationEmail(params: {
+    to: string;
+    token: string;
+    appUrl: string;
+  }): Promise<void>;
 };
 
 export type EmailServiceConfig = {
@@ -42,6 +47,14 @@ export class EmailService {
 
   async sendPasswordResetEmail(params: { to: string; token: string }): Promise<void> {
     await this.provider.sendPasswordResetEmail({
+      to: params.to,
+      token: params.token,
+      appUrl: this.appUrl,
+    });
+  }
+
+  async sendEmailChangeVerificationEmail(params: { to: string; token: string }): Promise<void> {
+    await this.provider.sendEmailChangeVerificationEmail({
       to: params.to,
       token: params.token,
       appUrl: this.appUrl,
@@ -127,6 +140,27 @@ export class ResendEmailProvider implements EmailProvider {
         <p><a href="${resetUrl.toString()}">Reset password</a></p>
         <p>This link expires in 10 minutes.</p>
         <p>If you did not request a password reset, you can safely ignore this email.</p>
+      `,
+    });
+  }
+
+  async sendEmailChangeVerificationEmail(params: {
+    to: string;
+    token: string;
+    appUrl: string;
+  }): Promise<void> {
+    const verifyUrl = new URL("/account/confirm-email", params.appUrl);
+    verifyUrl.searchParams.set("token", params.token);
+
+    await this.request({
+      to: params.to,
+      subject: "Confirm your new Swift MC email",
+      html: `
+        <h2>Confirm your new email address</h2>
+        <p>Click the button below to confirm this email address for your Swift MC account.</p>
+        <p><a href="${verifyUrl.toString()}">Confirm new email</a></p>
+        <p>This link expires in 10 minutes.</p>
+        <p>If you did not request this change, you can safely ignore this email.</p>
       `,
     });
   }

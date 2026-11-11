@@ -31,13 +31,12 @@ export async function GET(request: Request): Promise<Response> {
 
   const clientIp = getClientIp(request.headers);
 
-  // Rate limit session checks by IP. Fail-closed.
+  // Rate limit session checks by source IP. Fail-closed; missing trusted IP
+  // shares a bounded bucket instead of bypassing limits.
   try {
-    if (clientIp) {
-      const ipKey = opaqueKey(`auth:user:session:ip:${clientIp}`);
-      if (!(await rateLimiter.check({ key: ipKey }))) {
-        return rateLimitResponse();
-      }
+    const ipKey = opaqueKey(`auth:user:session:ip:${clientIp ?? "unknown"}`);
+    if (!(await rateLimiter.check({ key: ipKey }))) {
+      return rateLimitResponse();
     }
   } catch {
     return rateLimitResponse();

@@ -201,7 +201,7 @@ test("mappers.mapOAuthTransaction preserves intent and link fields", () => {
   assert.equal(tx.intent, "LOGIN");
   assert.equal(tx.linkUserId, null);
   assert.equal(tx.initiatingSessionId, null);
-  assert.equal("pkceVerifierCiphertext" in tx, false);
+  assert.equal(tx.pkceVerifierCiphertext, "cipher");
   assert.equal(tx.consumedAt, null);
 });
 
@@ -572,7 +572,7 @@ test("oauth repository create preserves LOGIN and LINK fields separately", async
   assert.equal(link.intent, "LINK");
   assert.equal(link.linkUserId, "user_1");
   assert.equal(link.initiatingSessionId, "sess_1");
-  assert.equal("pkceVerifierCiphertext" in link, false);
+  assert.equal(link.pkceVerifierCiphertext, "cipher");
 
   const login = await repo.create({
     stateHash: "login-state", browserContextId: "ctx_1", intent: "LOGIN",

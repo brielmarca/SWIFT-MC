@@ -146,11 +146,13 @@ test("session validation service exports required functions", async () => {
       listActiveForUser: async () => [],
     },
     userRepository: {
-      findById: async () => ({ id: "user-test", emailNormalized: "test@example.com", displayName: "Test", role: "USER", status: "ACTIVE", authVersion: 1, createdAt: new Date(), updatedAt: new Date(), emailVerifiedAt: null } as any), // eslint-disable-line @typescript-eslint/no-explicit-any
+      findById: async () => ({ id: "user-test", emailNormalized: "test@example.com", displayName: "Test", role: "USER", status: "ACTIVE", phoneE164: null, authVersion: 1, createdAt: new Date(), updatedAt: new Date(), emailVerifiedAt: null } as unknown as import("@/lib/auth-domain/repositories").AuthUser),
       findByNormalizedEmail: async () => null,
-      createUser: async () => ({ id: "user-test", emailNormalized: "test@example.com", displayName: "Test", role: "USER", status: "ACTIVE", authVersion: 1, createdAt: new Date(), updatedAt: new Date(), emailVerifiedAt: null } as any), // eslint-disable-line @typescript-eslint/no-explicit-any
+      createUser: async () => ({ id: "user-test", emailNormalized: "test@example.com", displayName: "Test", role: "USER", status: "ACTIVE", phoneE164: null, authVersion: 1, createdAt: new Date(), updatedAt: new Date(), emailVerifiedAt: null } as unknown as import("@/lib/auth-domain/repositories").AuthUser),
       bumpAuthVersion: async () => false,
       updateEmailVerifiedAt: async () => {},
+      updateProfile: async () => ({ id: "user-test", emailNormalized: "test@example.com", displayName: "Test", role: "USER", status: "ACTIVE", phoneE164: null, authVersion: 1, createdAt: new Date(), updatedAt: new Date(), emailVerifiedAt: null } as unknown as import("@/lib/auth-domain/repositories").AuthUser),
+      updateEmail: async () => ({ id: "user-test", emailNormalized: "test@example.com", displayName: "Test", role: "USER", status: "ACTIVE", phoneE164: null, authVersion: 1, createdAt: new Date(), updatedAt: new Date(), emailVerifiedAt: null } as unknown as import("@/lib/auth-domain/repositories").AuthUser),
     },
     clock: { now: () => new Date() },
   });

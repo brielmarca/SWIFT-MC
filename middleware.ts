@@ -7,8 +7,11 @@ const AUTH_PAGES = ['/login', '/register', '/forgot-password', '/reset-password'
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   if (process.env.BACKEND_RUNTIME === 'node' && !pathname.startsWith('/api/health/')) {
+    // Public static assets and internal image optimization fetches run on the
+    // loopback backend; the gateway enforces the secret at the edge.
+    const internalAsset = pathname.startsWith('/brand/') || pathname.startsWith('/_next/')
     const expected = process.env.BACKEND_PROXY_SECRET
-    if (!expected || expected.length < 32 || request.headers.get('x-swift-backend-key') !== expected) {
+    if (!internalAsset && (!expected || expected.length < 32 || request.headers.get('x-swift-backend-key') !== expected)) {
       return NextResponse.json({ error: { code: 'ORIGIN_UNAUTHORIZED' } }, { status: 403 })
     }
   }

@@ -67,6 +67,7 @@ export type AuthenticatedUser = {
   emailNormalized: string | null;
   emailVerifiedAt: Date | null;
   displayName: string;
+  phoneE164: string | null;
   role: string;
   status: string;
   createdAt: Date;
@@ -125,6 +126,7 @@ export async function validateSessionFromToken(
           emailNormalized: user.emailNormalized,
           emailVerifiedAt: user.emailVerifiedAt,
           displayName: user.displayName,
+          phoneE164: user.phoneE164 ?? null,
           role: user.role,
           status: user.status,
           createdAt: user.createdAt,
