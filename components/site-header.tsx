@@ -65,6 +65,12 @@ function MobileNav({
         <Search size={18} aria-hidden="true" /> Buscar
       </button>
 
+      {!authUser && (
+        <div className="flex flex-wrap gap-3 border-t border-white/[0.06] pt-3">
+          <a href="/login" className="button-secondary">Entrar</a>
+          <a href="/register" className="button-secondary">Criar conta</a>
+        </div>
+      )}
       {navigationGroups.map((group) => (
         <div key={group.label} className="border-t border-white/[0.06] pt-1">
           <MobileNavGroup label={group.label} items={group.items} pathname={pathname} onClose={onClose} />

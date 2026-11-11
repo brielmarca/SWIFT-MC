@@ -67,7 +67,7 @@ export function Hero() {
               <ShieldCheck size={14} className="text-ultraviolet" aria-hidden="true" /> Terrenos e guildas
             </div>
             <div className="absolute right-2 top-1/2 z-20 flex -translate-y-1/2 items-center gap-1.5 rounded-lg border border-violet/25 bg-void/85 px-2 py-1.5 text-[8px] font-bold uppercase tracking-[0.08em] text-ultraviolet backdrop-blur sm:right-3 sm:gap-2 sm:px-3 sm:py-2 sm:text-[10px] sm:tracking-[0.14em]">
-              <ShieldCheck size={14} aria-hidden="true" /> swiftmc.com.br
+              <ShieldCheck size={14} aria-hidden="true" /> swiftmc.com
             </div>
           </div>
         </div>

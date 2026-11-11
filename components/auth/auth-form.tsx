@@ -131,7 +131,6 @@ export function AuthForm({ mode, returnPath = "/" }: { mode: AuthMode; returnPat
   }
 
   return <>
-    {mode === "login" && <><button type="button" className="auth-discord" disabled={submitting} onClick={() => { attempted.current = true; setSubmitting(true); }}><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M19.7 5.2a18 18 0 0 0-4.4-1.4l-.6 1.2a16 16 0 0 0-5.4 0l-.6-1.2a18 18 0 0 0-4.4 1.4C1.5 9.3.8 13.3 1.2 17.2a18 18 0 0 0 5.5 2.8l1.1-1.8-1.7-.8.4-.3a13 13 0 0 0 11 0l.4.3-1.7.8 1.1 1.8a18 18 0 0 0 5.5-2.8c.5-4.5-.8-8.4-3.1-12ZM8.5 14.7c-1 0-1.8-.9-1.8-2s.8-2 1.8-2 1.8.9 1.8 2-.8 2-1.8 2Zm7 0c-1 0-1.8-.9-1.8-2s.8-2 1.8-2 1.8.9 1.8 2-.8 2-1.8 2Z" /></svg>Continuar com Discord</button><div className="auth-divider"><span>ou</span></div></>}
     <form method="post" action={endpointForMode[mode]} noValidate onSubmit={submit} onChange={() => { setErrors({}); setServerError(null); setAcknowledgement(null); }} aria-label={submitLabels[mode]}>
       <fieldset disabled={!hydrated || submitting} className="auth-fields">
         <AuthField id={`${fieldId}-email`} name="email" label="Email" type="email" autoComplete="email" autoCapitalize="none" spellCheck={false} required maxLength={254} placeholder="voce@exemplo.com" error={errors.email} />

@@ -45,6 +45,9 @@ services:
       target: migrations
     env_file: deploy/staging.env
     network_mode: host
+    # Prisma migrate resolves the certificate hostname locally while using verified TLS.
+    extra_hosts:
+      - "db-staging.swiftmc.com.br=127.0.0.1"
     volumes:
       - ./deploy/certs:/run/secrets/db-certs:ro
     cap_drop: [ALL]
