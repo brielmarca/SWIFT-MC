@@ -19,7 +19,6 @@ export function AuthShell({ children }: { children: ReactNode }) {
       <section className="auth-panel" aria-label="Acesso à conta">
         <Link className="auth-back" href="/">← Voltar à Swift MC</Link>
         <div className="auth-panel-content">{children}</div>
-        <p className="auth-preview">Experiência em preparação · Acesso ainda indisponível</p>
       </section>
     </main>
   );
