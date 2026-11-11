@@ -19,6 +19,7 @@ export function StoreSection() {
         </div>
         <div className="mt-8 flex justify-center">
           <Link href="/store" className="button-secondary">Explorar loja completa</Link>
+          <Link href="/store#cash" className="button-secondary">Ver pacotes de Cash</Link>
         </div>
       </div>
     </section>
