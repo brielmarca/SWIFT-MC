@@ -9,7 +9,7 @@ export const metadata = publicPageMetadata("/store");
 
 const assurances = [
   { icon: Zap, title: "Escolha rápida", text: "Compare os níveis e salve sua seleção no carrinho deste dispositivo." },
-  { icon: ShieldCheck, title: "Valores mensais", text: "VIPs mensais com pagamento avulso via Stripe, sem renovação automática. Cash permanece em demonstração." },
+  { icon: ShieldCheck, title: "Pagamento seguro", text: "VIPs mensais e pacotes de Cash com pagamento avulso via Stripe, sem renovação automática." },
   { icon: Sparkles, title: "Progressão preservada", text: "Cada nível inclui vantagens que ampliam sua experiência Survival." },
 ];
 

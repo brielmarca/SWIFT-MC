@@ -13,6 +13,8 @@ function metadata(timestamp: string, payload = body) {
 }
 
 test("production route rejects stale or altered signatures before database access", async () => {
+  const previous = { ...process.env };
+  Object.assign(process.env, { APP_ENV: "staging", PURCHASES_ENABLED: "false" });
   const previousSecret = process.env.STRIPE_WEBHOOK_SECRET;
   const previousKey = process.env.STRIPE_SECRET_KEY;
   process.env.STRIPE_WEBHOOK_SECRET = secret;
@@ -29,13 +31,14 @@ test("production route rejects stale or altered signatures before database acces
     // A fresh signed malformed event reaches payload validation without login,
     // Origin or CSRF headers. It cannot reach reconciliation or the database.
     const timestamp = String(Math.floor(Date.now() / 1000));
-    const signed = metadata(timestamp, "{}");
+    const signed = metadata(timestamp, '{"livemode":false}');
     const response = await POST(new Request("https://swift.example/api/webhooks/stripe", {
-      method: "POST", headers: { "stripe-signature": `t=${timestamp},v1=${signed.signature}` }, body: "{}",
+      method: "POST", headers: { "stripe-signature": `t=${timestamp},v1=${signed.signature}` }, body: '{"livemode":false}',
     }));
     assert.equal(response.status, 400);
     assert.equal((await response.json()).error, "INVALID_EVENT_PAYLOAD");
   } finally {
+    process.env = previous;
     if (previousSecret === undefined) delete process.env.STRIPE_WEBHOOK_SECRET;
     else process.env.STRIPE_WEBHOOK_SECRET = previousSecret;
     if (previousKey === undefined) delete process.env.STRIPE_SECRET_KEY;
@@ -72,7 +75,7 @@ test("Stripe reconciliation fetches the exact v1 resource URL and preserves prov
   const client = createStripeClient("test-key", async (url, init) => {
     assert.equal(String(url), `https://api.stripe.com/v1/${paths[calls]}`);
     assert.equal(new Headers(init?.headers).get("authorization"), "Bearer test-key");
-    return Response.json(responses[calls++]);
+    return Response.json({ ...responses[calls++], livemode: false });
   });
   assert.equal((await client.getCheckoutSession("cs_test_123"))?.amount_total, 1990);
   assert.equal((await client.getInvoice("in_test123"))?.amount_due, 1990);
@@ -103,7 +106,7 @@ test("refund reconciliation preserves exact cents, normalizes currency, and reje
       amountCents: 1990,
       currency: "BRL",
       approvedAt: null,
-      order: { id: "order", orderNumber: "SWIFT-test", status: "PAID", totalCents: 1990, paidAt: null },
+      order: { id: "order", orderNumber: "SWIFT-test", status: "PAID", totalCents: 1990, currency: "BRL", paidAt: null },
     };
     const store = {
       $queryRaw: async () => [],
@@ -124,7 +127,7 @@ test("refund reconciliation preserves exact cents, normalizes currency, and reje
       $transaction: async (callback: (tx: unknown) => Promise<unknown>) => callback(store),
     };
     const stripe = createStripeClient("test-key", async () => Response.json({
-      id: "ch_test", status: "succeeded", amount: scenario.amount, currency: scenario.currency, refunded: true,
+      id: "ch_test", livemode: false, status: "succeeded", amount: scenario.amount, currency: scenario.currency, refunded: true,
       payment_intent: "pi_test", metadata: { orderNumber: "SWIFT-test", paymentId: "payment" },
     }));
     const result = await reconcileStripeWebhook(store as unknown as PrismaClient, stripe,

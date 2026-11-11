@@ -1,13 +1,15 @@
 import "server-only";
 import { getPrisma } from "@/lib/prisma";
 import { assertStagingEnvironment } from "@/lib/staging-config";
+import { assertProductionEnvironment } from "@/lib/production-config";
 import type { AuthBindings } from "./bindings";
 import type { PrismaClient } from "@prisma/client";
 import type { BridgeBindings } from "@/lib/minecraft-bridge/auth";
 
 /** Reuses the auth capabilities on Node; counters are atomic and survive restarts. */
 export function getNodeAuthBindings(): AuthBindings & BridgeBindings & { APP_URL: string } {
-  assertStagingEnvironment(process.env);
+  if (process.env.APP_ENV === "production") assertProductionEnvironment(process.env);
+  else assertStagingEnvironment(process.env);
   return {
     APP_URL: process.env.APP_URL!,
     AUTH_HYPERDRIVE: { connectionString: process.env.DATABASE_URL! },

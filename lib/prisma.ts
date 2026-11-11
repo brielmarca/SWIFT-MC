@@ -3,6 +3,7 @@ import "server-only";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 import { assertStagingDatabase, stagingDatabaseTls } from "./staging-config";
+import { productionDatabaseConfig } from "./production-config";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -16,8 +17,9 @@ function createPrismaClient(): PrismaClient {
   }
 
   const nodeRuntime = process.env.BACKEND_RUNTIME === "node";
-  const connectionString = nodeRuntime ? assertStagingDatabase(raw) : raw;
-  const ssl = nodeRuntime ? { ...stagingDatabaseTls(), rejectUnauthorized: true as const } : undefined;
+  const production = nodeRuntime && process.env.APP_ENV === "production" ? productionDatabaseConfig(process.env) : undefined;
+  const connectionString = production?.connectionString ?? (nodeRuntime ? assertStagingDatabase(raw) : raw);
+  const ssl = production?.ssl ?? (nodeRuntime ? { ...stagingDatabaseTls(), rejectUnauthorized: true as const } : undefined);
   return new PrismaClient({
     adapter: new PrismaPg({
       connectionString,

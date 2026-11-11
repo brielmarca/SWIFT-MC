@@ -28,3 +28,10 @@ COPY --chown=node:node lib/staging-config.ts ./staging-config.ts
 COPY --chown=node:node deploy/staging-preflight.mjs ./
 USER node
 CMD ["node", "--import", "./staging-preflight.mjs", "server.js"]
+
+# Separate opt-in production target; staging services still select runtime above.
+FROM runtime AS production
+COPY --chown=node:node lib/production-config.ts ./production-config.ts
+COPY --chown=node:node deploy/production-preflight.mjs ./
+ENV PORT=3101
+CMD ["node", "--import", "./production-preflight.mjs", "server.js"]

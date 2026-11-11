@@ -25,9 +25,13 @@ mock.module("@/lib/auth-api/get-env", {
     }),
   },
 });
+// Keep live-mode tests on the disposable cluster, never the production URL.
+mock.module("@/lib/prisma", { namedExports: { getPrisma: () => db } });
 const { POST } = await import("@/app/api/webhooks/stripe/route");
 
 before(() => {
+  process.env.APP_ENV = "staging";
+  process.env.PURCHASES_ENABLED = "false";
   process.env.STRIPE_WEBHOOK_SECRET = secret;
   process.env.STRIPE_SECRET_KEY = secretKey;
 });
@@ -112,6 +116,7 @@ function stripeRequest(
   createdEventIds.add(eventId);
   const rawBody = JSON.stringify({
     id: eventId,
+    livemode: process.env.APP_ENV === "production",
     type: eventType,
     data: { object },
   });
@@ -134,9 +139,9 @@ function mockStripe(body: unknown, status = 200): () => number {
     assert.match(String(_input), /^https:\/\/api\.stripe\.com\/v1\/(checkout\/sessions|invoices|subscriptions|charges)\/[A-Za-z0-9_]+$/);
     assert.equal(
       new Headers(init?.headers).get("authorization"),
-      `Bearer ${secretKey}`,
+      `Bearer ${process.env.STRIPE_SECRET_KEY}`,
     );
-    return Response.json(body, { status });
+    return Response.json({ livemode: process.env.APP_ENV === "production", ...(body as object) }, { status });
   };
   return () => calls;
 }
@@ -447,4 +452,30 @@ test("unknown event type is acknowledged as ignored", databaseOptions, async () 
   assert.equal(result.status, 200);
   assert.equal((await result.json()).ignored, true);
   assert.equal(await db.paymentEvent.count({ where: { providerResourceId: "evt_unknown" } }), 1);
+});
+
+test("live Cash outage retry, concurrent distinct events and refund replay queue one credit", databaseOptions, async () => {
+  assert.ok(db);
+  const previous = { ...process.env };
+  try {
+    Object.assign(process.env, { APP_ENV: "production", BACKEND_RUNTIME: "node", APP_URL: "https://swiftmc.com.br", STRIPE_TEST_PURCHASES_ENABLED: "false", STRIPE_SECRET_KEY: "sk_live_integration_fixture" });
+    const user = await db.user.create({ data: { displayName: "Live fixture", emailNormalized: `${randomUUID()}@example.test`, emailVerifiedAt: new Date() } });
+    createdUserIds.push(user.id);
+    await db.minecraftIdentity.create({ data: { userId: user.id, namespace: MINECRAFT_NAMESPACE, subject: randomUUID(), lastKnownUsername: "LiveFixture", verifiedAt: new Date(), verificationMethod: "bridge_link" } });
+    const order = await fixture(OrderStatus.PENDING_PAYMENT, { rankSlug: "cash-100", totalCents: 999 });
+    await db.order.update({ where: { id: order.id }, data: { userId: user.id, cashAmount: 110 } });
+    const id = `cs_${randomUUID().replaceAll("-", "")}`;
+    const event = `evt_${randomUUID().replaceAll("-", "")}`;
+    globalThis.fetch = async () => Response.json({}, { status: 503 });
+    assert.equal((await POST(stripeRequest("checkout.session.completed", event, { id }))).status, 503);
+    mockStripe({ id, object: "checkout.session", mode: "payment", status: "complete", payment_status: "paid", amount_total: 999, currency: "brl", client_reference_id: order.orderNumber, payment_intent: order.providerPaymentId, metadata: { orderNumber: order.orderNumber, paymentId: order.payments[0].id } });
+    const responses = await Promise.all([event, `${event}_other`, event].map(e => POST(stripeRequest("checkout.session.completed", e, { id }))));
+    assert.ok(responses.every(r => r.status === 200));
+    assert.equal(await db.bridgeDelivery.count({ where: { orderId: order.id } }), 1);
+    const charge = `ch_${randomUUID().replaceAll("-", "")}`;
+    mockStripe({ id: charge, status: "succeeded", refunded: true, amount: 999, currency: "brl", payment_intent: order.providerPaymentId, metadata: { orderNumber: order.orderNumber, paymentId: order.payments[0].id } });
+    for (const suffix of ["refund", "refund", "refund_other"]) assert.equal((await POST(stripeRequest("charge.refunded", `${event}_${suffix}`, { id: charge }))).status, 200);
+    assert.equal((await db.bridgeDelivery.findFirstOrThrow({ where: { orderId: order.id } })).status, "CANCELLED_REFUND");
+    assert.equal((await db.order.findUniqueOrThrow({ where: { id: order.id } })).status, "REFUNDED");
+  } finally { process.env = previous; }
 });

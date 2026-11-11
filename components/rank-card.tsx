@@ -98,10 +98,10 @@ export function RankCard({ rank, variant = "full" }: RankCardProps) {
           <button
             type="button"
             onClick={handleBuyNow}
-            className="button-secondary w-full cursor-not-allowed px-4 opacity-70" disabled aria-disabled="true"
+            className="button-secondary w-full px-4" disabled={!hasPrice}
           >
             <ShoppingBag size={16} aria-hidden="true" />
-            Compra indisponível
+            Revisar compra
           </button>
           <button
             type="button"

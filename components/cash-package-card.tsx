@@ -72,7 +72,7 @@ export function CashPackageCard({ pack, testPurchases = false }: { pack: CashPac
             {pack.survivalOnly && <li>Pacote exclusivo para o Survival.</li>}
             <li>50% de desconto sobre o preço original.</li>
           </ul>
-          <p className="mt-2">{testPurchases ? "Entrega apenas na conta Minecraft vinculada no servidor de staging." : "Nenhum pedido é criado e nenhum Cash é creditado nesta fase."}</p>
+          <p className="mt-2">{testPurchases ? "Entrega na conta Minecraft vinculada após confirmação do pagamento." : "Compras temporariamente indisponíveis."}</p>
         </div>
         <dialog
           ref={previewRef}
@@ -84,7 +84,7 @@ export function CashPackageCard({ pack, testPurchases = false }: { pack: CashPac
           <h2 id={`cash-preview-title-${pack.amount}`} className="mt-3 text-xl font-extrabold uppercase">{name}</h2>
           <p className="mt-3 font-bold text-ultraviolet">{quantity.format(pack.amount + pack.bonus)} Cash no total · {currency.format(pack.price / 100)}</p>
           <p id={`cash-preview-description-${pack.amount}`} className="mt-4 text-sm leading-6 text-muted">
-            Compras e entrega de Cash ficam indisponíveis até a validação final em homologação. Nenhuma cobrança ou entrega será realizada nesta fase.
+            Compras temporariamente indisponíveis. Tente novamente mais tarde.
           </p>
           <form method="dialog" className="mt-6">
             <button type="submit" className="button-primary w-full">Voltar aos pacotes</button>

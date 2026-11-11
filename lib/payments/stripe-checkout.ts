@@ -163,7 +163,10 @@ async function createCheckoutSessionRaw(
     return null;
   }
 
-  return boundedCheckoutSession(await boundedJsonResponse(response));
+  const resource = await boundedJsonResponse(response);
+  if (!resource || typeof resource !== "object" ||
+      (resource as Record<string, unknown>).livemode !== /^(sk|rk)_live_/.test(secretKey)) throw new StripeUnavailableError();
+  return boundedCheckoutSession(resource);
 }
 
 export async function startStripeCheckout(

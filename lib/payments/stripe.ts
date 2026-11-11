@@ -242,7 +242,12 @@ export function createStripeClient(
     } catch {
       throw new StripeUnavailableError();
     }
-    return boundedJsonResponse(response);
+    const resource = await boundedJsonResponse(response);
+    const live = /^(sk|rk)_live_/.test(secretKey);
+    if (!resource || typeof resource !== "object" || (resource as Record<string, unknown>).livemode !== live) {
+      throw new StripeUnavailableError();
+    }
+    return resource;
   }
 
   return {

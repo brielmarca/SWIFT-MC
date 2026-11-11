@@ -19,7 +19,7 @@ export function CartCheckout({ email, verified, testPurchases = false }: { email
       <p className="font-bold">Total desta seleção: {rank.price} · BRL</p>
     </div>
     {testPurchases ? <TestPurchaseButton slug={rank.slug} type="vip" disabled={!verified} /> : <div role="status" className="rounded-xl border border-amber-300/20 bg-amber-400/10 p-4 text-sm leading-6 text-amber-100">
-      <strong>Compras indisponíveis no momento.</strong> A finalização com Stripe e a entrega no servidor Minecraft só serão liberadas após validação completa em homologação.
+      <strong>Compras temporariamente indisponíveis.</strong> Tente novamente mais tarde.
       {!verified ? " Verifique seu email para deixar sua conta pronta quando as compras forem liberadas." : ""}
     </div>}
     <div className="flex flex-wrap gap-3">

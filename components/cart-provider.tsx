@@ -202,7 +202,7 @@ function CartDrawer() {
             <h3 className="mt-5 text-lg font-bold uppercase text-ink">Seu carrinho está vazio</h3>
             <p className="mt-2 max-w-xs text-sm leading-6 text-muted">Explore os ranks e escolha as vantagens ideais para sua jornada.</p>
             <Link href="/store#store-search" onClick={closeCart} className="button-primary mt-6">Explorar ranks</Link>
-            <button type="button" disabled className="button-secondary mt-3 cursor-not-allowed opacity-50">Compras indisponíveis</button>
+            <Link href="/checkout" onClick={closeCart} className="button-secondary mt-3">Revisar compra</Link>
           </div>
         ) : (
           <>
@@ -228,7 +228,7 @@ function CartDrawer() {
                 <span className="micro-label">Subtotal · {items.length} {items.length === 1 ? "VIP" : "VIPs"}</span>
                 <strong className="text-2xl font-extrabold tabular-nums text-ink">{formatMonthlyPrice(subtotalCents) ?? "Total indisponível"}</strong>
               </div>
-              <p className="mt-2 text-xs leading-5 text-muted">Soma dos valores mensais selecionados. Seu carrinho fica salvo neste dispositivo; compras permanecem indisponíveis até validação final.</p>
+              <p className="mt-2 text-xs leading-5 text-muted">Soma dos valores mensais selecionados. Seu carrinho fica salvo neste dispositivo. Você selecionará um VIP por pagamento no checkout.</p>
               {subtotalCents === null ? <p role="status" className="mt-5 text-sm text-amber-200">Não foi possível calcular todos os valores. Revise sua seleção antes de continuar.</p> : <Link href="/checkout" onClick={closeCart} className="button-primary mt-5 w-full">Ir ao checkout</Link>}
               <Link href="/store#store-search" onClick={closeCart} className="button-secondary mt-2 w-full">Continuar na loja</Link>
               <button type="button" onClick={clearCart} className="mt-2 min-h-11 w-full text-xs font-bold uppercase tracking-wider text-muted hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet">Limpar carrinho</button>

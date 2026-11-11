@@ -56,8 +56,8 @@ export async function POST(request: Request): Promise<Response> {
   let event: { id: string; type: string; data: { object: unknown } };
   try {
     const payload = JSON.parse(rawBody);
-    if (stripeTestEventsOnly() && payload.livemode !== false) {
-      return Response.json({ error: "TEST_EVENTS_ONLY" }, { status: 400 });
+    if (payload.livemode !== !stripeTestEventsOnly()) {
+      return Response.json({ error: stripeTestEventsOnly() ? "TEST_EVENTS_ONLY" : "LIVE_EVENTS_ONLY" }, { status: 400 });
     }
     const parsedEvent = parseStripeWebhookEvent(payload);
     if (!parsedEvent) {
@@ -107,7 +107,7 @@ export async function POST(request: Request): Promise<Response> {
         { status: 503, headers: { "Cache-Control": "no-store" } },
       );
     }
-    console.error("stripe-webhook-failure", error);
+    console.error("stripe-webhook-failure");
     return Response.json(
       { error: "INTERNAL_ERROR" },
       { status: 500, headers: { "Cache-Control": "no-store" } },

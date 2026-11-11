@@ -1,4 +1,5 @@
 import "server-only";
+import { stripeLiveMode } from "./stripe-mode";
 
 export function getDatabaseUrl(): string {
   const value = process.env.DATABASE_URL;
@@ -88,7 +89,7 @@ export type StripeWebhookConfig = {
 };
 
 export function stripeTestEventsOnly(): boolean {
-  return process.env.BACKEND_RUNTIME === "node";
+  return !stripeLiveMode();
 }
 
 export function getStripeConfig(): StripeConfig {
@@ -98,9 +99,7 @@ export function getStripeConfig(): StripeConfig {
     throw new Error("STRIPE_SECRET_KEY is required.");
   }
 
-  if (process.env.BACKEND_RUNTIME === "node" && !/^(sk|rk)_test_/.test(secretKey)) {
-    throw new Error("Only Stripe test keys are permitted on the staging backend.");
-  }
+  stripeLiveMode();
 
   if (!/^(sk|rk)_live_/.test(secretKey) && !/^(sk|rk)_test_/.test(secretKey)) {
     throw new Error("STRIPE_SECRET_KEY must be a valid Stripe secret key (sk_* or rk_*).");

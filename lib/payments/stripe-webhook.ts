@@ -294,7 +294,7 @@ async function reconcileInTransaction(
         sessionId = session.id;
         paymentId = session.metadata.paymentId ?? null;
         paymentIntent = session.payment_intent;
-        if (session.id !== resource.id || session.client_reference_id !== orderNumber || session.amount_total === null || !Number.isSafeInteger(session.amount_total) || session.amount_total <= 0 || !session.currency) {
+        if (session.id !== resource.id || session.mode !== "payment" || session.status !== "complete" || !session.payment_intent || session.client_reference_id !== orderNumber || session.amount_total === null || !Number.isSafeInteger(session.amount_total) || session.amount_total <= 0 || !session.currency) {
           await recordPermanentMismatch(db, key, now, null, "INVALID_SESSION");
           return "ignored";
         }
@@ -337,7 +337,7 @@ async function reconcileInTransaction(
         orderNumber = extractOrderNumber(charge);
         paymentId = charge.metadata.paymentId ?? null;
         paymentIntent = charge.payment_intent;
-        if (charge.id !== resource.id || !charge.refunded || !Number.isSafeInteger(charge.amount) || charge.amount <= 0) {
+        if (charge.id !== resource.id || charge.status !== "succeeded" || !charge.payment_intent || !charge.refunded || !Number.isSafeInteger(charge.amount) || charge.amount <= 0) {
           await recordPermanentMismatch(db, key, now, null, "REFUND_REQUIRES_REVIEW");
           return "ignored";
         }
@@ -394,6 +394,7 @@ async function reconcileInTransaction(
   else if (payment.provider !== PaymentProvider.STRIPE) mismatch = "WRONG_PROVIDER";
   else if (paymentId && payment.id !== paymentId) mismatch = "PAYMENT_ID_MISMATCH";
   else if (paymentIntent && payment.providerPaymentId && payment.providerPaymentId !== paymentIntent) mismatch = "PAYMENT_INTENT_MISMATCH";
+  else if (!remoteCurrency || remoteCurrency.toUpperCase() !== payment.order.currency.toUpperCase()) mismatch = "CURRENCY_MISMATCH";
   else if (remoteAmountCents !== null && remoteAmountCents !== payment.order.totalCents) mismatch = "AMOUNT_MISMATCH";
   else if (remoteAmountCents !== null && payment.amountCents !== null && remoteAmountCents !== payment.amountCents) mismatch = "AMOUNT_MISMATCH";
   else if (remoteCurrency !== null && payment.currency !== null && remoteCurrency.toUpperCase() !== payment.currency.toUpperCase()) mismatch = "CURRENCY_MISMATCH";
