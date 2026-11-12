@@ -13,7 +13,7 @@ export default function ConfirmEmailPage() {
         <header className="mb-6 max-w-3xl border-l-2 border-violet pl-4 sm:mb-8 sm:pl-5">
           <p className="eyebrow">Conta</p>
           <h1 className="page-title mt-2">Confirmar novo e-mail</h1>
-          <p className="page-description">Confirme sua senha atual para concluir a alteração de e-mail com segurança.</p>
+          <p className="page-description">Confirme o link recebido. Contas Discord sem senha podem confirmar com uma sessão autenticada recentemente.</p>
         </header>
         <section className="glass-panel p-5 sm:p-6 max-w-xl">
           <ConfirmEmailForm />

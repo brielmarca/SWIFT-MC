@@ -162,8 +162,8 @@ export function AccountSettings({ initialDisplayName, initialEmail, initialPhone
             <Mail size={18} className="mt-1 shrink-0 text-muted" aria-hidden="true" />
             <div>
               <p className="micro-label">Endereço de e-mail</p>
-              <p className="font-medium text-ink">{initialEmail}</p>
-              <p className="mt-1 text-xs text-muted">Para alterar, use a seção “Alterar e-mail” abaixo (confirmação + reautenticação).</p>
+              <p className="font-medium text-ink">{initialEmail || "Não cadastrado"}</p>
+              <p className="mt-1 text-xs text-muted">{initialEmail ? "Para alterar, use a seção “Alterar e-mail” abaixo." : "Adicione um e-mail e confirme o link recebido para liberar as compras."}</p>
             </div>
           </div>
         </div>
@@ -171,11 +171,11 @@ export function AccountSettings({ initialDisplayName, initialEmail, initialPhone
         <button type="submit" disabled={savingProfile || !displayName.trim()} className="button-primary w-full sm:w-auto">{savingProfile ? "Salvando…" : "Salvar perfil"}</button>
       </form>
 
-      <form onSubmit={requestEmailChange} className="glass-panel p-5 sm:p-6 space-y-5" noValidate>
-        <div className="flex items-center gap-2"><Mail size={18} className="text-violet" aria-hidden="true" /><h2 className="text-lg font-bold text-ink">Alterar e-mail</h2></div>
-        <p className="text-sm text-muted">Por segurança, confirme sua identidade. Enviaremos um link de verificação para o novo e-mail e todas as sessões serão encerradas após a confirmação.</p>
+      <form id="email-verification" onSubmit={requestEmailChange} className="glass-panel p-5 sm:p-6 space-y-5" noValidate>
+        <div className="flex items-center gap-2"><Mail size={18} className="text-violet" aria-hidden="true" /><h2 className="text-lg font-bold text-ink">{initialEmail ? "Alterar e-mail" : "Adicionar e verificar e-mail"}</h2></div>
+        <p className="text-sm text-muted">{initialEmail ? "Por segurança, confirme sua identidade. Enviaremos um link para o novo e-mail e encerraremos suas sessões após a confirmação." : "Cadastre seu primeiro e-mail para receber um link de verificação. Contas Discord sem senha utilizam uma sessão autenticada recentemente."}</p>
         <div className="space-y-4">
-          <label className="block text-sm font-bold text-ink">Novo e-mail
+          <label className="block text-sm font-bold text-ink">{initialEmail ? "Novo e-mail" : "E-mail para verificação"}
             <input type="email" value={newEmail} onChange={e=>setNewEmail(e.target.value)} required autoComplete="email" className="checkout-input mt-2 w-full" disabled={savingEmail} />
           </label>
           {linked?.hasPassword !== false ? (

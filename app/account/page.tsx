@@ -53,6 +53,7 @@ export default async function AccountPage() {
                     <p className={`font-medium ${emailVerified ? "text-ink" : "text-amber-200"}`}>
                       {emailVerified ? "Verificado" : "Não verificado"}
                     </p>
+                    {!emailVerified && <Link href="/account/profile#email-verification" className="mt-2 inline-block text-sm font-semibold text-violet underline underline-offset-4">Adicionar ou verificar e-mail</Link>}
                   </div>
                 </div>
                 <div className="flex items-start gap-3">

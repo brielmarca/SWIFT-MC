@@ -34,7 +34,7 @@ export function createEmailChangeService(deps: EmailChangeDeps) {
   return {
     async requestEmailChange(params: { userId: string; newEmail: string; currentPassword?: string; recentAuthOk?: boolean; requestId: string }): Promise<{ ok: true; acknowledgement: string; challengeToken?: string } | { ok: false; code: "REQUEST_FAILED" }> {
       const user = await deps.userRepository.findById(params.userId);
-      if (!user || user.status !== "ACTIVE" || !user.emailNormalized) return { ok: false, code: "REQUEST_FAILED" };
+      if (!user || user.status !== "ACTIVE") return { ok: false, code: "REQUEST_FAILED" };
       if (!(await verifyReauth(user.id, params.currentPassword, params.recentAuthOk === true))) return { ok: false, code: "REQUEST_FAILED" };
       let normalizedNew: string;
       try { normalizedNew = normalizeAuthEmail(params.newEmail); } catch { return { ok: false, code: "REQUEST_FAILED" }; }
@@ -58,7 +58,7 @@ export function createEmailChangeService(deps: EmailChangeDeps) {
       return { ok: true, acknowledgement: "Se for possível, enviaremos a confirmação para o novo email.", challengeToken: token };
     },
 
-    async confirmEmailChange(params: { email: string; challengeToken: string; currentPassword?: string; recentAuthOk?: boolean; requestId: string }): Promise<{ ok: true; userId: string } | { ok: false; code: "REQUEST_FAILED" }> {
+    async confirmEmailChange(params: { userId: string; email: string; challengeToken: string; currentPassword?: string; recentAuthOk?: boolean; requestId: string }): Promise<{ ok: true; userId: string } | { ok: false; code: "REQUEST_FAILED" }> {
       let normalizedNew: string;
       try { normalizedNew = normalizeAuthEmail(params.email); } catch { return { ok: false, code: "REQUEST_FAILED" }; }
       const challenge = await deps.emailChallengeRepository.consume(digestSecurityToken(params.challengeToken, "email-change"));
@@ -67,7 +67,7 @@ export function createEmailChangeService(deps: EmailChangeDeps) {
         throw new RollbackRequiredError("REQUEST_FAILED", "INVALID_CHALLENGE");
       }
       const user = await deps.userRepository.findById(challenge.userId);
-      if (!user || user.status !== "ACTIVE" || user.authVersion !== challenge.authVersion || !user.emailNormalized) {
+      if (!user || user.id !== params.userId || user.status !== "ACTIVE" || user.authVersion !== challenge.authVersion) {
         throw new RollbackRequiredError("REQUEST_FAILED", "INVALID_CHALLENGE");
       }
       if (!(await verifyReauth(user.id, params.currentPassword, params.recentAuthOk === true))) {
@@ -83,7 +83,7 @@ export function createEmailChangeService(deps: EmailChangeDeps) {
       if (!bumped) throw new RollbackRequiredError("REQUEST_FAILED", "AUTH_VERSION_MISMATCH");
       await deps.sessionRepository.revokeAllForUser(user.id);
       await deps.emailChallengeRepository.invalidateOutstanding(normalizedNew, "CHANGE_EMAIL", challenge.tokenHash);
-      await deps.emailChallengeRepository.invalidateOutstanding(user.emailNormalized, "PASSWORD_RESET");
+      if (user.emailNormalized) await deps.emailChallengeRepository.invalidateOutstanding(user.emailNormalized, "PASSWORD_RESET");
       await deps.auditRepository.append({ eventType: "EMAIL_CHANGED", outcome: "success", requestId: params.requestId, actorUserId: user.id, subjectUserId: user.id, metadata: {} });
       return { ok: true, userId: user.id };
     },

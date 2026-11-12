@@ -93,6 +93,45 @@ test("email change allows Discord-only recent reauth without password", async ()
   assert.equal(challenges[0].purpose, "CHANGE_EMAIL");
 });
 
+test("Discord-only account without email can request first verified email", async () => {
+  const user = { id: "u1", emailNormalized: null, displayName: "U", phoneE164: null, role: "USER" as const, status: "ACTIVE" as const, authVersion: 1, emailVerifiedAt: null, createdAt: new Date(), updatedAt: new Date() };
+  const challenges: Array<{ purpose: string }> = [];
+  const challengeRepo: EmailChallengeRepository = {
+    create: async (p) => { challenges.push({ purpose: p.purpose }); return { id: "c1", consumedAt: null, createdAt: new Date(), ...p } as EmailChallenge; },
+    consume: async () => null,
+    expire: async () => {},
+    invalidateOutstanding: async () => {},
+  };
+  const svc = createEmailChangeService({
+    userRepository: {
+      findById: async () => user,
+      findByNormalizedEmail: async () => null,
+      createUser: async () => user,
+      bumpAuthVersion: async () => true,
+      updateEmailVerifiedAt: async () => {},
+      updateProfile: async () => user,
+      updateEmail: async () => user,
+    },
+    identityRepository: {
+      findByProviderAndSubject: async () => null,
+      findByUserAndProvider: async (_id, provider) => provider === "DISCORD" ? { id: "disc", userId: "u1", provider: "DISCORD", providerSubject: "d1", createdAt: new Date(), lastAuthenticatedAt: null } : null,
+      resolveOwner: async () => null,
+      createIdentity: async () => { throw new Error("no"); },
+      deleteByUserAndProvider: async () => {},
+      updateProviderSubject: async () => {},
+    },
+    passwordCredentialRepository: { findByIdentity: async () => null, createPasswordHash: async () => {}, replacePasswordHashIfUnchanged: async () => false },
+    emailChallengeRepository: challengeRepo,
+    sessionRepository: { create: async () => ({} as Awaited<ReturnType<SessionService["issueSession"]>> extends { session: infer S } ? S : never), findByTokenDigest: async () => null, touchLastSeen: async () => {}, revoke: async () => {}, revokeAllForUser: async () => {}, listActiveForUser: async () => [] } as unknown as import("@/lib/auth-domain/repositories").SessionRepository,
+    auditRepository: { append: async () => {} },
+    clock: new FixedClock(),
+  });
+  const res = await svc.requestEmailChange({ userId: "u1", newEmail: "new@example.com", recentAuthOk: true, requestId: "r1" });
+  assert.equal(res.ok, true);
+  assert.equal(challenges.length, 1);
+  assert.equal(challenges[0].purpose, "CHANGE_EMAIL");
+});
+
 test("email change rejects Discord-only request without recent auth or password", async () => {
   const user = { id: "u1", emailNormalized: "old@example.com", displayName: "U", phoneE164: null, role: "USER" as const, status: "ACTIVE" as const, authVersion: 1, emailVerifiedAt: new Date(), createdAt: new Date(), updatedAt: new Date() };
   const svc = createEmailChangeService({

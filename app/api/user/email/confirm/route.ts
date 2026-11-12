@@ -38,7 +38,7 @@ export async function POST(request: Request): Promise<Response> {
       const session = await prisma.session.findUnique({ where: { id: auth.sessionId }, select: { authenticatedAt: true } });
       const recentAuthOk = !!(session?.authenticatedAt && Date.now() - new Date(session.authenticatedAt).getTime() <= 10 * 60 * 1000);
       const svc = createEmailChangeService({ ...services.repositories, clock: new SystemClock() });
-      const result = await svc.confirmEmailChange({ email: input.data.email, challengeToken: input.data.challengeToken, currentPassword: input.data.currentPassword, recentAuthOk, requestId });
+      const result = await svc.confirmEmailChange({ userId: auth.user.id, email: input.data.email, challengeToken: input.data.challengeToken, currentPassword: input.data.currentPassword, recentAuthOk, requestId });
       if (!result.ok || result.userId !== auth.user.id) return jsonError("REQUEST_FAILED", "Não foi possível confirmar o novo e-mail. Confirme sua senha ou faça login novamente.", 400);
       return Response.json({ ok: true, message: "E-mail alterado com sucesso. Faça login novamente." }, { headers: { "Cache-Control": "private, no-store" } });
     });
