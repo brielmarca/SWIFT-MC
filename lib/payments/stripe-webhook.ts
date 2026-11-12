@@ -452,8 +452,19 @@ async function reconcileInTransaction(
   // All delivery writes share the payment transaction; provider retries cannot double-credit.
   if (orderStatusChanged && orderStatus === OrderStatus.PAID) {
     const order = verifiedPayment.order;
-    if (order.cashAmount > 0) await queueCashForPaidOrder(db, order);
-    if (isVipRank(order.rankSlug)) {
+    let hasVerifiedMinecraftUuid = false;
+    if (order.userId) {
+      const identity = await db.minecraftIdentity.findFirst({ where: { userId: order.userId, namespace: "java" } });
+      hasVerifiedMinecraftUuid = !!identity?.subject;
+    }
+    if (order.cashAmount > 0 && hasVerifiedMinecraftUuid) {
+      try {
+        await queueCashForPaidOrder(db, order);
+      } catch {
+        // Never fail payment reconciliation due to fulfillment setup.
+      }
+    }
+    if (isVipRank(order.rankSlug) && hasVerifiedMinecraftUuid) {
       let fulfillment = await db.fulfillment.findUnique({ where: { orderId: verifiedPayment.orderId } });
       if (!fulfillment) {
         const created = await createFulfillmentForOrder(db as unknown as PrismaClient, {
@@ -463,10 +474,14 @@ async function reconcileInTransaction(
         fulfillment = created.fulfillment;
       }
       if (order.userId) {
-        await upsertVipEntitlementForPaidOrder(db as unknown as PrismaClient, {
-          id: order.id, userId: order.userId, orderNumber: order.orderNumber, rankSlug: order.rankSlug,
-          rankName: order.rankName, minecraftUsername: order.minecraftUsername, totalCents: order.totalCents, currency: order.currency,
-        }, fulfillment.id, now);
+        try {
+          await upsertVipEntitlementForPaidOrder(db as unknown as PrismaClient, {
+            id: order.id, userId: order.userId, orderNumber: order.orderNumber, rankSlug: order.rankSlug,
+            rankName: order.rankName, minecraftUsername: order.minecraftUsername, totalCents: order.totalCents, currency: order.currency,
+          }, fulfillment.id, now);
+        } catch {
+          // Never fail payment reconciliation due to fulfillment setup.
+        }
       }
     }
   }

@@ -12,6 +12,11 @@ import { withAuthPrisma } from "@/lib/auth-infrastructure/prisma";
 import { getLinkedMinecraftIdentityForUser } from "@/lib/minecraft-bridge/purchase";
 import Link from "next/link";
 
+function isStagingTestPurchases(): boolean {
+  const env = process.env;
+  return env.BACKEND_RUNTIME === "node" && env.APP_ENV === "staging" && env.STRIPE_TEST_PURCHASES_ENABLED === "true" && env.PURCHASES_ENABLED === "false" && /^(sk|rk)_test_/.test(env.STRIPE_SECRET_KEY ?? "");
+}
+
 export const metadata: Metadata = { title: "Checkout | Swift MC", description: "Revise sua seleção e pague com segurança pelo Stripe.", robots: { index: false, follow: false } };
 
 export const dynamic = "force-dynamic";
@@ -22,8 +27,9 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
   const { cash } = await searchParams;
   const pack = cashPackages.find(pack => String(pack.amount) === cash);
   const testPurchases = purchasesEnabled();
+  const stagingBypass = isStagingTestPurchases();
   const linked = testPurchases && await withAuthPrisma(await getWorkersEnv(), db => getLinkedMinecraftIdentityForUser(db, user.id));
-  const eligible = !!user.emailVerifiedAt && !!linked;
+  const eligible = !!user.emailVerifiedAt && (!!linked || stagingBypass);
 
   return <>
     <AuthHeader />
@@ -38,7 +44,7 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
       {testPurchases && !eligible && <p className="mb-6 text-sm text-muted">Verifique seu email e vincule sua conta Minecraft em <Link href="/account" className="underline">Minha conta</Link> para continuar.</p>}
       {pack && testPurchases ? <section className="glass-panel space-y-4 p-6">
         <h2>{pack.amount + pack.bonus} Cash · {(pack.price / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</h2>
-        <TestPurchaseButton slug={`cash-${pack.amount}`} type="cash" disabled={!eligible} />
+        <TestPurchaseButton slug={`cash-${pack.amount}`} type="cash" disabled={!eligible} stagingBypass={stagingBypass} />
       </section> : <CartCheckout email={user.emailNormalized ?? ""} verified={eligible} testPurchases={testPurchases} />}
     </main>
     <Footer />

@@ -236,12 +236,13 @@ export async function upsertVipEntitlementForPaidOrder(db: Db, order: {
   if (order.totalCents <= 0) return { created: false, skipped: true, reason: "INVALID_AMOUNT" };
   const rank = order.rankSlug as VipRankSlug;
   const identity = await db.minecraftIdentity.findFirst({ where: { userId: order.userId, namespace: MINECRAFT_NAMESPACE } });
+  if (!identity?.subject) return { created: false, skipped: true, reason: "NO_MINECRAFT_IDENTITY" };
   try {
     await db.vipEntitlement.create({
       data: {
         userId: order.userId, orderId: order.id, fulfillmentId, rankSlug: rank,
-        minecraftUuid: identity?.subject ?? null,
-        minecraftUsername: identity?.lastKnownUsername ?? order.minecraftUsername.slice(0, 64),
+        minecraftUuid: identity.subject,
+        minecraftUsername: identity.lastKnownUsername ?? order.minecraftUsername.slice(0, 64),
         startsAt: now, expiresAt: absoluteVipExpiry(now, VIP_DAYS), status: "ACTIVE",
       },
     });
@@ -269,7 +270,7 @@ export async function revokeVipEntitlementsForOrder(db: Db, orderId: string, rea
 export async function queueCashForPaidOrder(db: Db, order: { id: string; userId: string | null; cashAmount: number }): Promise<void> {
   if (!order.userId || order.cashAmount <= 0) throw new BridgeValidationError("Cash sem destinatário");
   const identity = await db.minecraftIdentity.findFirst({ where: { userId: order.userId, namespace: MINECRAFT_NAMESPACE } });
-  if (!identity) throw new BridgeValidationError("Conta Minecraft não vinculada");
+  if (!identity?.subject) throw new BridgeValidationError("Conta Minecraft não vinculada");
   const deliveryId = `cash_${order.id}`;
   if (await db.bridgeDelivery.findUnique({ where: { deliveryId } })) return;
   await db.bridgeDelivery.create({ data: {
