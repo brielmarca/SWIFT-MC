@@ -77,7 +77,8 @@ export function createEmailChangeService(deps: EmailChangeDeps) {
       if (existing && existing.id !== user.id) throw new RollbackRequiredError("REQUEST_FAILED", "EMAIL_TAKEN");
 
       await deps.userRepository.updateEmail(user.id, normalizedNew, deps.clock.now());
-      await deps.identityRepository.updateProviderSubject(user.id, "EMAIL_PASSWORD", normalizedNew);
+      const passwordIdentity = await deps.identityRepository.findByUserAndProvider(user.id, "EMAIL_PASSWORD");
+      if (passwordIdentity) await deps.identityRepository.updateProviderSubject(user.id, "EMAIL_PASSWORD", normalizedNew);
 
       const bumped = await deps.userRepository.bumpAuthVersion(user.id, user.authVersion);
       if (!bumped) throw new RollbackRequiredError("REQUEST_FAILED", "AUTH_VERSION_MISMATCH");
