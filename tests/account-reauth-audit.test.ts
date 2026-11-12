@@ -145,6 +145,7 @@ test("email change rejects Discord-only request without recent auth or password"
   });
   const res = await svc.requestEmailChange({ userId: "u1", newEmail: "new@example.com", recentAuthOk: false, requestId: "r1" });
   assert.equal(res.ok, false);
+  if (!res.ok) assert.equal(res.code, "RECENT_AUTH_REQUIRED");
 });
 
 test("Discord-only first email confirmation persists verified address without password identity", async () => {

@@ -19,26 +19,27 @@ export type EmailChangeDeps = {
 export function createEmailChangeService(deps: EmailChangeDeps) {
   const ttlMs = 10 * 60 * 1000;
 
-  async function verifyReauth(userId: string, password: string | undefined, recentAuthOk: boolean): Promise<boolean> {
+  async function verifyReauth(userId: string, password: string | undefined, recentAuthOk: boolean): Promise<"OK" | "PASSWORD_REQUIRED" | "RECENT_AUTH_REQUIRED"> {
     const identity = await deps.identityRepository.findByUserAndProvider(userId, "EMAIL_PASSWORD");
     if (identity) {
-      if (!password) return false;
+      if (!password) return "PASSWORD_REQUIRED";
       const credential = await deps.passwordCredentialRepository.findByIdentity(identity.id);
-      if (!credential) return false;
-      return verifyPassword(password, credential.passwordHash);
+      if (!credential || !(await verifyPassword(password, credential.passwordHash))) return "PASSWORD_REQUIRED";
+      return "OK";
     }
-    // Discord-only/passwordless users: require a recently authenticated session.
-    return recentAuthOk;
+    // Passwordless Discord accounts must reauthenticate within the last 10 minutes.
+    return recentAuthOk ? "OK" : "RECENT_AUTH_REQUIRED";
   }
 
   return {
-    async requestEmailChange(params: { userId: string; newEmail: string; currentPassword?: string; recentAuthOk?: boolean; requestId: string }): Promise<{ ok: true; acknowledgement: string; challengeToken?: string } | { ok: false; code: "REQUEST_FAILED" }> {
+    async requestEmailChange(params: { userId: string; newEmail: string; currentPassword?: string; recentAuthOk?: boolean; requestId: string }): Promise<{ ok: true; acknowledgement: string; challengeToken?: string } | { ok: false; code: "REQUEST_FAILED" | "PASSWORD_REQUIRED" | "RECENT_AUTH_REQUIRED" | "EMAIL_UNCHANGED" }> {
       const user = await deps.userRepository.findById(params.userId);
       if (!user || user.status !== "ACTIVE") return { ok: false, code: "REQUEST_FAILED" };
-      if (!(await verifyReauth(user.id, params.currentPassword, params.recentAuthOk === true))) return { ok: false, code: "REQUEST_FAILED" };
+      const reauth = await verifyReauth(user.id, params.currentPassword, params.recentAuthOk === true);
+      if (reauth !== "OK") return { ok: false, code: reauth };
       let normalizedNew: string;
       try { normalizedNew = normalizeAuthEmail(params.newEmail); } catch { return { ok: false, code: "REQUEST_FAILED" }; }
-      if (normalizedNew === user.emailNormalized) return { ok: false, code: "REQUEST_FAILED" };
+      if (normalizedNew === user.emailNormalized) return { ok: false, code: "EMAIL_UNCHANGED" };
       const existing = await deps.userRepository.findByNormalizedEmail(normalizedNew);
       if (existing) {
         await deps.auditRepository.append({ eventType: "EMAIL_CHANGE_REQUESTED", outcome: "failure", requestId: params.requestId, actorUserId: user.id, subjectUserId: user.id, metadata: { reason: "email_unavailable" } });
@@ -70,7 +71,7 @@ export function createEmailChangeService(deps: EmailChangeDeps) {
       if (!user || user.id !== params.userId || user.status !== "ACTIVE" || user.authVersion !== challenge.authVersion) {
         throw new RollbackRequiredError("REQUEST_FAILED", "INVALID_CHALLENGE");
       }
-      if (!(await verifyReauth(user.id, params.currentPassword, params.recentAuthOk === true))) {
+      if ((await verifyReauth(user.id, params.currentPassword, params.recentAuthOk === true)) !== "OK") {
         throw new RollbackRequiredError("REQUEST_FAILED", "INVALID_CREDENTIALS");
       }
       const existing = await deps.userRepository.findByNormalizedEmail(normalizedNew);

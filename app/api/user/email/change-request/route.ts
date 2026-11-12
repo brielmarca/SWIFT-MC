@@ -32,23 +32,31 @@ export async function POST(request: Request): Promise<Response> {
   const requestId = crypto.randomUUID();
 
   try {
-    return await withAuthTransaction(env, async (services) => {
+    // Commit the challenge before contacting the email provider; network latency
+    // must not hold the auth transaction or cause an emailed token to roll back.
+    const result = await withAuthTransaction(env, async (services) => {
       const prisma = (services.repositories.userRepository as unknown as { prisma: import("@prisma/client").PrismaClient }).prisma;
       const session = await prisma.session.findUnique({ where: { id: auth.sessionId }, select: { authenticatedAt: true } });
       const recentAuthOk = !!(session?.authenticatedAt && Date.now() - new Date(session.authenticatedAt).getTime() <= 10 * 60 * 1000);
       const svc = createEmailChangeService({ ...services.repositories, clock: new SystemClock() });
-      const result = await svc.requestEmailChange({ userId: auth.user.id, newEmail: input.data.newEmail, currentPassword: input.data.currentPassword, recentAuthOk, requestId });
-      if (!result.ok) return jsonError("REQUEST_FAILED", "Não foi possível solicitar a alteração de e-mail. Confirme sua senha atual ou faça login novamente.", 400);
-      if (result.challengeToken) {
-        const emailService = createEmailService(env);
-        if (emailService) {
-          try { await emailService.sendEmailChangeVerificationEmail({ to: input.data.newEmail.trim().toLowerCase(), token: result.challengeToken }); }
-          catch { console.error("Email change verification delivery failed"); }
-        }
-      }
-      return Response.json({ ok: true, acknowledgement: result.acknowledgement }, { headers: { "Cache-Control": "private, no-store" } });
+      return svc.requestEmailChange({ userId: auth.user.id, newEmail: input.data.newEmail, currentPassword: input.data.currentPassword, recentAuthOk, requestId });
     });
+
+    if (!result.ok) {
+      if (result.code === "RECENT_AUTH_REQUIRED") return jsonError("RECENT_AUTH_REQUIRED", "Para verificar o e-mail, autentique-se novamente pelo Discord e tente em até 10 minutos.", 403);
+      if (result.code === "PASSWORD_REQUIRED") return jsonError("PASSWORD_REQUIRED", "Esta conta possui senha cadastrada. Informe a senha atual para alterar o e-mail.", 403);
+      if (result.code === "EMAIL_UNCHANGED") return jsonError("EMAIL_UNCHANGED", "Este e-mail já pertence à conta. Use a opção de reenviar verificação caso ainda não esteja confirmado.", 409);
+      return jsonError("REQUEST_FAILED", "Não foi possível solicitar a verificação de e-mail.", 400);
+    }
+    if (result.challengeToken) {
+      const emailService = createEmailService(env);
+      if (emailService) {
+        try { await emailService.sendEmailChangeVerificationEmail({ to: input.data.newEmail.trim().toLowerCase(), token: result.challengeToken }); }
+        catch { console.error("Email change verification delivery failed"); }
+      }
+    }
+    return Response.json({ ok: true, acknowledgement: result.acknowledgement }, { headers: { "Cache-Control": "private, no-store" } });
   } catch {
-    return jsonError("REQUEST_FAILED", "Não foi possível solicitar a alteração de e-mail.", 400);
+    return jsonError("REQUEST_FAILED", "Não foi possível solicitar a verificação de e-mail.", 400);
   }
 }

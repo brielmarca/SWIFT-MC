@@ -37,7 +37,7 @@ export default async function ProfilePage() {
               Atualize perfil e telefone, solicite alteração segura de e-mail e gerencie contas vinculadas.
             </p>
           </header>
-          <AccountSettings initialDisplayName={user.displayName} initialEmail={user.emailNormalized || ""} initialPhone={user.phoneE164} />
+          <AccountSettings initialDisplayName={user.displayName} initialEmail={user.emailNormalized || ""} initialEmailVerified={!!user.emailVerifiedAt} initialPhone={user.phoneE164} />
         </div>
       </main>
       <Footer />

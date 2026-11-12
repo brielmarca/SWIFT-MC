@@ -43,7 +43,7 @@ async function postJson(url: string, body: unknown): Promise<{ ok: boolean; stat
   return { ok: res.ok, status: res.status, data };
 }
 
-export function AccountSettings({ initialDisplayName, initialEmail, initialPhone }: { initialDisplayName: string; initialEmail: string; initialPhone: string | null }) {
+export function AccountSettings({ initialDisplayName, initialEmail, initialEmailVerified, initialPhone }: { initialDisplayName: string; initialEmail: string; initialEmailVerified: boolean; initialPhone: string | null }) {
   const [profileMsg, setProfileMsg] = useState<Msg>(null);
   const [emailMsg, setEmailMsg] = useState<Msg>(null);
   const [linksMsg, setLinksMsg] = useState<Msg>(null);
@@ -54,6 +54,8 @@ export function AccountSettings({ initialDisplayName, initialEmail, initialPhone
   const [newEmail, setNewEmail] = useState("");
   const [emailPassword, setEmailPassword] = useState("");
   const [savingEmail, setSavingEmail] = useState(false);
+  const [resendingVerification, setResendingVerification] = useState(false);
+  const [resendMsg, setResendMsg] = useState<Msg>(null);
 
   const [linked, setLinked] = useState<Linked | null>(null);
   const [mcCode, setMcCode] = useState<{ code: string; expiresAt: string } | null>(null);
@@ -99,6 +101,19 @@ export function AccountSettings({ initialDisplayName, initialEmail, initialPhone
     if (!ok) return setEmailMsg({ type: "error", text: errMsg(data, "Não foi possível solicitar a alteração.") });
     setEmailMsg({ type: "success", text: (typeof data.acknowledgement === "string" && data.acknowledgement) || "Se for possível, enviaremos a confirmação para o novo email." });
     setEmailPassword("");
+  }
+
+  async function resendVerification() {
+    if (!initialEmail || resendingVerification) return;
+    setResendingVerification(true); setResendMsg(null);
+    try {
+      const { ok, data } = await postJson("/api/auth/resend-verification", { email: initialEmail });
+      setResendMsg(ok
+        ? { type: "success", text: (typeof data.acknowledgement === "string" && data.acknowledgement) || "Se possível, enviaremos um novo link para o seu e-mail." }
+        : { type: "error", text: errMsg(data, "Não foi possível reenviar a verificação.") });
+    } catch {
+      setResendMsg({ type: "error", text: "Não foi possível reenviar a verificação." });
+    } finally { setResendingVerification(false); }
   }
 
   async function unlinkDiscord(e: FormEvent) {
@@ -171,7 +186,17 @@ export function AccountSettings({ initialDisplayName, initialEmail, initialPhone
         <button type="submit" disabled={savingProfile || !displayName.trim()} className="button-primary w-full sm:w-auto">{savingProfile ? "Salvando…" : "Salvar perfil"}</button>
       </form>
 
-      <form id="email-verification" onSubmit={requestEmailChange} className="glass-panel p-5 sm:p-6 space-y-5" noValidate>
+      {initialEmail && !initialEmailVerified && (
+        <section id="email-verification" className="glass-panel p-5 sm:p-6 space-y-4">
+          <div className="flex items-center gap-2"><Mail size={18} className="text-violet" aria-hidden="true" /><h2 className="text-lg font-bold text-ink">Verificar e-mail existente</h2></div>
+          <p className="text-sm text-muted">Seu endereço {initialEmail} ainda não foi confirmado. Reenvie o link para verificar sua conta; não é necessário alterar o endereço nem informar a senha.</p>
+          <Notice msg={resendMsg} />
+          <button type="button" className="button-primary w-full sm:w-auto" onClick={() => void resendVerification()} disabled={resendingVerification}>
+            {resendingVerification ? "Enviando…" : "Reenviar link de verificação"}
+          </button>
+        </section>
+      )}
+      <form id={initialEmail ? "email-change" : "email-verification"} onSubmit={requestEmailChange} className="glass-panel p-5 sm:p-6 space-y-5" noValidate>
         <div className="flex items-center gap-2"><Mail size={18} className="text-violet" aria-hidden="true" /><h2 className="text-lg font-bold text-ink">{initialEmail ? "Alterar e-mail" : "Adicionar e verificar e-mail"}</h2></div>
         <p className="text-sm text-muted">{initialEmail ? "Por segurança, confirme sua identidade. Enviaremos um link para o novo e-mail e encerraremos suas sessões após a confirmação." : "Cadastre seu primeiro e-mail para receber um link de verificação. Contas Discord sem senha utilizam uma sessão autenticada recentemente."}</p>
         <div className="space-y-4">
@@ -187,6 +212,12 @@ export function AccountSettings({ initialDisplayName, initialEmail, initialPhone
           )}
         </div>
         <Notice msg={emailMsg} />
+        {linked?.hasPassword === false && (
+          <div className="space-y-2">
+            <p className="text-xs text-muted">Se sua última autenticação tiver mais de 10 minutos, use o botão abaixo antes de solicitar o link.</p>
+            <DiscordAuthButton label="Autenticar novamente com Discord" returnPath="/account/profile" />
+          </div>
+        )}
         <button type="submit" disabled={savingEmail || !newEmail || (linked?.hasPassword !== false && !emailPassword)} className="button-primary w-full sm:w-auto">{savingEmail ? "Enviando…" : "Enviar confirmação"}</button>
       </form>
 
