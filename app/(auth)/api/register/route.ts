@@ -94,17 +94,23 @@ export async function POST(request: Request): Promise<Response> {
         return jsonError("REGISTER_FAILED", "Não foi possível criar a conta.", 400);
       }
 
-      if (result.challengeToken && emailService) {
+      // Preserve generic responses for unknown, already verified, and other
+      // addresses to avoid email enumeration; use private PII-free diagnostics.
+      if (!result.challengeToken) {
+        console.info("[swiftmc-email] registration-or-resend skipped", { requestId, reason: "not_eligible" });
+      } else if (!emailService) {
+        console.error("[swiftmc-email] registration-or-resend delivery unavailable", { requestId, reason: "email_provider_unconfigured" });
+      } else {
         try {
           await emailService.sendVerificationEmail({
             to: email,
-             token: result.challengeToken,
-             existingAccount: result.existingAccount,
+            token: result.challengeToken,
+            existingAccount: result.existingAccount,
           });
-        } catch {
-          // Log server-side so the failure is never silent. Never include
-          // email content, recipient, or API key in the client response.
-          console.error("Registration verification email delivery failed");
+          console.info("[swiftmc-email] registration-or-resend accepted by provider", { requestId });
+        } catch (error) {
+          const status = error instanceof Error ? /Resend API error: (\\d{3})/.exec(error.message)?.[1] : undefined;
+          console.error("[swiftmc-email] registration-or-resend delivery failed", { requestId, providerHttpStatus: status ?? "unknown" });
         }
       }
 
@@ -116,6 +122,7 @@ export async function POST(request: Request): Promise<Response> {
         headers: { "Cache-Control": "private, no-store" },
       });
   } catch {
+    console.error("[swiftmc-email] registration-or-resend failed before delivery", { requestId });
     return jsonError("REGISTER_FAILED", "Não foi possível criar a conta.", 400);
   }
 }

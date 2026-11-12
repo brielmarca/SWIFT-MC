@@ -48,15 +48,28 @@ export async function POST(request: Request): Promise<Response> {
       if (result.code === "EMAIL_UNCHANGED") return jsonError("EMAIL_UNCHANGED", "Este e-mail já pertence à conta. Use a opção de reenviar verificação caso ainda não esteja confirmado.", 409);
       return jsonError("REQUEST_FAILED", "Não foi possível solicitar a verificação de e-mail.", 400);
     }
-    if (result.challengeToken) {
+    // Keep the same generic client acknowledgement for unavailable emails and
+    // delivery failures to prevent email-address enumeration. Operational logs
+    // include no addresses, tokens or credentials.
+    if (!result.challengeToken) {
+      console.info("[swiftmc-email] change-request skipped", { requestId, reason: "address_unavailable" });
+    } else {
       const emailService = createEmailService(env);
-      if (emailService) {
-        try { await emailService.sendEmailChangeVerificationEmail({ to: input.data.newEmail.trim().toLowerCase(), token: result.challengeToken }); }
-        catch { console.error("Email change verification delivery failed"); }
+      if (!emailService) {
+        console.error("[swiftmc-email] change-request delivery unavailable", { requestId, reason: "email_provider_unconfigured" });
+      } else {
+        try {
+          await emailService.sendEmailChangeVerificationEmail({ to: input.data.newEmail.trim().toLowerCase(), token: result.challengeToken });
+          console.info("[swiftmc-email] change-request accepted by provider", { requestId });
+        } catch (error) {
+          const status = error instanceof Error ? /Resend API error: (\\d{3})/.exec(error.message)?.[1] : undefined;
+          console.error("[swiftmc-email] change-request delivery failed", { requestId, providerHttpStatus: status ?? "unknown" });
+        }
       }
     }
     return Response.json({ ok: true, acknowledgement: result.acknowledgement }, { headers: { "Cache-Control": "private, no-store" } });
   } catch {
+    console.error("[swiftmc-email] change-request failed before delivery", { requestId });
     return jsonError("REQUEST_FAILED", "Não foi possível solicitar a verificação de e-mail.", 400);
   }
 }
