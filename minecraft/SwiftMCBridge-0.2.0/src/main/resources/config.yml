@@ -1,8 +1,8 @@
 # A API só fica ativa depois de configurar endpoint HTTPS + token aleatório.
 enabled: false
-apiUrl: "https://api.SEU-DOMINIO.COM"
+apiUrl: "https://staging.swiftmc.com.br"
 apiKey: "TROQUE-POR-UM-TOKEN-ALEATORIO-DE-PELO-MENOS-32-CARACTERES"
-serverId: "swift-survival"
+serverId: "swift-staging"
 endpoints:
   link: "/v1/bridge/link"
   pending: "/v1/bridge/pending"

@@ -158,7 +158,7 @@ export function AccountSettings({ initialDisplayName, initialEmail, initialEmail
 
   async function copyCode() {
     if (!mcCode) return;
-    try { await navigator.clipboard.writeText(mcCode.code); setLinksMsg({ type: "success", text: "Código copiado." }); } catch { setLinksMsg({ type: "error", text: "Não foi possível copiar o código." }); }
+    try { await navigator.clipboard.writeText(`/link ${mcCode.code}`); setLinksMsg({ type: "success", text: "Comando /link copiado. Cole no chat do servidor Minecraft." }); } catch { setLinksMsg({ type: "error", text: "Não foi possível copiar o comando." }); }
   }
 
   return (
@@ -257,17 +257,17 @@ export function AccountSettings({ initialDisplayName, initialEmail, initialEmail
             {linked?.minecraft.linked && <p className="text-xs text-muted mt-1 break-all">UUID: {linked.minecraft.uuid}</p>}
           </div>
           <div className="space-y-3 rounded-lg border border-white/10 p-3">
-            <p className="text-sm text-muted">Vincule pelo servidor usando um código verificado (UUID). Gere um código e use no jogo conforme instruções do servidor.</p>
+            <p className="text-sm text-muted">1. Gere um código aqui (válido por 15 minutos). 2. Entre no servidor <strong className="text-ink">swiftmc.com.br</strong>. 3. Abra o chat e digite <code className="text-ink">/link CODIGO</code>. Não compartilhe seu código com ninguém.</p>
             <div className="flex flex-wrap gap-2">
               <button type="button" onClick={()=>void generateMinecraftCode()} disabled={pendingAction==="mc-code"} className="button-primary">{pendingAction==="mc-code"?"Gerando…":"Gerar código de vínculo"}</button>
               <button type="button" onClick={()=>void refreshLinks().then(d=>{if(d)setLinked(d);})} className="rounded-lg border border-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/5">Atualizar status</button>
             </div>
             {mcCode && (
               <div className="rounded-lg bg-black/30 p-3 space-y-2">
-                <p className="micro-label">Código (expira em 15 min)</p>
+                <p className="micro-label">Comando para digitar dentro do Minecraft (expira em 15 min)</p>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <code className="text-sm text-ink break-all">{mcCode.code}</code>
-                  <button type="button" onClick={()=>void copyCode()} className="inline-flex items-center gap-1 rounded border border-white/10 px-2 py-1 text-xs hover:bg-white/5"><Copy size={14} aria-hidden="true" />Copiar</button>
+                  <code className="text-sm text-ink break-all">/link {mcCode.code}</code>
+                  <button type="button" onClick={()=>void copyCode()} className="inline-flex items-center gap-1 rounded border border-white/10 px-2 py-1 text-xs hover:bg-white/5"><Copy size={14} aria-hidden="true" />Copiar comando</button>
                 </div>
                 <p className="text-xs text-muted">Expira em: {new Date(mcCode.expiresAt).toLocaleString("pt-BR")}</p>
               </div>

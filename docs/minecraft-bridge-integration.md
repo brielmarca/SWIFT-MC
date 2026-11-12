@@ -51,9 +51,9 @@ Source of truth: `minecraft/SwiftMCBridge-0.2.0/` in this repository (built with
 ## Plugin configuration (`plugins/SwiftMCBridge/config.yml`)
 ```yaml
 enabled: true
-apiUrl: "https://<your-app-origin>"
-apiKey: "<MINECRAFT_BRIDGE_SECRET>"   # >=32 chars, server-side secret in website env/Worker secret
-serverId: "swift-survival"            # must equal MINECRAFT_BRIDGE_SERVER_ID
+apiUrl: "https://staging.swiftmc.com.br"
+apiKey: "<MINECRAFT_BRIDGE_SECRET>"   # >=32 chars; keep out of source control and chat logs
+serverId: "swift-staging"             # MUST match staging MINECRAFT_BRIDGE_SERVER_ID
 endpoints:
   link: "/v1/bridge/link"
   pending: "/v1/bridge/pending"
@@ -66,6 +66,8 @@ Do **not** put Stripe keys, DB URLs, or `pk_live` in plugin config. Keep HTTPS o
 
 ## Website environment / Cloudflare bindings
 Secrets/runtime: `MINECRAFT_BRIDGE_SECRET`, existing Stripe/DB bindings. Non-secret/config: `MINECRAFT_BRIDGE_SERVER_ID`, optional `MINECRAFT_BRIDGE_ALLOWED_SERVER_IDS` (comma-separated). Migration: `prisma/migrations/20261108203314_minecraft_bridge_vip_deliveries/migration.sql`.
+
+For an offline-mode/cracked Paper server, ensure authentication (e.g., an audited login plugin or correctly configured proxy authentication) is enforced *before* `/link` can execute. Never allow an unauthenticated player to claim another player's offline-mode UUID.
 
 ## Paper 1.21.11 validation steps (manual)
 1. Apply migration to staging/test PostgreSQL; deploy Worker/site with bridge secrets; keep live payments inactive.
