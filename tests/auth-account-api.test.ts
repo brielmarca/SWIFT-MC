@@ -111,3 +111,13 @@ test("validateSessionFromRequest returns unauthenticated when Hyperdrive missing
   assert.equal(result.authenticated, false);
   assert.equal(result.code, "INFRASTRUCTURE_UNAVAILABLE");
 });
+
+test("initial password setup rejects unauthenticated requests", async () => {
+  const mod = await import("@/app/api/user/password/setup/route");
+  const response = await mod.POST(new Request("https://swiftmc.example/api/user/password/setup", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Origin: "https://swiftmc.example" },
+    body: JSON.stringify({ newPassword: "Strong-Discord-123!", confirmPassword: "Strong-Discord-123!" }),
+  }));
+  assert.ok([401, 429].includes(response.status));
+});

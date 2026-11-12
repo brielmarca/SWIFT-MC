@@ -47,6 +47,10 @@ export function AccountSettings({ initialDisplayName, initialEmail, initialEmail
   const [profileMsg, setProfileMsg] = useState<Msg>(null);
   const [emailMsg, setEmailMsg] = useState<Msg>(null);
   const [linksMsg, setLinksMsg] = useState<Msg>(null);
+  const [passwordMsg, setPasswordMsg] = useState<Msg>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [savingPassword, setSavingPassword] = useState(false);
   const [displayName, setDisplayName] = useState(initialDisplayName);
   const [phone, setPhone] = useState(initialPhone || "");
   const [savingProfile, setSavingProfile] = useState(false);
@@ -114,6 +118,24 @@ export function AccountSettings({ initialDisplayName, initialEmail, initialEmail
     } catch {
       setResendMsg({ type: "error", text: "Não foi possível reenviar a verificação." });
     } finally { setResendingVerification(false); }
+  }
+
+  async function setInitialPassword(e: FormEvent) {
+    e.preventDefault();
+    if (newPassword.length < 12) return setPasswordMsg({ type: "error", text: "A senha precisa ter pelo menos 12 caracteres." });
+    if (newPassword !== confirmPassword) return setPasswordMsg({ type: "error", text: "As senhas não coincidem." });
+    setSavingPassword(true); setPasswordMsg(null);
+    try {
+      const { ok, data } = await postJson("/api/user/password/setup", { newPassword, confirmPassword });
+      if (!ok) return setPasswordMsg({ type: "error", text: errMsg(data, "Não foi possível criar a senha.") });
+      setNewPassword(""); setConfirmPassword("");
+      setPasswordMsg({ type: "success", text: "Senha criada! Suas sessões foram encerradas. Entre novamente pelo Discord ou com seu e-mail e senha." });
+      window.setTimeout(() => { window.location.href = "/login"; }, 1700);
+    } catch {
+      setPasswordMsg({ type: "error", text: "Falha de conexão. Tente novamente." });
+    } finally {
+      setSavingPassword(false);
+    }
   }
 
   async function unlinkDiscord(e: FormEvent) {
@@ -185,6 +207,34 @@ export function AccountSettings({ initialDisplayName, initialEmail, initialEmail
         <Notice msg={profileMsg} />
         <button type="submit" disabled={savingProfile || !displayName.trim()} className="button-primary w-full sm:w-auto">{savingProfile ? "Salvando…" : "Salvar perfil"}</button>
       </form>
+
+      {linked?.discord.linked && !linked.hasPassword && (
+        <section id="password-setup" className="glass-panel p-5 sm:p-6 space-y-4">
+          <div className="flex items-center gap-2">
+            <Shield size={18} className="text-violet" aria-hidden="true" />
+            <h2 className="text-lg font-bold text-ink">Criar senha para sua conta</h2>
+          </div>
+          <p className="text-sm text-muted">Você entrou pelo Discord e ainda não tem senha. Cadastre uma senha para também acessar com e-mail e senha, sem perder o login pelo Discord.</p>
+          {!initialEmailVerified ? (
+            <p className="text-sm text-amber-200">Para criar sua senha, primeiro adicione e confirme seu endereço de e-mail nas configurações abaixo.</p>
+          ) : (
+            <form onSubmit={setInitialPassword} className="space-y-4" noValidate>
+              <label className="block text-sm font-medium text-ink">Nova senha (mínimo de 12 caracteres)
+                <input className="checkout-input mt-2 w-full" type="password" autoComplete="new-password" minLength={12} maxLength={1024} required value={newPassword} onChange={e => setNewPassword(e.target.value)} disabled={savingPassword} />
+              </label>
+              <label className="block text-sm font-medium text-ink">Confirme sua nova senha
+                <input className="checkout-input mt-2 w-full" type="password" autoComplete="new-password" minLength={12} maxLength={1024} required value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} disabled={savingPassword} />
+              </label>
+              <p className="text-xs text-muted">Por segurança, é necessário ter feito login pelo Discord nos últimos 10 minutos. Se precisar, autentique-se novamente:</p>
+              <DiscordAuthButton label="Autenticar novamente com Discord" returnPath="/account/profile#password-setup" />
+              <Notice msg={passwordMsg} />
+              <button type="submit" className="button-primary w-full sm:w-auto" disabled={savingPassword || newPassword.length < 12 || !confirmPassword}>
+                {savingPassword ? "Criando senha…" : "Criar senha"}
+              </button>
+            </form>
+          )}
+        </section>
+      )}
 
       {initialEmail && !initialEmailVerified && (
         <section id="email-verification" className="glass-panel p-5 sm:p-6 space-y-4">

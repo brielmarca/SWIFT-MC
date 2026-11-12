@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   LoginRequestSchema, RegistrationRequestSchema, RegistrationCompleteRequestSchema,
-  PasswordResetRequestSchema, PasswordResetCompleteRequestSchema, PasswordChangeRequestSchema, LogoutRequestSchema,
+  PasswordResetRequestSchema, PasswordResetCompleteRequestSchema, PasswordChangeRequestSchema, InitialPasswordRequestSchema, LogoutRequestSchema,
 } from "@/lib/auth-domain/dto";
 
 function checkReject(schema: unknown, input: unknown) {
@@ -71,4 +71,12 @@ test("PasswordChangeRequest: requires current password and a policy-compliant ne
 test("LogoutRequest: accepts empty object", () => {
   const result = LogoutRequestSchema.safeParse({});
   assert.equal(result.success, true);
+});
+
+test("InitialPasswordRequest: requires matching strong passwords and rejects unknown fields", () => {
+  checkAccept(InitialPasswordRequestSchema, { newPassword: "Strong-Discord-123!", confirmPassword: "Strong-Discord-123!" });
+  checkReject(InitialPasswordRequestSchema, { newPassword: "short", confirmPassword: "short" });
+  checkReject(InitialPasswordRequestSchema, { newPassword: "Strong-Discord-123!", confirmPassword: "Mismatch-Discord-123!" });
+  checkReject(InitialPasswordRequestSchema, { newPassword: "Strong-Discord-123!" });
+  checkReject(InitialPasswordRequestSchema, { newPassword: "Strong-Discord-123!", confirmPassword: "Strong-Discord-123!", userId: "other" });
 });

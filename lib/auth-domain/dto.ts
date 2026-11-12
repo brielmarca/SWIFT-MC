@@ -88,6 +88,15 @@ export const PasswordChangeRequestSchema = z.object({
   newPassword: passwordSchema,
 }).strict();
 
+/** Only for verified, Discord-linked accounts that have no password yet. */
+export const InitialPasswordRequestSchema = z.object({
+  newPassword: passwordSchema,
+  confirmPassword: passwordSchema,
+}).strict().refine(value => value.newPassword === value.confirmPassword, {
+  message: "As senhas não coincidem.",
+  path: ["confirmPassword"],
+});
+
 export type PasswordChangeRequest = z.infer<typeof PasswordChangeRequestSchema>;
 
 export const ResendVerificationRequestSchema = z.object({
