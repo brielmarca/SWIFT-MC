@@ -19,7 +19,7 @@ function jsonError(code: string, message: string, status: number): Response {
 }
 
 function opaqueKey(input: string): string {
-  return createHash("sha256").update(`swiftmc:auth:ratelimit:v1\\0${input}`).digest("hex");
+  return createHash("sha256").update(`swiftmc:auth:ratelimit:v1\0${input}`).digest("hex");
 }
 
 /**
@@ -88,7 +88,7 @@ export async function POST(request: Request): Promise<Response> {
       });
       await services.repositories.passwordCredentialRepository.createPasswordHash(identity.id, passwordHash);
       if (!(await services.repositories.userRepository.bumpAuthVersion(user.id, user.authVersion))) {
-        throw new RollbackRequiredError("SETUP_FAILED", "AUTH_VERSION_MISMATCH");
+        throw new RollbackRequiredError("REQUEST_FAILED", "AUTH_VERSION_MISMATCH");
       }
       await services.sessionService.revokeAllUserSessions(user.id);
       await services.repositories.emailChallengeRepository.invalidateOutstanding(user.emailNormalized, "PASSWORD_RESET");
