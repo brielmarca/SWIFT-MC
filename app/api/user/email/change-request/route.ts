@@ -62,7 +62,7 @@ export async function POST(request: Request): Promise<Response> {
           await emailService.sendEmailChangeVerificationEmail({ to: input.data.newEmail.trim().toLowerCase(), token: result.challengeToken });
           console.info("[swiftmc-email] change-request accepted by provider", { requestId });
         } catch (error) {
-          const status = error instanceof Error ? /Resend API error: (\\d{3})/.exec(error.message)?.[1] : undefined;
+          const status = error instanceof Error ? /Resend API error: (\d{3})/.exec(error.message)?.[1] : undefined;
           console.error("[swiftmc-email] change-request delivery failed", { requestId, providerHttpStatus: status ?? "unknown" });
         }
       }

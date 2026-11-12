@@ -109,7 +109,7 @@ export async function POST(request: Request): Promise<Response> {
           });
           console.info("[swiftmc-email] registration-or-resend accepted by provider", { requestId });
         } catch (error) {
-          const status = error instanceof Error ? /Resend API error: (\\d{3})/.exec(error.message)?.[1] : undefined;
+          const status = error instanceof Error ? /Resend API error: (\d{3})/.exec(error.message)?.[1] : undefined;
           console.error("[swiftmc-email] registration-or-resend delivery failed", { requestId, providerHttpStatus: status ?? "unknown" });
         }
       }
