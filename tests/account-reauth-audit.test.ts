@@ -147,6 +147,62 @@ test("email change rejects Discord-only request without recent auth or password"
   assert.equal(res.ok, false);
 });
 
+test("Discord-only first email confirmation persists verified address without password identity", async () => {
+  const user = { id: "u1", emailNormalized: null, displayName: "Discord User", phoneE164: null, role: "USER" as const, status: "ACTIVE" as const, authVersion: 1, emailVerifiedAt: null, createdAt: new Date(), updatedAt: new Date() };
+  const verifiedEmail = "verified@example.com";
+  const mutations: string[] = [];
+  const challenge = {
+    id: "challenge-1", userId: "u1", emailNormalized: verifiedEmail, purpose: "CHANGE_EMAIL" as const,
+    authVersion: 1, tokenHash: "example-hash", expiresAt: new Date("2026-11-11T12:09:00Z"),
+    consumedAt: null, createdAt: new Date("2026-11-11T12:00:00Z"),
+  } as EmailChallenge;
+  const svc = createEmailChangeService({
+    userRepository: {
+      findById: async () => user, findByNormalizedEmail: async () => null,
+      createUser: async () => user, bumpAuthVersion: async () => true,
+      updateEmailVerifiedAt: async () => {}, updateProfile: async () => user,
+      updateEmail: async (_id, email, verifiedAt) => {
+        assert.equal(email, verifiedEmail);
+        assert.equal(verifiedAt.toISOString(), "2026-11-11T12:00:00.000Z");
+        mutations.push("email");
+        return user;
+      },
+    },
+    identityRepository: {
+      findByProviderAndSubject: async () => null,
+      findByUserAndProvider: async () => null,
+      resolveOwner: async () => null,
+      createIdentity: async () => { throw new Error("must preserve Discord-only identity"); },
+      deleteByUserAndProvider: async () => {},
+      updateProviderSubject: async () => { throw new Error("cannot update nonexistent password identity"); },
+    },
+    passwordCredentialRepository: {
+      findByIdentity: async () => null, createPasswordHash: async () => {},
+      replacePasswordHashIfUnchanged: async () => false,
+    },
+    emailChallengeRepository: {
+      create: async () => challenge, consume: async () => challenge,
+      expire: async () => {}, invalidateOutstanding: async () => {},
+    },
+    sessionRepository: {
+      create: async () => ({} as never), findByTokenDigest: async () => null,
+      touchLastSeen: async () => {}, revoke: async () => {},
+      revokeAllForUser: async () => { mutations.push("revoke"); },
+      listActiveForUser: async () => [],
+    } as unknown as import("@/lib/auth-domain/repositories").SessionRepository,
+    auditRepository: { append: async () => {} },
+    clock: new FixedClock(),
+  });
+  await assert.rejects(
+    () => svc.confirmEmailChange({ userId: "another-user", email: verifiedEmail, challengeToken: "token", recentAuthOk: true, requestId: "r1" }),
+    { name: "RollbackRequiredError" },
+  );
+  assert.deepEqual(mutations, [], "cross-user confirmation must not mutate any account");
+  const result = await svc.confirmEmailChange({ userId: "u1", email: verifiedEmail, challengeToken: "token", recentAuthOk: true, requestId: "r2" });
+  assert.deepEqual(result, { ok: true, userId: "u1" });
+  assert.deepEqual(mutations, ["email", "revoke"]);
+});
+
 test("minecraft relink safety: bind logic rejects transfer to different owned UUID (source contract)", async () => {
   const src = await import("node:fs/promises").then(fs => fs.readFile("lib/minecraft-bridge/service.ts", "utf8"));
   assert.ok(src.includes("Para preservar seus benefícios, vincule novamente o mesmo UUID"), "must enforce same-UUID relink when entitlements owned");
