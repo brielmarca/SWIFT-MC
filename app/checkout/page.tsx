@@ -50,7 +50,7 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
             {emailVerified ? "Vincular minha conta Minecraft" : "Verificar meu e-mail"}
           </Link>
         )}
-      </section> : <CartCheckout email={user.emailNormalized ?? ""} verified={eligible} testPurchases={testPurchases} />}
+      </section> : <CartCheckout email={user.emailNormalized ?? ""} emailVerified={emailVerified} verified={eligible} testPurchases={testPurchases} />}
     </main>
     <Footer />
   </>;
