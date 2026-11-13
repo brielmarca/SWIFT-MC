@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useCart } from "./cart-provider";
 import { TestPurchaseButton } from "./test-purchase-button";
 
-export function CartCheckout({ email, verified, testPurchases = false }: { email: string; verified: boolean; testPurchases?: boolean }) {
+export function CartCheckout({ email, emailVerified, verified, testPurchases = false }: { email: string; emailVerified: boolean; verified: boolean; testPurchases?: boolean }) {
   const { items, ready } = useCart();
   const [selection, setSelection] = useState("");
   const rank = items.find(item => item.slug === selection) ?? items[0];
@@ -18,7 +18,7 @@ export function CartCheckout({ email, verified, testPurchases = false }: { email
       <p className="text-sm text-muted">Conta: {email}. O nome do jogador será confirmado com a conta Minecraft vinculada antes de qualquer compra.</p>
       <p className="font-bold">Total desta seleção: {rank.price} · BRL</p>
     </div>
-    {testPurchases ? (verified ? <TestPurchaseButton slug={rank.slug} type="vip" /> : <Link href="/account/profile#linked" className="button-primary">Concluir verificação da conta</Link>) : <div role="status" className="rounded-xl border border-amber-300/20 bg-amber-400/10 p-4 text-sm leading-6 text-amber-100">
+    {testPurchases ? (verified ? <TestPurchaseButton slug={rank.slug} type="vip" /> : <Link href={emailVerified ? "/account/profile#linked" : "/account/profile#email-verification"} className="button-primary">{emailVerified ? "Vincular minha conta Minecraft" : "Verificar meu e-mail"}</Link>) : <div role="status" className="rounded-xl border border-amber-300/20 bg-amber-400/10 p-4 text-sm leading-6 text-amber-100">
       <strong>Compras temporariamente indisponíveis.</strong> Tente novamente mais tarde.
       {" Quando as compras forem liberadas, será necessário ter e-mail verificado e Minecraft vinculado."}
     </div>}
