@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { headers } from "next/headers";
 import { CartCheckout } from "@/components/cart-checkout";
 import { AuthHeader } from "@/components/auth-header";
