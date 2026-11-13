@@ -21,11 +21,6 @@ function error(code: string, message: string, status: number) {
   return Response.json({ error: { code, message } }, { status, headers });
 }
 
-function isStagingTestPurchases(): boolean {
-  const env = process.env;
-  return env.BACKEND_RUNTIME === "node" && env.APP_ENV === "staging" && env.STRIPE_TEST_PURCHASES_ENABLED === "true" && env.PURCHASES_ENABLED === "false" && /^(sk|rk)_test_/.test(env.STRIPE_SECRET_KEY ?? "");
-}
-
 export async function POST(request: Request): Promise<Response> {
   if (!purchasesEnabled()) return purchasesDisabledResponse(request);
   const env = await getWorkersEnv();
@@ -43,11 +38,9 @@ export async function POST(request: Request): Promise<Response> {
   catch { return error("CHECKOUT_UNAVAILABLE", "Pagamento indisponível. Tente novamente mais tarde.", 503); }
   try {
     return await withAuthPrisma(env, async db => {
-      const stagingBypass = isStagingTestPurchases();
       const identity = await getLinkedMinecraftIdentityForUser(db, auth.user.id);
-      if (!identity && !stagingBypass) return error("MINECRAFT_LINK_REQUIRED", "Vincule sua conta Minecraft antes de comprar um VIP.", 409);
-      const fallbackName = auth.user.emailNormalized!.split("@")[0];
-      const minecraftUsername = identity ? orderIdentityLabel(identity) : fallbackName;
+      if (!identity) return error("MINECRAFT_LINK_REQUIRED", "Vincule e verifique sua conta Minecraft antes de comprar VIP ou Cash.", 409);
+      const minecraftUsername = orderIdentityLabel(identity);
       const validated = validateOrderInput({ ...input.data, minecraftUsername, email: auth.user.emailNormalized! });
       if (validated.error) return error(validated.error, "Este produto não está disponível para compra.", 400);
       const idempotencyKey = createHash("sha256").update(`stripe:v1:${auth.user.id}:${input.data.idempotencyKey}`).digest("hex");

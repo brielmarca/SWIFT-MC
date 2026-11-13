@@ -10,12 +10,7 @@ import { TestPurchaseButton } from "@/components/test-purchase-button";
 import { getWorkersEnv } from "@/lib/auth-api/get-env";
 import { withAuthPrisma } from "@/lib/auth-infrastructure/prisma";
 import { getLinkedMinecraftIdentityForUser } from "@/lib/minecraft-bridge/purchase";
-import Link from "next/link";
-
-function isStagingTestPurchases(): boolean {
-  const env = process.env;
-  return env.BACKEND_RUNTIME === "node" && env.APP_ENV === "staging" && env.STRIPE_TEST_PURCHASES_ENABLED === "true" && env.PURCHASES_ENABLED === "false" && /^(sk|rk)_test_/.test(env.STRIPE_SECRET_KEY ?? "");
-}
+import { CheckoutRequirements } from "@/components/checkout-requirements";
 
 export const metadata: Metadata = { title: "Checkout | Swift MC", description: "Revise sua seleção e pague com segurança pelo Stripe.", robots: { index: false, follow: false } };
 
@@ -27,9 +22,10 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
   const { cash } = await searchParams;
   const pack = cashPackages.find(pack => String(pack.amount) === cash);
   const testPurchases = purchasesEnabled();
-  const stagingBypass = isStagingTestPurchases();
-  const linked = testPurchases && await withAuthPrisma(await getWorkersEnv(), db => getLinkedMinecraftIdentityForUser(db, user.id));
-  const eligible = !!user.emailVerifiedAt && (!!linked || stagingBypass);
+  // Both production and staging purchases require a verified linked Minecraft UUID.
+  const linked = testPurchases ? await withAuthPrisma(await getWorkersEnv(), db => getLinkedMinecraftIdentityForUser(db, user.id)) : null;
+  const emailVerified = !!user.emailVerifiedAt && !!user.emailNormalized;
+  const eligible = emailVerified && !!linked;
 
   return <>
     <AuthHeader />
@@ -41,10 +37,18 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
           ? (process.env.APP_ENV === "production" ? "Pagamento seguro com Stripe. Entrega na conta Minecraft vinculada após confirmação do pagamento." : "Homologação: use apenas cartões de teste Stripe e o servidor Minecraft de staging.")
           : "Compras temporariamente indisponíveis. Sua seleção permanece salva."}</p>
       </header>
-      {testPurchases && !eligible && <p className="mb-6 text-sm text-muted">Verifique seu email e vincule sua conta Minecraft em <Link href="/account" className="underline">Minha conta</Link> para continuar.</p>}
-      {pack && testPurchases ? <section className="glass-panel space-y-4 p-6">
+      {testPurchases && !eligible && <CheckoutRequirements emailVerified={emailVerified} minecraftLinked={!!linked} />}
+      {pack ? <section className="glass-panel space-y-4 p-6">
         <h2>{pack.amount + pack.bonus} Cash · {(pack.price / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</h2>
-        <TestPurchaseButton slug={`cash-${pack.amount}`} type="cash" disabled={!eligible} stagingBypass={stagingBypass} />
+        {!testPurchases ? (
+          <p role="status" className="text-sm text-amber-100">Compras temporariamente indisponíveis neste ambiente.</p>
+        ) : eligible ? (
+          <TestPurchaseButton slug={`cash-${pack.amount}`} type="cash" />
+        ) : (
+          <Link className="button-primary" href={emailVerified ? "/account/profile#linked" : "/account/profile#email-verification"}>
+            {emailVerified ? "Vincular minha conta Minecraft" : "Verificar meu e-mail"}
+          </Link>
+        )}
       </section> : <CartCheckout email={user.emailNormalized ?? ""} verified={eligible} testPurchases={testPurchases} />}
     </main>
     <Footer />
