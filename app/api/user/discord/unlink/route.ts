@@ -48,8 +48,12 @@ export async function POST(request: Request): Promise<Response> {
         return jsonError("REQUEST_FAILED", "Não foi possível confirmar sua identidade.", 400);
       }
 
-      // Clean up Discord-bound MFA to avoid orphan/lock issues; admin privileges remain server-controlled.
-      await prisma.mfaCredential.deleteMany({ where: { userId: user.id } });
+      // Keep account-level MFA when another owned identity remains (EMAIL_PASSWORD/DISCORD support).
+      // Rebind MFA credential away from the Discord identity being removed to satisfy FK/integrity.
+      const credential = await prisma.mfaCredential.findUnique({ where: { userId: user.id }, select: { id: true, identityId: true } });
+      if (credential && credential.identityId === discord.id) {
+        await prisma.mfaCredential.update({ where: { userId: user.id }, data: { identityId: passwordIdentity.id } });
+      }
       await identityRepository.deleteByUserAndProvider(user.id, "DISCORD");
       const bumped = await userRepository.bumpAuthVersion(user.id, user.authVersion);
       if (!bumped) return jsonError("REQUEST_FAILED", "Conflito de segurança. Tente novamente.", 409);

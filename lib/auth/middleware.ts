@@ -72,6 +72,8 @@ export type AuthenticatedUser = {
   status: string;
   createdAt: Date;
   authVersion: number;
+  isMfaVerified: boolean;
+  mfaVerifiedAt: Date | null;
 };
 
 export type AuthSessionResult = {
@@ -81,6 +83,12 @@ export type AuthSessionResult = {
 } | {
   authenticated: false;
   code?: string;
+};
+
+export type SessionValidationOptions = {
+  requiredPermission?: import("@/lib/auth-domain/types").AuthPermission;
+  requireRecentAuth?: boolean;
+  requireMfa?: boolean;
 };
 
 /**
@@ -99,12 +107,12 @@ function extractSessionToken(cookieHeader: string | null): string | null {
 
 /**
  * Validates a session token against the database.
- * Returns the authenticated user or a failure result.
  * Fail-closed: any error results in unauthenticated status.
  */
 export async function validateSessionFromToken(
   token: string,
   env?: Awaited<ReturnType<typeof getWorkersEnv>>,
+  options: SessionValidationOptions = {},
 ): Promise<AuthSessionResult> {
   const bindings = env ?? (await getWorkersEnv());
   const hyperdrive = bindings.AUTH_HYPERDRIVE;
@@ -114,7 +122,7 @@ export async function validateSessionFromToken(
 
   try {
     return await withAuthServices(bindings, async (services) => {
-      const validation = await services.sessionService.validateSession({ token });
+      const validation = await services.sessionService.validateSession({ token, ...options });
       if (!validation.ok) {
         return { authenticated: false, code: validation.code };
       }
@@ -131,6 +139,8 @@ export async function validateSessionFromToken(
           status: user.status,
           createdAt: user.createdAt,
           authVersion: user.authVersion,
+          isMfaVerified: session.mfaVerifiedAt !== null,
+          mfaVerifiedAt: session.mfaVerifiedAt,
         },
         sessionId: session.id,
       };
@@ -147,22 +157,23 @@ export async function validateSessionFromToken(
 export async function validateSessionFromRequest(
   request: Request,
   env?: Awaited<ReturnType<typeof getWorkersEnv>>,
+  options: SessionValidationOptions = {},
 ): Promise<AuthSessionResult> {
   const cookie = request.headers.get("cookie") || "";
   const token = extractSessionToken(cookie);
   if (!token) {
     return { authenticated: false, code: "NO_SESSION" };
   }
-  return validateSessionFromToken(token, env);
+  return validateSessionFromToken(token, env, options);
 }
 
 /**
- * Requires a valid session. Returns the user if authenticated, or a 401 Response
- * if not. Intended for use in API route handlers.
+ * Requires a valid session. Returns the user if authenticated, or 401/403 Response if not.
  */
 export async function requireSession(
   request: Request,
   env?: Awaited<ReturnType<typeof getWorkersEnv>>,
+  options: SessionValidationOptions = {},
 ): Promise<{ user: AuthenticatedUser; sessionId: string } | Response> {
   // Rate limit session validation by IP. Fail-closed.
   const bindings = env ?? await getWorkersEnv();
@@ -170,8 +181,6 @@ export async function requireSession(
   const clientIp = getClientIp(request.headers);
   if (clientIp || bindings.AUTH_HYPERDRIVE) {
     try {
-      // Missing trusted IP must not bypass limiting. Unidentified traffic shares
-      // a bounded bucket; untrusted forwarded headers cannot select another one.
       const ipKey = opaqueKey(`auth:user:protected:ip:${clientIp ?? "unknown"}`);
       if (!(await rateLimiter.check({ key: ipKey }))) {
         return rateLimitResponse();
@@ -181,43 +190,32 @@ export async function requireSession(
     }
   }
 
-  const result = await validateSessionFromRequest(request, bindings);
+  const result = await validateSessionFromRequest(request, bindings, options);
   if (!result.authenticated) {
+    const code = result.code ?? "UNAUTHENTICATED";
+    const status = code === "MFA_REQUIRED" || code === "RECENT_AUTH_REQUIRED" || code === "INSUFFICIENT_PERMISSION" ? 403 : 401;
     return Response.json(
-      { error: { code: result.code ?? "UNAUTHENTICATED", message: "Sessão inválida ou expirada." } },
-      { status: 401, headers: { "Cache-Control": "private, no-store" } },
+      { error: { code, message: status === 403 ? "Acesso negado." : "Sessão inválida ou expirada." } },
+      { status, headers: { "Cache-Control": "private, no-store" } },
     );
   }
   return { user: result.user, sessionId: result.sessionId };
 }
 
-/**
- * Middleware wrapper for API route handlers that require authentication.
- * Usage:
- *   export async function POST(request: Request) {
- *     const auth = await requireAuthenticated(request);
- *     if (auth instanceof Response) return auth;
- *     const { user } = auth;
- *     ...
- *   }
- */
 export async function requireAuthenticated(
   request: Request,
   env?: Awaited<ReturnType<typeof getWorkersEnv>>,
+  options: SessionValidationOptions = {},
 ): Promise<{ user: AuthenticatedUser; sessionId: string } | Response> {
-  return requireSession(request, env);
+  return requireSession(request, env, options);
 }
 
-/**
- * Check if a request has a valid session without enforcing.
- * Returns the user or null. Suitable for Server Components that conditionally
- * render content based on authentication state.
- */
 export async function getOptionalSession(
   request: Request,
   env?: Awaited<ReturnType<typeof getWorkersEnv>>,
+  options: SessionValidationOptions = {},
 ): Promise<{ user: AuthenticatedUser; sessionId: string } | null> {
-  const result = await validateSessionFromRequest(request, env);
+  const result = await validateSessionFromRequest(request, env, options);
   if (!result.authenticated) return null;
   return { user: result.user, sessionId: result.sessionId };
 }

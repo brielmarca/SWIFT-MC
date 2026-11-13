@@ -214,8 +214,12 @@ model User {
   createdAt             DateTime            @default(now()) @db.Timestamptz(3)
   updatedAt             DateTime            @updatedAt @db.Timestamptz(3)
   identities            AuthIdentity[]
-  provisionedAsAdmin    ProvisionedAdmin?
+  provisionedAsAdmin    ProvisionedAdmin?    @relation("ProvisionedAdminClaimedBy")
+  grantedProvisionedAdmins ProvisionedAdmin[] @relation("ProvisionedAdminGrantedBy")
   mfaCredential         MfaCredential?
+  mfaSetup              MfaSetup?
+  mfaChallenges         MfaChallenge[]
+  mfaRecoveryCodes      MfaRecoveryCode[]
   sessions              Session[]
   orders                Order[]
   oauthLinkTransactions OAuthTransaction[]
@@ -268,6 +272,7 @@ model Session {
   mfaVerifiedAt     DateTime?          @db.Timestamptz(3)
   user              User               @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   oauthTransactions OAuthTransaction[]
+  mfaChallenges     MfaChallenge[]
 
   @@index([userId])
   @@index([idleExpiresAt])
@@ -413,25 +418,38 @@ model BridgeDelivery {
   @@index([entitlementId, status])
 }
 
-/// Admin bootstrap allowlist. Discord subject only; SQL rejects email/display-name values.
+/// Admin bootstrap/provisioning allowlist. Discord subject only; SQL rejects email/display-name values.
 model ProvisionedAdmin {
   id                String    @id @default(cuid())
   discordSubject    String    @unique @db.VarChar(255)
+  targetRole        UserRole  @default(ADMIN)
+  grantedByUserId   String?
+  note              String?   @db.VarChar(255)
   createdAt         DateTime  @default(now()) @db.Timestamptz(3)
   claimedByUserId   String?   @unique
   claimedAt         DateTime? @db.Timestamptz(3)
-  claimedByUser     User?     @relation(fields: [claimedByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  consumedAt        DateTime? @db.Timestamptz(3)
+  claimedByUser     User?     @relation("ProvisionedAdminClaimedBy", fields: [claimedByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  grantedByUser     User?     @relation("ProvisionedAdminGrantedBy", fields: [grantedByUserId], references: [id], onDelete: SetNull, onUpdate: Restrict)
+
+  @@index([targetRole, claimedAt])
 }
 
 model MfaCredential {
-  id                 String       @id @default(cuid())
-  userId             String       @unique
-  identityId         String       @unique
-  secretCiphertext   String       @db.VarChar(2048)
-  enabledAt          DateTime     @db.Timestamptz(3)
-  createdAt          DateTime     @default(now()) @db.Timestamptz(3)
-  user               User         @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  identity           AuthIdentity @relation(fields: [identityId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  id                      String       @id @default(cuid())
+  userId                  String       @unique
+  identityId              String       @unique
+  secretCiphertext        String       @db.VarChar(2048)
+  pendingSecretCiphertext String?      @db.VarChar(2048)
+  pendingCreatedAt        DateTime?    @db.Timestamptz(3)
+  enabledAt               DateTime     @db.Timestamptz(3)
+  confirmedAt             DateTime?    @db.Timestamptz(3)
+  lastUsedStep            BigInt?
+  lastUsedAt              DateTime?    @db.Timestamptz(3)
+  createdAt               DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt               DateTime     @default(now()) @updatedAt @db.Timestamptz(3)
+  user                    User         @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  identity                AuthIdentity @relation(fields: [identityId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 }
 
 model AuthAuditEvent {
@@ -451,4 +469,48 @@ model AuthAuditEvent {
   @@index([subjectUserId, createdAt])
   @@index([requestId])
   @@index([createdAt])
+}
+
+model MfaSetup {
+  id               String    @id @default(cuid())
+  userId           String    @unique
+  secretCiphertext String    @db.VarChar(2048)
+  expiresAt        DateTime  @db.Timestamptz(3)
+  consumedAt       DateTime? @db.Timestamptz(3)
+  createdAt        DateTime  @default(now()) @db.Timestamptz(3)
+  user             User      @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([expiresAt])
+}
+
+model MfaChallenge {
+  id           String    @id @default(cuid())
+  userId       String
+  sessionId    String?
+  purpose      String    @db.VarChar(32)
+  tokenHash    String    @unique @db.VarChar(128)
+  attemptCount Int       @default(0)
+  maxAttempts  Int       @default(10)
+  expiresAt    DateTime  @db.Timestamptz(3)
+  consumedAt   DateTime? @db.Timestamptz(3)
+  verifiedAt   DateTime? @db.Timestamptz(3)
+  createdAt    DateTime  @default(now()) @db.Timestamptz(3)
+  user         User      @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  session      Session?  @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: Restrict)
+
+  @@index([userId, purpose, expiresAt])
+  @@index([sessionId])
+  @@index([expiresAt])
+}
+
+model MfaRecoveryCode {
+  id        String    @id @default(cuid())
+  userId    String
+  codeHash  String    @db.VarChar(128)
+  usedAt    DateTime? @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([userId, usedAt])
+  @@index([codeHash])
 }

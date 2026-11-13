@@ -121,12 +121,13 @@ export async function POST(request: Request): Promise<Response> {
         return jsonError("VERIFICATION_FAILED", "Não foi possível verificar o email.", 400);
       }
 
-      // Issue a session for the newly verified user.
+      // Issue a session for the newly verified user (no MFA trust).
       const issued = await services.sessionService.issueSession({
         userId: result.userId,
         authVersion: 1,
         rememberMe: false,
-        isStaff: false,
+        isPrivilegedAdmin: false,
+        mfaVerifiedAt: null,
       });
 
       if (!issued.ok) {

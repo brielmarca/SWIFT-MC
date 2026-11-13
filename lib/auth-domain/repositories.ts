@@ -111,6 +111,7 @@ export interface SessionRepository {
     absoluteExpiresAt: Date;
     mfaVerifiedAt?: Date | null;
   }): Promise<AuthSession>;
+  markMfaVerified?(sessionId: string, verifiedAt: Date): Promise<void>;
   /** Look up a session by its token digest. */
   findByTokenDigest(tokenHash: string): Promise<AuthSession | null>;
   /** Refresh lastSeenAt without extending absolute expiry. */

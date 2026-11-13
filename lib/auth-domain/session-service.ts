@@ -20,16 +20,19 @@ const USER_NOT_FOUND: SessionValidateFailureCode = "USER_NOT_FOUND";
 const USER_NOT_ACTIVE: SessionValidateFailureCode = "USER_NOT_ACTIVE";
 const AUTH_VERSION_MISMATCH: SessionValidateFailureCode = "AUTH_VERSION_MISMATCH";
 
-function computeExpiry(now: Date, params: { rememberMe: boolean; isStaff: boolean }) {
+function computeExpiry(now: Date, params: { rememberMe: boolean; isPrivilegedAdmin: boolean }) {
+  if (params.isPrivilegedAdmin) {
+    return {
+      absoluteExpiresAt: new Date(now.getTime() + SESSION_POLICY.adminAbsoluteSeconds * 1000),
+      idleExpiresAt: new Date(now.getTime() + SESSION_POLICY.adminInactivitySeconds * 1000),
+    };
+  }
   const absoluteSeconds = params.rememberMe
     ? SESSION_POLICY.rememberMeAbsoluteSeconds
     : SESSION_POLICY.normalAbsoluteSeconds;
-  const idleSeconds = params.isStaff
-    ? SESSION_POLICY.staffInactivitySeconds
-    : SESSION_POLICY.inactivitySeconds;
   return {
     absoluteExpiresAt: new Date(now.getTime() + absoluteSeconds * 1000),
-    idleExpiresAt: new Date(now.getTime() + idleSeconds * 1000),
+    idleExpiresAt: new Date(now.getTime() + SESSION_POLICY.inactivitySeconds * 1000),
   };
 }
 
@@ -54,7 +57,7 @@ export function createSessionService(deps: SessionServiceDeps): SessionService {
       const now = clock.now();
       const { absoluteExpiresAt, idleExpiresAt } = computeExpiry(now, {
         rememberMe: params.rememberMe,
-        isStaff: params.isStaff,
+        isPrivilegedAdmin: params.isPrivilegedAdmin ?? params.isStaff ?? false,
       });
 
       // Fresh opaque 256-bit session token.
@@ -134,13 +137,13 @@ export function createSessionService(deps: SessionServiceDeps): SessionService {
         }
       }
 
-      // 12. future MFA assurance placeholder when explicitly required
+      // 12. MFA assurance when explicitly required (elevation/privileged operations)
       if (requireMfa) {
         if (session.mfaVerifiedAt === null) {
           return { ok: false, code: "MFA_REQUIRED" as SessionValidateFailureCode };
         }
         const mfaMs = now.getTime() - session.mfaVerifiedAt.getTime();
-        if (mfaMs > SESSION_POLICY.recentAuthenticationSeconds * 1000) {
+        if (mfaMs > SESSION_POLICY.mfaVerificationSeconds * 1000) {
           return { ok: false, code: "MFA_REQUIRED" as SessionValidateFailureCode };
         }
       }

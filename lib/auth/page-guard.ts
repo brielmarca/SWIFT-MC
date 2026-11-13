@@ -1,23 +1,12 @@
 import "server-only";
 import { getWorkersEnv } from "@/lib/auth-api/get-env";
-import { validateSessionFromToken, type AuthSessionResult } from "@/lib/auth/middleware";
+import { validateSessionFromToken, type AuthSessionResult, type SessionValidationOptions } from "@/lib/auth/middleware";
 
 const SESSION_COOKIE_NAME = "__Host-swiftmc_session";
 
-export type AuthenticatedUser = {
-  id: string;
-  emailNormalized: string | null;
-  emailVerifiedAt: Date | null;
-  displayName: string;
-  phoneE164: string | null;
-  role: string;
-  status: string;
-  createdAt: Date;
-};
+export type AuthenticatedUser = NonNullable<Extract<AuthSessionResult, { authenticated: true }>["user"]>;
+export type AuthenticatedPageSession = Extract<AuthSessionResult, { authenticated: true }>;
 
-/**
- * Extracts the session token from a Cookie header value.
- */
 function extractSessionToken(cookieHeader: string | null): string | null {
   if (!cookieHeader) return null;
   return cookieHeader
@@ -29,69 +18,57 @@ function extractSessionToken(cookieHeader: string | null): string | null {
     .join("=") ?? null;
 }
 
-/**
- * Requires a valid session for a Server Component page.
- * Returns the authenticated user or redirects to /login.
- * Fail-closed: missing infrastructure or invalid session results in redirect.
- *
- * Usage in a page component:
- *   export default async function MyPage({ params }: { params: Promise<{...}> }) {
- *     const user = await requireAuthPage((await headers()).get("cookie"), "/checkout");
- *     // user is guaranteed authenticated
- *   }
- *
- * Note: Pages using this must be dynamic (not statically prerendered) so the
- * check runs at request time in the Cloudflare Workers runtime where
- * cloudflare:workers bindings are available. Add `export const dynamic = "force-dynamic"`.
- */
 export async function requireAuthPage(
   cookieHeader: string | null,
   callbackUrl?: string,
 ): Promise<AuthenticatedUser> {
-  const env = await getWorkersEnv();
-
-  const token = extractSessionToken(cookieHeader);
-  if (!token) {
-    const loginUrl = callbackUrl
-      ? `/login?callbackUrl=${encodeURIComponent(callbackUrl)}`
-      : "/login";
-    await redirectToLogin(loginUrl);
-  }
-
-  const result = await validateSessionFromToken(token as string, env);
-  if (!result.authenticated) {
-    const loginUrl = callbackUrl
-      ? `/login?callbackUrl=${encodeURIComponent(callbackUrl)}`
-      : "/login";
-    await redirectToLogin(loginUrl);
-  }
-
-  return (result as Extract<AuthSessionResult, { authenticated: true }>).user;
+  const session = await requirePageSession(cookieHeader, callbackUrl);
+  return session.user;
 }
 
-/**
- * Optional session check for Server Components that conditionally render
- * based on auth state. Returns the user or null. Safe to call during builds
- * when cloudflare:workers is unavailable (returns null).
- */
 export async function getOptionalPageUser(
   cookieHeader: string | null,
 ): Promise<AuthenticatedUser | null> {
+  const session = await getOptionalPageSession(cookieHeader);
+  return session?.user ?? null;
+}
+
+export async function requirePageSession(
+  cookieHeader: string | null,
+  callbackUrl?: string,
+  options: SessionValidationOptions = {},
+): Promise<AuthenticatedPageSession> {
+  const env = await getWorkersEnv();
+  const token = extractSessionToken(cookieHeader);
+  const loginUrl = callbackUrl ? `/login?callbackUrl=${encodeURIComponent(callbackUrl)}` : "/login";
+  const adminLoginUrl = callbackUrl ? `/admin/login?callbackUrl=${encodeURIComponent(callbackUrl)}` : "/admin/login";
+  if (!token) {
+    redirectTo(options.requireMfa ? adminLoginUrl : loginUrl);
+  }
+  const result = await validateSessionFromToken(token, env, options);
+  if (!result.authenticated) {
+    if (options.requireMfa && (result.code === "MFA_REQUIRED" || result.code === "RECENT_AUTH_REQUIRED")) redirectTo(adminLoginUrl);
+    if (options.requiredPermission && result.code === "INSUFFICIENT_PERMISSION") redirectTo("/account");
+    redirectTo(options.requireMfa ? adminLoginUrl : loginUrl);
+  }
+  return result;
+}
+
+export async function getOptionalPageSession(
+  cookieHeader: string | null,
+  options: SessionValidationOptions = {},
+): Promise<AuthenticatedPageSession | null> {
   const env = await getWorkersEnv();
   const token = extractSessionToken(cookieHeader);
   if (!token) return null;
-
-  const result = await validateSessionFromToken(token, env);
+  const result = await validateSessionFromToken(token, env, options);
   if (!result.authenticated) return null;
-  return result.user;
+  return result as AuthenticatedPageSession;
 }
 
-/**
- * Throws a Next.js redirect to the login page.
- * Imported lazily to avoid loading next/navigation in non-Next.js contexts.
- */
-async function redirectToLogin(url: string): Promise<void> {
-  // Dynamic import used because "require" is not available in ESM mode.
-  const { redirect } = await import("next/navigation");
-  redirect(url);
+function redirectTo(url: string): never {
+  // Lazy import to keep server-component tests runnable without Next client router context.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const mod = require("next/navigation") as { redirect: (url: string) => never };
+  return mod.redirect(url);
 }

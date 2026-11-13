@@ -107,7 +107,9 @@ export type SessionIssueParams = {
   userId: string;
   authVersion: number;
   rememberMe: boolean;
-  isStaff: boolean;
+  /** Deprecated compatibility alias. Prefer isPrivilegedAdmin. */
+  isStaff?: boolean;
+  isPrivilegedAdmin?: boolean;
   mfaVerifiedAt?: Date | null;
 };
 

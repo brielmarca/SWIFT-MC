@@ -1,19 +1,25 @@
 import "server-only";
 import { headers } from "next/headers";
-import { getOptionalPageUser, requireAuthPage } from "@/lib/auth/page-guard";
 import { redirect } from "next/navigation";
-import { hasPermission } from "@/lib/auth/permissions";
+import { hasPermission, type AuthPermission } from "@/lib/auth/permissions";
+import { getOptionalPageSession, requirePageSession } from "@/lib/auth/page-guard";
 
-export async function requireAdminPage(callbackUrl = "/admin") {
-  const cookie = (await headers()).get("cookie");
-  const user = await requireAuthPage(cookie, callbackUrl);
-  if (user.status !== "ACTIVE" || !hasPermission(user.role, "audit:read")) redirect("/account");
-  return user;
+const ADMIN_BASE_PERMISSION: AuthPermission = "audit:read";
+
+function isAuthorizedAdmin(user: { status: string; role: string }, permission: AuthPermission) {
+  return user.status === "ACTIVE" && hasPermission(user.role, ADMIN_BASE_PERMISSION) && hasPermission(user.role, permission);
 }
 
-export async function getAdminPageUser() {
+export async function requireAdminPage(permission: AuthPermission = ADMIN_BASE_PERMISSION, callbackUrl = "/admin") {
   const cookie = (await headers()).get("cookie");
-  const user = await getOptionalPageUser(cookie);
-  if (!user || user.status !== "ACTIVE" || !hasPermission(user.role, "audit:read")) return null;
-  return user;
+  const session = await requirePageSession(cookie, callbackUrl, { requiredPermission: permission, requireMfa: true });
+  if (!isAuthorizedAdmin(session.user, permission) || !session.user.isMfaVerified) redirect(callbackUrl.startsWith("/admin") ? "/admin/login" : "/account");
+  return session.user;
+}
+
+export async function getAdminPageUser(permission: AuthPermission = ADMIN_BASE_PERMISSION) {
+  const cookie = (await headers()).get("cookie");
+  const session = await getOptionalPageSession(cookie, { requiredPermission: permission, requireMfa: true });
+  if (!session || !isAuthorizedAdmin(session.user, permission) || !session.user.isMfaVerified) return null;
+  return session.user;
 }

@@ -104,6 +104,11 @@ export function AuthForm({ mode, returnPath = "/" }: { mode: AuthMode; returnPat
         const result = await response.json();
         if (mode === "login" || mode === "verify") {
           if (mode === "verify") form.reset();
+          if (mode === "login" && (result.adminElevationRequired || result.mfaRequired)) {
+            const target = typeof returnPath === "string" && returnPath.startsWith("/admin") ? returnPath : "/admin";
+            window.location.href = `/admin/login?callbackUrl=${encodeURIComponent(target)}`;
+            return;
+          }
           window.location.href = mode === "login" ? returnPath : "/";
         } else if (mode === "forgot" || mode === "register" || mode === "resend") {
           setAcknowledgement(result.acknowledgement ?? "Se for possível, enviaremos as instruções para o email informado.");

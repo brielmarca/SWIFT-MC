@@ -18,14 +18,14 @@ async function loadData() {
     prisma.order.count(),
     prisma.order.count({ where: { status: "PAID" } }),
     prisma.fulfillment.count({ where: { status: { in: ["PENDING", "PROCESSING", "RETRY_PENDING"] } } }),
-    prisma.provisionedAdmin.findMany({ orderBy: { createdAt: "desc" }, take: 20, select: { id: true, discordSubject: true, claimedAt: true, createdAt: true } }),
+    prisma.provisionedAdmin.findMany({ orderBy: { createdAt: "desc" }, take: 20, select: { id: true, discordSubject: true, targetRole: true, claimedAt: true, createdAt: true } }),
     prisma.authAuditEvent.findMany({ orderBy: { createdAt: "desc" }, take: 20, select: { id: true, eventType: true, outcome: true, createdAt: true } }),
   ]);
   return { users, orders, paidOrders, fulfillmentsPending, provisioned, audit };
 }
 
 export default async function AdminPage() {
-  await requireAdminPage("/admin");
+  await requireAdminPage("audit:read", "/admin");
   const data = await loadData();
   return (
     <>
@@ -58,7 +58,7 @@ export default async function AdminPage() {
               <ul className="mt-4 space-y-2 text-sm">
                 {data.provisioned.length === 0 ? <li className="text-muted">Nenhum registro.</li> : data.provisioned.map(p => (
                   <li key={p.id} className="flex items-center justify-between gap-3 border-b border-white/10 pb-2">
-                    <span className="font-mono text-xs text-ink">{p.discordSubject}</span>
+                    <span className="font-mono text-xs text-ink">{p.discordSubject} <span className="text-muted">({p.targetRole})</span></span>
                     <span className="text-xs text-muted">{p.claimedAt ? "Reivindicado" : "Pendente"}</span>
                   </li>
                 ))}
