@@ -23,7 +23,8 @@ public final class Backend {
         if(route==null || route.isBlank() || !route.startsWith("/") || route.startsWith("//") || route.contains("..") || route.contains("?"))
             throw new IllegalStateException("Rota ausente: "+name);
         var b=HttpRequest.newBuilder(URI.create(base+route)).timeout(Duration.ofSeconds(timeout))
-            .header("Authorization","Bearer "+key).header("Accept","application/json").header("X-Swift-Server",server);
+            .header("Authorization","Bearer "+key).header("Accept","application/json").header("X-Swift-Server",server)
+            .header("User-Agent","SwiftMCBridge/0.2.0");
         if(method.equals("GET"))b.GET();
         else b.header("Content-Type","application/json").POST(HttpRequest.BodyPublishers.ofString(body.toString(), StandardCharsets.UTF_8));
         var resp=http.send(b.build(),HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
