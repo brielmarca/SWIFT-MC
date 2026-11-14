@@ -1,6 +1,6 @@
 import "server-only";
 import { createHash, randomBytes } from "node:crypto";
-import { Prisma, type PrismaClient } from "@prisma/client";
+import { OrderStatus, Prisma, type PrismaClient } from "@prisma/client";
 import {
   MINECRAFT_NAMESPACE, VIP_DAYS, absoluteVipExpiry, isVipRank, normalizeLinkCode,
   normalizeNickname, normalizeUuid, selectActiveVipSnapshot, type VipRankSlug,
@@ -140,6 +140,15 @@ export async function bindMinecraftLinkCode(db: PrismaClient, input: { code: str
 
     // Backfill paid VIP entitlements waiting for link and queue final state.
     await attachLinkedUuidToPendingEntitlements(tx, accountId, playerUuid);
+    // Lock entitlement-bearing paid cash orders before recovery so a refund
+    // (which also locks the order row) cannot race and have recovery resurrect
+    // a delivery after pending credits are cancelled.
+    await tx.$queryRaw`SELECT id FROM "Order" WHERE "userId" = ${accountId} AND "cashAmount" > 0 AND status IN ('PAID'::"OrderStatus", 'FULFILLED'::"OrderStatus") FOR UPDATE`;
+    // Recover Cash deliveries for confirmed payments that could not be queued
+    // while the account had no verified Minecraft UUID (e.g. unlink before
+    // webhook confirmation). Stable cash delivery IDs keep this idempotent and
+    // never resurrect refunded deliveries.
+    await recoverPendingCashDeliveriesForAccount(tx, accountId);
     await queueVipSnapshot(tx, accountId, now);
     return { accountId };
   });
@@ -236,13 +245,12 @@ export async function upsertVipEntitlementForPaidOrder(db: Db, order: {
   if (order.totalCents <= 0) return { created: false, skipped: true, reason: "INVALID_AMOUNT" };
   const rank = order.rankSlug as VipRankSlug;
   const identity = await db.minecraftIdentity.findFirst({ where: { userId: order.userId, namespace: MINECRAFT_NAMESPACE } });
-  if (!identity?.subject) return { created: false, skipped: true, reason: "NO_MINECRAFT_IDENTITY" };
   try {
     await db.vipEntitlement.create({
       data: {
         userId: order.userId, orderId: order.id, fulfillmentId, rankSlug: rank,
-        minecraftUuid: identity.subject,
-        minecraftUsername: identity.lastKnownUsername ?? order.minecraftUsername.slice(0, 64),
+        minecraftUuid: identity?.subject ?? null,
+        minecraftUsername: identity?.lastKnownUsername ?? order.minecraftUsername.slice(0, 64),
         startsAt: now, expiresAt: absoluteVipExpiry(now, VIP_DAYS), status: "ACTIVE",
       },
     });
@@ -250,7 +258,9 @@ export async function upsertVipEntitlementForPaidOrder(db: Db, order: {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") return { created: false, skipped: false };
     throw e;
   }
-  await queueVipSnapshot(db, order.userId, now);
+  // Only queue a bridge snapshot when a verified linked UUID exists; unlinked
+  // entitlements are activated on authenticated bind (which preserves ownership).
+  if (identity?.subject) await queueVipSnapshot(db, order.userId, now);
   return { created: true, skipped: false };
 }
 
@@ -264,6 +274,21 @@ export async function revokeVipEntitlementsForOrder(db: Db, orderId: string, rea
   for (const accountId of new Set(ents.map(e => e.userId))) {
     await queueVipSnapshot(db, accountId, now);
   }
+}
+
+async function recoverPendingCashDeliveriesForAccount(tx: Db, accountId: string): Promise<void> {
+  return tx.order.findMany({
+    where: {
+      userId: accountId,
+      cashAmount: { gt: 0 },
+      status: { in: [OrderStatus.PAID, OrderStatus.FULFILLED] },
+    },
+    select: { id: true, userId: true, cashAmount: true },
+  }).then(async (orders) => {
+    for (const order of orders) {
+      await queueCashForPaidOrder(tx, order);
+    }
+  });
 }
 
 /** Called within the payment transaction. Stable delivery ID deduplicates retries. */

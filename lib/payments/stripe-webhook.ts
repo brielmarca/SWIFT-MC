@@ -464,7 +464,7 @@ async function reconcileInTransaction(
         // Never fail payment reconciliation due to fulfillment setup.
       }
     }
-    if (isVipRank(order.rankSlug) && hasVerifiedMinecraftUuid) {
+    if (isVipRank(order.rankSlug)) {
       let fulfillment = await db.fulfillment.findUnique({ where: { orderId: verifiedPayment.orderId } });
       if (!fulfillment) {
         const created = await createFulfillmentForOrder(db as unknown as PrismaClient, {
