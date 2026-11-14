@@ -152,13 +152,12 @@ export function createPasswordLoginService(deps: PasswordLoginDeps): PasswordLog
         identity.id, credential.passwordHash, passwordOk,
       );
 
-      // Step 6: enforce ACTIVE status.
-      const active = user.status === "ACTIVE";
+      // Step 6: enforce ACTIVE status and current authVersion before issuing.
+      const currentUser = await userRepository.findById(user.id);
+      const active = currentUser?.status === "ACTIVE";
+      const authVersionOk = currentUser?.authVersion === user.authVersion;
 
-      // Step 7: re-read/recheck authVersion before issuing (user.authVersion is current).
-      const authVersionOk = true;
-
-      const credentialsValid = passwordOk && loginAllowed && active && authVersionOk;
+      const credentialsValid = currentUser !== null && passwordOk && loginAllowed && active && authVersionOk;
 
       if (!credentialsValid) {
         // Real verification already ran above; keep generic public failure.
@@ -173,17 +172,16 @@ export function createPasswordLoginService(deps: PasswordLoginDeps): PasswordLog
       }
 
       // Step 8: Revoke all existing sessions for this user (session rotation on login).
-      // Prevents session fixation: any previously issued session token is invalidated
-      // when a new login occurs.
-      await sessionService.revokeAllUserSessions(user.id);
+      await sessionService.revokeAllUserSessions(currentUser.id);
 
-      // Step 9: issue a new session through SessionService.
-      const isStaff = user.role !== "USER";
+      // Step 9: issue a new session. Privileged roles never receive remember-me or MFA trust here.
+      const isPrivilegedAdmin = currentUser.role === "ADMIN" || currentUser.role === "OWNER";
       const issued = await sessionService.issueSession({
-        userId: user.id,
-        authVersion: user.authVersion,
-        rememberMe,
-        isStaff,
+        userId: currentUser.id,
+        authVersion: currentUser.authVersion,
+        rememberMe: isPrivilegedAdmin ? false : rememberMe,
+        isPrivilegedAdmin,
+        mfaVerifiedAt: null,
       });
 
       if (!issued.ok) {

@@ -114,8 +114,11 @@ export async function POST(request: Request): Promise<Response> {
       const csrfToken = generateSessionToken();
       setCsrfCookie(headers, csrfToken);
 
+      const adminMfaRequired = result.user.role === "ADMIN" || result.user.role === "OWNER";
       return Response.json({
         ok: true,
+        mfaRequired: adminMfaRequired,
+        adminElevationRequired: adminMfaRequired,
         user: {
           id: result.user.id,
           emailNormalized: result.user.emailNormalized,

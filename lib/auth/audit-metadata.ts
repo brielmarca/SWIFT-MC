@@ -7,7 +7,8 @@ const ENUM_FIELDS: Readonly<Record<string, readonly string[]>> = Object.freeze({
   role: ["USER", "SUPPORT", "MODERATOR", "ADMIN", "OWNER"],
   intent: ["LOGIN", "LINK"],
   challengePurpose: ["REGISTER", "VERIFY_EMAIL", "CHANGE_EMAIL", "PASSWORD_RESET"],
-  reason: ["INVALID_CREDENTIALS", "EXPIRED", "REVOKED", "RATE_LIMITED", "ORIGIN_REJECTED", "CSRF_REJECTED"],
+  mfaPurpose: ["LOGIN", "ELEVATION", "DISABLE", "RECOVERY", "SETUP", "CONFIRM"],
+  reason: ["INVALID_CREDENTIALS", "EXPIRED", "REVOKED", "RATE_LIMITED", "ORIGIN_REJECTED", "CSRF_REJECTED", "MFA_REQUIRED", "REPLAY", "CONCURRENT", "NOT_CONFIGURED", "PROVISIONED_ADMIN_CREATED", "PROVISIONING_CLAIMED", "MFA_RECOVERY_REGENERATED"],
 });
 
 /** Strict allowlist: unknown keys and invalid values are stripped, including nested bodies.

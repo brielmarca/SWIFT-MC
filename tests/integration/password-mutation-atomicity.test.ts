@@ -17,6 +17,7 @@ const requestId = prefix;
 const emails: string[] = [];
 const password = "Database-Test-Password-123!";
 const env = {
+  APP_URL: "https://swift.example",
   AUTH_HYPERDRIVE: { connectionString: process.env.TEST_DATABASE_URL! },
   AUTH_RATE_LIMIT: { limit: async () => ({ success: true }) },
 };
@@ -75,7 +76,14 @@ function changePasswordRequest(sessionToken: string | null, currentPassword: str
     ...(sessionToken ? [`__Host-swiftmc_session=${sessionToken}`] : []),
     `__Host-swiftmc_csrf=${csrf}`,
   ].join("; ");
-  const headers: Record<string, string> = { cookie, "content-type": "application/json" };
+  const headers: Record<string, string> = {
+    cookie,
+    "content-type": "application/json",
+    origin: "https://swift.example",
+    "sec-fetch-site": "same-origin",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-dest": "empty",
+  };
   if (withCsrf) headers["x-csrf-token"] = csrf;
   return new Request("https://swift.example/api/user/password", {
     method: "POST",

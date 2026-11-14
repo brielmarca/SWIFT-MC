@@ -5,7 +5,7 @@ import { setCsrfCookie } from "@/lib/auth/csrf";
 import { generateSessionToken, digestSecurityToken } from "@/lib/auth/tokens";
 import { internalReturnPath } from "@/lib/auth/browser-security";
 import { decryptSecret, discordConfigured, exchangeDiscordCode, fetchDiscordUser } from "@/lib/auth/discord-oauth";
-import { isStaffRole } from "@/lib/auth/permissions";
+
 import { createHash } from "node:crypto";
 import { createRateLimiter, rateLimitResponse } from "@/lib/auth-infrastructure/rate-limit";
 import type { AuthBindings } from "@/lib/auth-infrastructure/bindings";
@@ -82,29 +82,59 @@ export async function GET(request: Request): Promise<Response> {
       const txClient = (repos.userRepository as unknown as { prisma: PrismaClient }).prisma;
       if (txClient.provisionedAdmin) {
         const claim = await txClient.provisionedAdmin.findUnique({ where: { discordSubject: subject } });
-        if (claim && !claim.claimedByUserId) {
+        if (claim && !claim.claimedByUserId && !claim.consumedAt) {
           try {
-            await txClient.provisionedAdmin.update({ where: { discordSubject: subject }, data: { claimedByUserId: userId, claimedAt: new Date() } });
-            const refreshed = await repos.userRepository.findById(userId);
-            if (refreshed) user = refreshed;
-          } catch { /* claim race or guard rejection fails closed */ }
+            const now = new Date();
+            const claimed = await txClient.provisionedAdmin.updateMany({
+              where: { id: claim.id, claimedByUserId: null, consumedAt: null },
+              data: { claimedByUserId: userId, claimedAt: now, consumedAt: now },
+            });
+            if (claimed.count === 1) {
+              const refreshed = await repos.userRepository.findById(userId);
+              if (refreshed) user = refreshed;
+              try {
+                await txClient.authAuditEvent.create({
+                  data: {
+                    eventType: "ADMIN_PROVISIONING_CLAIMED",
+                    outcome: "success",
+                    requestId: crypto.randomUUID(),
+                    actorUserId: userId,
+                    subjectUserId: userId,
+                    metadata: { reason: "PROVISIONING_CLAIMED" },
+                  },
+                });
+              } catch { /* audit must not block secure claim completion */ }
+            }
+          } catch {
+            // claim race, guard rejection, or already consumed: fail closed (no privilege escalation)
+          }
         }
       }
 
-      // Staff/admin accounts with MFA enabled must complete MFA before session issuance.
-      if (isStaffRole(user.role) && txClient.mfaCredential) {
-        const mfa = await txClient.mfaCredential.findUnique({ where: { userId } });
-        if (mfa) return fail("mfa_required");
-      }
+      const privilegedAdmin = user.role === "ADMIN" || user.role === "OWNER";
+      const mfaConfigured = Boolean((await txClient.mfaCredential.findUnique({ where: { userId }, select: { confirmedAt: true } }).catch(() => null))?.confirmedAt);
+      const returnTo = internalReturnPath(tx.returnPath) || "/account";
 
       await services.sessionService.revokeAllUserSessions(userId);
-      const issued = await services.sessionService.issueSession({ userId, authVersion: user.authVersion, rememberMe: false, isStaff: isStaffRole(user.role), mfaVerifiedAt: isStaffRole(user.role) ? new Date() : null });
+      // Never grant MFA-verified trust from OAuth alone. Privileged/admin sessions are issued without MFA trust
+      // so administrative surfaces remain unavailable until a real MFA challenge is completed.
+      const issued = await services.sessionService.issueSession({
+        userId,
+        authVersion: user.authVersion,
+        rememberMe: false,
+        isPrivilegedAdmin: privilegedAdmin,
+        mfaVerifiedAt: null,
+      });
       if (!issued.ok) return fail();
       const headers = new Headers();
       setSessionCookie(headers, issued.rawToken, issued.session.absoluteExpiresAt);
       setCsrfCookie(headers, generateSessionToken());
       headers.append("Set-Cookie", "__Host-swiftmc_oauth=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0");
-      return redirect(internalReturnPath(tx.returnPath) || "/account", headers);
+      if (privilegedAdmin || mfaConfigured) {
+        const next = mfaConfigured ? `/admin/login?callbackUrl=${encodeURIComponent(returnTo.startsWith("/admin") ? returnTo : "/admin")}` : "/admin/security";
+        return redirect(next, headers);
+      }
+      return redirect(returnTo, headers);
     });
   } catch {
     return fail();

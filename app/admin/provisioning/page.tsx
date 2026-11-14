@@ -10,9 +10,9 @@ export const metadata: Metadata = { title: "Provisionamento admin | Swift MC", r
 export const dynamic = "force-dynamic";
 
 export default async function AdminProvisioningPage() {
-  await requireAdminPage("/admin/provisioning");
+  await requireAdminPage("security:configure", "/admin/provisioning");
   const env = await getWorkersEnv();
-  const items = env.AUTH_HYPERDRIVE ? await getPrisma().provisionedAdmin.findMany({ orderBy: { createdAt: "desc" }, take: 50, select: { id: true, discordSubject: true, claimedAt: true, createdAt: true } }) : [];
+  const items = env.AUTH_HYPERDRIVE ? await getPrisma().provisionedAdmin.findMany({ orderBy: { createdAt: "desc" }, take: 50, select: { id: true, discordSubject: true, targetRole: true, claimedAt: true, consumedAt: true, createdAt: true } }) : [];
   return (
     <>
       <AuthHeader />
@@ -29,7 +29,10 @@ export default async function AdminProvisioningPage() {
             <ul className="mt-4 space-y-2 text-sm">
               {items.length === 0 ? <li className="text-muted">Nenhum registro.</li> : items.map(i => (
                 <li key={i.id} className="flex items-center justify-between gap-3 border-b border-white/10 pb-2">
-                  <span className="font-mono text-xs text-ink">{i.discordSubject}</span>
+                  <div className="min-w-0">
+                    <p className="font-mono text-xs text-ink">{i.discordSubject}</p>
+                    <p className="text-[11px] text-muted">Papel: {i.targetRole}</p>
+                  </div>
                   <span className="text-xs text-muted">{i.claimedAt ? "Reivindicado" : "Pendente"}</span>
                 </li>
               ))}

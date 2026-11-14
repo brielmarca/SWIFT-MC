@@ -43,7 +43,7 @@ export function CashPackageCard({ pack, testPurchases = false }: { pack: CashPac
           <p className="mt-2 text-xs leading-5 text-muted">{quantity.format(pack.amount + pack.bonus)} Cash no total · {testPurchases ? "Pagamento de teste" : "Compra indisponível"}</p>
         </div>
         <div className="mt-5 grid gap-2">
-           {testPurchases ? <Link className="button-primary w-full px-4" href={`/checkout?cash=${pack.amount}`}>Comprar em teste</Link> : <button
+           {testPurchases ? <Link className="button-primary w-full px-4" href={`/checkout?cash=${pack.amount}`}>Revisar compra</Link> : <button
             type="button"
             className="button-primary w-full px-4"
             aria-label={`Compra indisponível — ${name}`}

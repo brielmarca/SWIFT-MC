@@ -2,19 +2,24 @@ import "server-only";
 import { getWorkersEnv } from "@/lib/auth-api/get-env";
 import { withAuthTransaction } from "@/lib/auth-api/auth-stack";
 import { requireSession, requireCsrfToken } from "@/lib/auth/middleware";
+import { hasTrustedBrowserMutation } from "@/lib/auth/browser-security";
 import { createRateLimiter, rateLimitResponse } from "@/lib/auth-infrastructure/rate-limit";
 import { isRollbackRequiredError } from "@/lib/auth-domain/errors";
 import { PasswordChangeRequestSchema } from "@/lib/auth-domain/dto";
 import { createHash } from "node:crypto";
 
 function jsonError(code: string, message: string, status: number): Response {
-  return Response.json({ error: { code, message } }, { status, headers: { "Cache-Control": "private, no-store", "Referrer-Policy": "no-referrer" } });
+  return Response.json({ error: { code, message } }, { status, headers: { "Cache-Control": "private, no-store", "Referrer-Policy": "no-referrer", "X-Content-Type-Options": "nosniff" } });
 }
 
 export async function POST(request: Request): Promise<Response> {
   const env = await getWorkersEnv();
   const auth = await requireSession(request, env);
   if (auth instanceof Response) return auth;
+
+  if (!hasTrustedBrowserMutation(request.headers, env.APP_URL ?? "")) {
+    return jsonError("ORIGIN_REJECTED", "Origem não permitida.", 403);
+  }
 
   // CSRF protection for state-changing POST
   const csrfError = requireCsrfToken(request);

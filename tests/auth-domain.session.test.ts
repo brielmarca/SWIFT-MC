@@ -22,14 +22,14 @@ class FixedClock implements Clock {
 class FakeSessionRepository implements SessionRepository {
   constructor(private readonly clock: FixedClock) {}
   sessions = new Map<string, AuthSession>();
-  async create(params: { userId: string; tokenHash: string; authVersion: number; idleExpiresAt: Date; absoluteExpiresAt: Date }): Promise<AuthSession> {
+  async create(params: { userId: string; tokenHash: string; authVersion: number; idleExpiresAt: Date; absoluteExpiresAt: Date; mfaVerifiedAt?: Date | null }): Promise<AuthSession> {
     const id = `sess_${Math.random().toString(36).slice(2)}`;
     const now = this.clock.now();
     const session: AuthSession = {
       id, userId: params.userId, tokenHash: params.tokenHash, authVersion: params.authVersion,
       createdAt: now, lastSeenAt: now, idleExpiresAt: params.idleExpiresAt,
       absoluteExpiresAt: params.absoluteExpiresAt, revokedAt: null, revocationReason: null,
-      authenticatedAt: now, mfaVerifiedAt: null,
+      authenticatedAt: now, mfaVerifiedAt: params.mfaVerifiedAt ?? null,
     };
     this.sessions.set(id, session);
     return session;
@@ -394,4 +394,47 @@ test("lastSeen touch never extends absolute expiry", async () => {
   // Re-fetch to confirm absolute not extended in repo.
   const found = await repo.findByTokenDigest(digestSessionToken(issued.rawToken));
   assert.equal(found!.absoluteExpiresAt.getTime(), absolute);
+});
+
+test("MFA-required validation rejects sessions without MFA and accepts recent MFA", async () => {
+  const clock = new FixedClock("2026-10-22T00:00:00Z");
+  const repo = new FakeSessionRepository(clock);
+  const users = new FakeUserRepository();
+  const svc = makeService({ clock, sessionRepository: repo, userRepository: users });
+  const user = baseUser({ role: "ADMIN" });
+  users.add(user);
+
+  const issued = await svc.issueSession({ userId: user.id, authVersion: user.authVersion, rememberMe: false, isStaff: true, mfaVerifiedAt: null });
+  assert.equal(issued.ok, true);
+  if (!issued.ok) throw new Error("unreachable");
+  const denied = await svc.validateSession({ token: issued.rawToken, requireMfa: true });
+  assert.equal(denied.ok, false);
+  if (denied.ok) throw new Error("unreachable");
+  assert.equal(denied.code, "MFA_REQUIRED");
+
+  const elevated = await svc.issueSession({ userId: user.id, authVersion: user.authVersion, rememberMe: false, isStaff: true, mfaVerifiedAt: clock.now() });
+  assert.equal(elevated.ok, true);
+  if (!elevated.ok) throw new Error("unreachable");
+  const ok = await svc.validateSession({ token: elevated.rawToken, requireMfa: true });
+  assert.equal(ok.ok, true, JSON.stringify(ok));
+  clock.advance(SESSION_POLICY.mfaVerificationSeconds * 1000 + 1);
+  const stale = await svc.validateSession({ token: elevated.rawToken, requireMfa: true });
+  assert.equal(stale.ok, false);
+  if (stale.ok) throw new Error("unreachable");
+  assert.equal(stale.code, "MFA_REQUIRED");
+});
+
+test("privileged/admin session issuance ignores remember-me and uses admin absolute cap", async () => {
+  const clock = new FixedClock("2026-10-22T00:00:00Z");
+  const repo = new FakeSessionRepository(clock);
+  const users = new FakeUserRepository();
+  const svc = makeService({ clock, sessionRepository: repo, userRepository: users });
+  const user = baseUser({ role: "OWNER" });
+  users.add(user);
+  const issued = await svc.issueSession({ userId: user.id, authVersion: user.authVersion, rememberMe: true, isStaff: true, mfaVerifiedAt: null });
+  assert.equal(issued.ok, true);
+  if (!issued.ok) throw new Error("unreachable");
+  const absMs = issued.session.absoluteExpiresAt.getTime() - clock.now().getTime();
+  assert.ok(Math.abs(absMs - SESSION_POLICY.adminAbsoluteSeconds * 1000) < 1000);
+  assert.equal(issued.session.mfaVerifiedAt, null);
 });
