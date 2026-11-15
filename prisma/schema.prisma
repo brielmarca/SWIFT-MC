@@ -95,6 +95,7 @@ model Order {
   createdAt              DateTime        @default(now()) @db.Timestamptz(3)
   updatedAt              DateTime        @updatedAt @db.Timestamptz(3)
   payments               Payment[]
+  cancellationRequest    OrderCancellationRequest?
   fulfillment            Fulfillment?
   vipEntitlement         VipEntitlement?
   user                   User?           @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
@@ -102,6 +103,23 @@ model Order {
   @@index([status, createdAt])
   @@index([minecraftUsername])
   @@index([userId])
+  @@index([userId, createdAt])
+}
+
+// Customer requests are recorded for manual review. They do not cancel a provider
+// payment, trigger a refund, or change Minecraft entitlements automatically.
+model OrderCancellationRequest {
+  id         String    @id @default(cuid())
+  orderId    String    @unique
+  userId     String
+  reason     String?   @db.VarChar(800)
+  status     String    @default("OPEN") @db.VarChar(24)
+  createdAt  DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime  @updatedAt @db.Timestamptz(3)
+  order      Order     @relation(fields: [orderId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([status, createdAt])
   @@index([userId, createdAt])
 }
 
@@ -222,6 +240,7 @@ model User {
   mfaRecoveryCodes      MfaRecoveryCode[]
   sessions              Session[]
   orders                Order[]
+  cancellationRequests  OrderCancellationRequest[]
   oauthLinkTransactions OAuthTransaction[]
   emailChallenges       EmailChallenge[]
   minecraftIdentity     MinecraftIdentity?
