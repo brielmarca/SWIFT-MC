@@ -16,7 +16,7 @@ export default function robots(): MetadataRoute.Robots {
   }
   return {
     // Leave HTML pages crawlable so their noindex directives can be read.
-    rules: { userAgent: "*", allow: "/", disallow: ["/api/"] },
+    rules: { userAgent: "*", allow: "/", disallow: ["/api/", "/admin"] },
     sitemap: siteUrl("/sitemap.xml"),
   };
 }
