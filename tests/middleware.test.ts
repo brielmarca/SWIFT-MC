@@ -44,3 +44,16 @@ test("middleware does not set Cache-Control on non-auth routes", () => {
   const response = middleware(request);
   assert.equal(response.headers.get("cache-control"), null);
 });
+
+test("private admin routes are never indexed or cached on production and preview hosts", () => {
+  for (const host of ["swiftmc.com.br", "www.swiftmc.com.br", "staging.swiftmc.com.br"]) {
+    for (const path of ["/admin", "/admin/login", "/admin/security", "/admin/users"]) {
+      const response = middleware(new NextRequest(`https://${host}${path}`));
+      assert.equal(response.headers.get("x-robots-tag"), "noindex, nofollow, noarchive");
+      assert.equal(response.headers.get("cache-control"), "private, no-store");
+      assert.equal(response.headers.get("referrer-policy"), "no-referrer");
+    }
+  }
+  const unrelated = middleware(new NextRequest("https://swiftmc.com.br/store"));
+  assert.equal(unrelated.headers.get("cache-control"), null);
+});
