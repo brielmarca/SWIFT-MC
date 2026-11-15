@@ -4,6 +4,7 @@ import { SiteProviders } from "@/components/site-providers";
 import { getServerConfig } from "@/lib/server-status";
 import { getActiveAnnouncement } from "@/data/content";
 import { rootMetadata } from "@/lib/seo";
+import { CookiePreferences } from "@/components/privacy/cookie-preferences";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -22,6 +23,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <SiteProviders publicAddress={getServerConfig().publicAddress} announcement={getActiveAnnouncement()}>
           {children}
         </SiteProviders>
+        <CookiePreferences />
       </body>
     </html>
   );

@@ -25,6 +25,7 @@ const footerLinks = {
   ] as FooterLink[],
   legal: [
     { href: "/privacy", label: "Privacidade" },
+    { href: "/cookies", label: "Política de Cookies" },
     { href: "/terms", label: "Termos de compra" },
     { href: "/refund", label: "Reembolso" },
   ] as FooterLink[],

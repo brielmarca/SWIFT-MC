@@ -12,17 +12,18 @@ async function loadData() {
   const env = await getWorkersEnv();
   if (!env.AUTH_HYPERDRIVE) return null;
   const prisma = getPrisma();
-  const [users, orders, approvedOrders, fulfillmentsPending, bridgePending, activeVips, recentOrders, recentAudit] = await Promise.all([
+  const [users, orders, approvedOrders, fulfillmentsPending, bridgePending, activeVips, cancellationOpen, recentOrders, recentAudit] = await Promise.all([
     prisma.user.count(),
     prisma.order.count(),
     prisma.order.count({ where: { status: { in: ["PAID", "FULFILLED"] } } }),
     prisma.fulfillment.count({ where: { status: { in: ["PENDING", "PROCESSING", "RETRY_PENDING"] } } }),
     prisma.bridgeDelivery.count({ where: { status: "PENDING" } }),
     prisma.vipEntitlement.count({ where: { status: "ACTIVE", revokedAt: null, expiresAt: { gt: new Date() } } }),
+    prisma.orderCancellationRequest.count({ where: { status: "OPEN" } }),
     prisma.order.findMany({ orderBy: { createdAt: "desc" }, take: 6, select: { id: true, orderNumber: true, rankName: true, status: true, totalCents: true, currency: true, createdAt: true } }),
     prisma.authAuditEvent.findMany({ orderBy: { createdAt: "desc" }, take: 6, select: { id: true, eventType: true, outcome: true, createdAt: true } }),
   ]);
-  return { users, orders, approvedOrders, fulfillmentsPending, bridgePending, activeVips, recentOrders, recentAudit };
+  return { users, orders, approvedOrders, fulfillmentsPending, bridgePending, activeVips, cancellationOpen, recentOrders, recentAudit };
 }
 
 export default async function AdminPage() {
@@ -35,6 +36,7 @@ export default async function AdminPage() {
     { label: "VIPs ativos", value: data.activeVips, href: "/admin/deliveries" },
     { label: "Processamentos pendentes", value: data.fulfillmentsPending, href: "/admin/deliveries" },
     { label: "Entregas Bridge pendentes", value: data.bridgePending, href: "/admin/deliveries" },
+    { label: "Cancelamentos solicitados", value: data.cancellationOpen, href: "/admin/cancellations" },
   ] : [];
 
   return (
