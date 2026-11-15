@@ -16,10 +16,18 @@ export function middleware(request: NextRequest) {
     }
   }
   const isAuthPage = AUTH_PAGES.includes(pathname)
+  const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/')
   const response = NextResponse.next()
+  // Private administrative routes must not be indexed or cached even on
+  // the canonical host. Discovery controls complement server-side auth/MFA.
+  if (isAdminRoute) {
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive')
+    response.headers.set('Cache-Control', 'private, no-store')
+    response.headers.set('Referrer-Policy', 'no-referrer')
+  }
   // Canonical metadata may still point to production on preview deployments.
   // Protect the actual serving host independently of that build-time setting.
-  if (!['swiftmc.com.br', 'www.swiftmc.com.br'].includes(request.nextUrl.hostname)) {
+  if (!isAdminRoute && !['swiftmc.com.br', 'www.swiftmc.com.br'].includes(request.nextUrl.hostname)) {
     response.headers.set('X-Robots-Tag', 'noindex, nofollow')
   }
 
