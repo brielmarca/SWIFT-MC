@@ -15,3 +15,4 @@ declare module "qrcode-svg" {
     constructor(content: string | QrOptions);
     svg(): string;
   }
+}
