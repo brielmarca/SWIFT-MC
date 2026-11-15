@@ -8,6 +8,7 @@ import { withAuthPrisma } from "@/lib/auth-infrastructure/prisma";
 import { requireAuthPage } from "@/lib/auth/page-guard";
 import { getWorkersEnv } from "@/lib/auth-api/get-env";
 import type { AuthBindings } from "@/lib/auth-infrastructure/bindings";
+import { RequestCancellation } from "@/components/account/request-cancellation";
 
 const PAGE_SIZE = 20;
 
@@ -67,6 +68,7 @@ export default async function OrdersPage() {
     createdAt: Date;
     expiresAt: Date | null;
     paidAt: Date | null;
+    cancellationRequest: { status: string } | null;
   }> = [];
   let total = 0;
 
@@ -89,6 +91,7 @@ export default async function OrdersPage() {
             createdAt: true,
             expiresAt: true,
             paidAt: true,
+            cancellationRequest: { select: { status: true } },
           },
           orderBy: { createdAt: "desc" },
           skip,
@@ -154,6 +157,7 @@ export default async function OrdersPage() {
                       <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider">Valor</th>
                       <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider">Status</th>
                       <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider">Data</th>
+                      <th className="pb-3 text-xs font-bold text-muted uppercase tracking-wider">Cancelamento</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/10">
@@ -188,6 +192,9 @@ export default async function OrdersPage() {
                               year: "numeric",
                             })}
                           </div>
+                        </td>
+                        <td className="py-4 pl-3 align-top">
+                          <RequestCancellation orderNumber={order.orderNumber} orderStatus={order.status} initialStatus={order.cancellationRequest?.status ?? null} />
                         </td>
                       </tr>
                     ))}
