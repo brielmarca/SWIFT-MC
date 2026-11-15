@@ -13,11 +13,15 @@ export default async function AdminDeliveriesPage({ searchParams }: { searchPara
   const page = await adminPageNumber(searchParams);
   const env = await getWorkersEnv();
   const db = env.AUTH_HYPERDRIVE ? getPrisma() : null;
-  const [bridge, fulfillment] = db ? await Promise.all([
-    db.bridgeDelivery.findMany({ orderBy: [{ createdAt: "desc" }, { deliveryId: "desc" }], skip: (page - 1) * 25, take: 26,
-      select: { deliveryId: true, kind: true, action: true, vip: true, cashAmount: true, status: true, playerUuid: true, createdAt: true, ackedAt: true } }),
-    db.fulfillment.count({ where: { status: { in: ["PENDING", "PROCESSING", "RETRY_PENDING"] } } }),
-  ]) : [null, null];
+  const bridge = db ? await db.bridgeDelivery.findMany({
+    orderBy: [{ createdAt: "desc" }, { deliveryId: "desc" }],
+    skip: (page - 1) * 25,
+    take: 26,
+    select: { deliveryId: true, kind: true, action: true, vip: true, cashAmount: true, status: true, playerUuid: true, createdAt: true },
+  }) : null;
+  const fulfillment = db ? await db.fulfillment.count({
+    where: { status: { in: ["PENDING", "PROCESSING", "RETRY_PENDING"] } },
+  }) : null;
   const hasNext = bridge !== null && bridge.length > 25;
   const deliveries = bridge?.slice(0, 25) ?? [];
   return (
