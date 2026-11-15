@@ -74,5 +74,5 @@ test("manifest references existing artwork with its actual dimensions and robots
   assert.equal(identity.theme_color, "#7c3aed");
   assert.equal(identity.icons?.[0].sizes, `${BRAND_IMAGE.width}x${BRAND_IMAGE.height}`);
   assert.equal(identity.icons?.[0].src, BRAND_IMAGE.src);
-  assert.deepEqual(robots().rules, { userAgent: "*", allow: "/", disallow: ["/api/"] });
+  assert.deepEqual(robots().rules, { userAgent: "*", allow: "/", disallow: ["/api/", "/admin"] });
 });
