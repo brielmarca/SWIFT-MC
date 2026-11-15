@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { extractCsrfTokenFromCookie } from "@/lib/auth-client";
+import { MfaQrCode } from "@/components/admin/mfa-qr-code";
 
 type Props = { displayName: string; email: string | null; mfaEnabled: boolean; pendingSetup: boolean; recoveryCodesRemaining: number; mfaVerified: boolean; canProvision: boolean };
 
@@ -24,6 +25,8 @@ export function AdminSecurityPanel({ displayName, email, mfaEnabled, pendingSetu
 
   async function startSetup() {
     const csrf = extractCsrfTokenFromCookie(); if (!csrf) return setMsg({ tone: "err", text: "Recarregue a página." });
+    // Starting again replaces the pending TOTP secret on the server.
+    setOtpauthUri(null); setCode(""); setRecoveryCodes(null);
     setPending(true); setMsg(null);
     try {
       const res = await fetch("/api/admin/mfa/setup/start", { method: "POST", headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf } });
@@ -101,20 +104,36 @@ export function AdminSecurityPanel({ displayName, email, mfaEnabled, pendingSetu
 
       {!status.mfaEnabled && !otpauthUri && (
         <div className="space-y-3">
-          <p className="text-sm text-muted">Use um aplicativo autenticador (TOTP). O segredo é gerado no servidor e nunca é aceito do cliente. Após ativar, o acesso administrativo exigirá verificação MFA.</p>
-          <button type="button" className="button-primary" onClick={()=>void startSetup()} disabled={pending}>Iniciar configuração segura</button>
+          <p className="text-sm text-muted">Use o Google Authenticator, Microsoft Authenticator ou outro aplicativo TOTP. Após ativar, o painel administrativo exigirá um código do aplicativo.</p>
+          {status.pendingSetup && (
+            <p className="rounded-lg border border-amber-400/30 bg-amber-500/5 p-3 text-sm text-amber-100">
+              Já existe uma configuração pendente. Gere uma nova chave para invalidar a anterior e exibir seu QR Code.
+            </p>
+          )}
+          <button type="button" className="button-primary" onClick={()=>void startSetup()} disabled={pending}>
+            {pending ? "Gerando QR Code…" : status.pendingSetup ? "Gerar nova chave e QR Code" : "Configurar com QR Code"}
+          </button>
         </div>
       )}
 
       {otpauthUri && (
-        <div className="space-y-3 rounded border border-violet/30 bg-black/20 p-4">
-          <p className="text-sm text-ink font-semibold">Configuração pendente</p>
-          <p className="text-sm text-muted">Adicione esta conta no seu autenticador usando a URI abaixo (ou escaneie via app compatível com otpauth). O segredo não será exibido novamente após a confirmação.</p>
-          <code className="block break-all rounded bg-black/40 p-3 text-[11px] text-muted">{otpauthUri}</code>
-          <label className="block text-sm font-bold text-ink">Código de confirmação
-            <input value={code} onChange={e=>setCode(e.target.value.replace(/\D/g,"").slice(0,6))} inputMode="numeric" className="checkout-input mt-2 w-44" />
+        <div className="space-y-4 rounded border border-violet/30 bg-black/20 p-4">
+          <p className="text-sm font-semibold text-ink">Adicionar SwiftMC ao seu autenticador</p>
+          <MfaQrCode uri={otpauthUri} />
+          <label className="block text-sm font-bold text-ink">
+            Código de 6 dígitos do aplicativo
+            <input value={code} onChange={e=>setCode(e.target.value.replace(/\D/g,"").slice(0,6))} inputMode="numeric"
+              autoComplete="one-time-code" className="checkout-input mt-2 w-44" />
           </label>
-          <button type="button" className="button-primary" onClick={()=>void confirmSetup()} disabled={pending || code.length !== 6}>Confirmar e ativar MFA</button>
+          <div className="flex flex-wrap items-center gap-3">
+            <button type="button" className="button-primary" onClick={()=>void confirmSetup()} disabled={pending || code.length !== 6}>
+              {pending ? "Confirmando…" : "Confirmar e ativar MFA"}
+            </button>
+            <button type="button" className="button-secondary px-4" onClick={()=>void startSetup()} disabled={pending}>
+              Gerar outra chave
+            </button>
+          </div>
+          <p className="text-xs text-muted">Gerar outra chave invalida imediatamente a configuração pendente anterior. A configuração expira em 10 minutos.</p>
         </div>
       )}
 
