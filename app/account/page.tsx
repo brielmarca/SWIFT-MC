@@ -6,6 +6,7 @@ import { LogoutButton } from "@/components/auth/logout-button";
 import { AuthHeader } from "@/components/auth-header";
 import { Footer } from "@/components/footer";
 import { requireAuthPage } from "@/lib/auth/page-guard";
+import { hasPermission } from "@/lib/auth/permissions";
 
 export const metadata: Metadata = {
   title: "Minha conta | Swift MC",
@@ -93,6 +94,12 @@ export default async function AccountPage() {
               </dl>
 
               <div className="mt-6 flex flex-wrap items-center gap-3">
+                {hasPermission(user.role, "audit:read") && (
+                  <Link href="/admin" className="flex items-center gap-2 rounded-lg border border-violet/30 bg-violet/10 px-4 py-2 text-sm font-semibold text-ink transition-colors hover:bg-violet/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet">
+                    <ShieldCheck size={18} aria-hidden="true" />
+                    <span>Painel administrativo</span>
+                  </Link>
+                )}
                 <LogoutButton />
                 <Link
                   href="/account/profile"
