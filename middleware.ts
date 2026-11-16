@@ -17,7 +17,8 @@ export function middleware(request: NextRequest) {
   }
   const isAuthPage = AUTH_PAGES.includes(pathname)
   const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/')
-  const isPrivatePage = /^(?:\\/account|\\/checkout)(?:\\/|$)/.test(pathname)
+  const isPrivatePage = pathname === '/account' || pathname.startsWith('/account/') ||
+    pathname === '/checkout' || pathname.startsWith('/checkout/')
   // Public read-only API caches retain their explicit upstream policies.
   const isPrivateApi = pathname.startsWith('/api/') &&
     pathname !== '/api/server-status' && pathname !== '/api/players/online'
