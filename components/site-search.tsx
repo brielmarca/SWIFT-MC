@@ -34,33 +34,6 @@ const QUICK_LINKS = [
   { href: "/online", label: "Online" },
 ];
 
-function isTypingTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false;
-  if (target.isContentEditable) return true;
-  const tag = target.tagName;
-  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
-}
-
-/** Global open shortcuts: Ctrl/Cmd+K anywhere, "/" when not typing. */
-export function useSiteSearchHotkeys(enabled: boolean, onOpen: () => void) {
-  const openFromEvent = useEffectEvent(onOpen);
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (!enabled) return;
-      if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === "k") {
-        event.preventDefault();
-        openFromEvent();
-        return;
-      }
-      if (event.key === "/" && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey && !event.repeat && !isTypingTarget(event.target)) {
-        event.preventDefault();
-        openFromEvent();
-      }
-    }
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [enabled]);
-}
 
 export function SiteSearchDialog({ onClose }: { onClose: () => void }) {
   const [query, setQuery] = useState("");
