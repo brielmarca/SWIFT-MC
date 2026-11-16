@@ -54,8 +54,20 @@ export function CookiePreferences() {
     setMounted(true);
     setOpen(!loaded);
     const reopen = () => setOpen(true);
+    const syncAcrossTabs = (event: StorageEvent) => {
+      if (event.key !== STORAGE_KEY && event.key !== null) return;
+      const next = readCookiePreferences();
+      setCurrent(next);
+      setAnalytics(next?.analytics ?? false);
+      setMarketing(next?.marketing ?? false);
+      setOpen(!next);
+    };
     window.addEventListener(OPEN_EVENT, reopen);
-    return () => window.removeEventListener(OPEN_EVENT, reopen);
+    window.addEventListener("storage", syncAcrossTabs);
+    return () => {
+      window.removeEventListener(OPEN_EVENT, reopen);
+      window.removeEventListener("storage", syncAcrossTabs);
+    };
   }, []);
 
   function save(nextAnalytics: boolean, nextMarketing: boolean) {
