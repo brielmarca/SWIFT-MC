@@ -51,6 +51,7 @@ export default async function AdminPage() {
               <div className="mt-5 flex flex-wrap gap-3">
                 <Link href="/security" className="button-secondary px-4">Segurança/MFA</Link>
                 <Link href="/admin/provisioning" className="button-secondary px-4">Provisionamento admin</Link>
+                <Link href="/admin/media" className="button-secondary px-4">Biblioteca de imagens</Link>
               </div>
             </section>
             <section className="glass-panel p-5 sm:p-6">
