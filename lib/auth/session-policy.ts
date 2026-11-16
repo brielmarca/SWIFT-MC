@@ -9,6 +9,7 @@ export const SESSION_POLICY = Object.freeze({
   normalAbsoluteSeconds: DAY,
   inactivitySeconds: 2 * HOUR,
   rememberMeAbsoluteSeconds: 30 * DAY,
+  rememberMeInactivitySeconds: 7 * DAY,
   staffInactivitySeconds: 30 * MINUTE,
   adminInactivitySeconds: 30 * MINUTE,
   adminAbsoluteSeconds: 8 * HOUR,

@@ -1,5 +1,7 @@
 import "server-only";
 import { createConnection } from "node:net";
+import { resolveSrv } from "node:dns/promises";
+import type { SrvRecord } from "node:dns";
 import { z } from "zod";
 import { serverInfo } from "@/data/server-info";
 
@@ -20,6 +22,36 @@ export function getServerConfig() {
     port,
     publicAddress: process.env.MINECRAFT_PUBLIC_ADDRESS?.trim() || `${addressHost}${port === serverInfo.defaultPort ? "" : `:${port}`}`,
   };
+}
+
+/**
+ * Minecraft Java clients honor DNS SRV records, while a direct TCP socket does
+ * not. Prefer the verified public-domain SRV target for the status ping.
+ * Explicit custom hosts/ports stay untouched. Never change the player-visible
+ * address (swiftmc.com.br) to the internal hosting target.
+ */
+export async function resolveMinecraftStatusTarget(
+  config: ReturnType<typeof getServerConfig>,
+  lookup: (name: string) => Promise<SrvRecord[]> = resolveSrv,
+): Promise<ReturnType<typeof getServerConfig>> {
+  const publicHostname = serverInfo.defaultHost.toLowerCase();
+  if (config.host.toLowerCase() !== publicHostname || config.port !== serverInfo.defaultPort) return config;
+  try {
+    const records = await lookup(`_minecraft._tcp.${publicHostname}`);
+    const valid = records.filter((record) => {
+      const name = record.name.replace(/\.$/, "").toLowerCase();
+      return Number.isInteger(record.port) && record.port > 0 && record.port < 65536
+        && /^[a-z0-9]+(?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9]+(?:[a-z0-9-]*[a-z0-9])?)+$/.test(name)
+        && !/\.(?:local|localhost|internal|invalid|test)$/.test(name)
+        && Number.isInteger(record.priority) && record.priority >= 0
+        && Number.isInteger(record.weight) && record.weight >= 0;
+    }).sort((a, b) => a.priority - b.priority || b.weight - a.weight);
+    const selected = valid[0];
+    return selected ? { ...config, host: selected.name.replace(/\.$/, "").toLowerCase(), port: selected.port } : config;
+  } catch {
+    // No SRV available: preserve the ordinary Java default host/port behavior.
+    return config;
+  }
 }
 
 function varInt(value: number): Buffer {
@@ -116,4 +148,4 @@ export function createStatusCache(load: () => Promise<ServerStatus>, ttl = 15000
   };
 }
 
-export const getServerStatus = createStatusCache(() => queryServer(getServerConfig()));
+export const getServerStatus = createStatusCache(async () => queryServer(await resolveMinecraftStatusTarget(getServerConfig())));

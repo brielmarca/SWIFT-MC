@@ -85,7 +85,7 @@ export function AuthForm({ mode, returnPath = "/" }: { mode: AuthMode; returnPat
         : mode === "reset" ? { email, newPassword: password, challengeToken }
         : mode === "verify" ? { email, password, displayName, challengeToken }
         : mode === "verify-existing" ? { email, challengeToken }
-        : { email, password };
+        : { email, password, rememberMe: formData.get("rememberMe") === "on" };
 
       // Read CSRF token from cookie and send as header
       const csrfToken = extractCsrfTokenFromCookie();
@@ -145,7 +145,8 @@ export function AuthForm({ mode, returnPath = "/" }: { mode: AuthMode; returnPat
         {mode === "verify" && <AuthField id="displayName" name="displayName" label="Nome de exibição" autoComplete="nickname" required maxLength={100} error={errors.displayName} />}
         {needsPassword && <PasswordField id="password" name="password" label={mode === "reset" ? "Nova senha" : "Senha"} autoComplete={newPassword ? "new-password" : "current-password"} required minLength={newPassword ? 12 : undefined} error={errors.password} hint={newPassword ? "Use pelo menos 12 caracteres. Prefira uma frase única, com palavras, números e símbolos." : undefined} />}
         {newPassword && <PasswordField id="confirmation" name="confirmation" label={mode === "reset" ? "Confirmar nova senha" : "Confirmar senha"} autoComplete="new-password" required error={errors.confirmation} />}
-        {mode === "login" && <Link className="auth-forgot" href="/forgot-password">Esqueci minha senha</Link>}
+        {mode === "login" && <div className="flex flex-wrap items-center justify-between gap-3 text-sm"><label className="inline-flex min-h-11 cursor-pointer items-center gap-2 text-muted"><input type="checkbox" name="rememberMe" defaultChecked className="h-4 w-4 accent-violet-500" /> Manter conectado neste dispositivo</label><Link className="auth-forgot" href="/forgot-password">Esqueci minha senha</Link></div>}
+        {mode === "login" && <p className="text-xs leading-5 text-muted">Sessões comuns: até 30 dias, com expiração após 7 dias sem uso. Contas administrativas mantêm o prazo curto e exigem MFA.</p>}
         {serverError && <AuthMessage>{serverError}</AuthMessage>}
         {acknowledgement && <AuthMessage tone="success">{acknowledgement}</AuthMessage>}
         {authAvailability.message && <AuthMessage>{authAvailability.message}</AuthMessage>}

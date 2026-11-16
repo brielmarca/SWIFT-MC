@@ -267,6 +267,16 @@ test("remember-me extends absolute lifetime", async () => {
   const expectedAbsMs = SESSION_POLICY.rememberMeAbsoluteSeconds * 1000;
   const actualAbsMs = issued.session.absoluteExpiresAt.getTime() - clock.now().getTime();
   assert.ok(Math.abs(actualAbsMs - expectedAbsMs) < 1000, `remember-me absolute should be ~30d, got ${actualAbsMs / 1000}s`);
+  const expectedIdleMs = SESSION_POLICY.rememberMeInactivitySeconds * 1000;
+  const actualIdleMs = issued.session.idleExpiresAt.getTime() - clock.now().getTime();
+  assert.ok(Math.abs(actualIdleMs - expectedIdleMs) < 1000, `remember-me idle should be ~7d, got ${actualIdleMs / 1000}s`);
+  // Closing the browser/restarting the OS does not revoke the server-side session.
+  clock.advance(24 * 60 * 60 * 1000);
+  assert.equal((await svc.validateSession({ token: issued.rawToken })).ok, true);
+  clock.advance(SESSION_POLICY.rememberMeInactivitySeconds * 1000);
+  const expired = await svc.validateSession({ token: issued.rawToken });
+  assert.equal(expired.ok, false);
+  if (!expired.ok) assert.equal(expired.code, "SESSION_IDLE_EXPIRED");
 });
 
 test("staff inactivity lifetime is shorter", async () => {
