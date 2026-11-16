@@ -15,8 +15,15 @@ type AnalyticsWindow = Window & {
   gtag?: GtagFunction;
 };
 
+/** Tracking is limited to public, non-transactional areas. */
+export function isPublicAnalyticsPath(pathname: string): boolean {
+  if (pathname === "/") return true;
+  const publicPaths = ["/store", "/ranks", "/play", "/status", "/news", "/wiki", "/rules", "/faq", "/events", "/lore", "/vote", "/online", "/leaderboards"];
+  return publicPaths.some((path) => pathname === path || pathname.startsWith(path + "/"));
+}
+
 export function trackOptInEvent(name: string, params: Record<string, string | number | boolean> = {}): void {
-  if (typeof window === "undefined" || !analyticsConfigured() || !hasOptionalCookieConsent("analytics")) return;
+  if (typeof window === "undefined" || !analyticsConfigured() || !hasOptionalCookieConsent("analytics") || !isPublicAnalyticsPath(window.location.pathname)) return;
   if (!/^[a-z][a-z0-9_]{0,39}$/.test(name)) return;
   (window as AnalyticsWindow).gtag?.("event", name, params);
 }
