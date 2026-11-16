@@ -1,4 +1,5 @@
 import { publicPageMetadata } from "@/lib/seo";
+import Image from "next/image";
 import { ShieldCheck, Sparkles, Zap } from "lucide-react";
 import { Footer } from "@/components/footer";
 import { AuthHeader } from "@/components/auth-header";
@@ -46,10 +47,14 @@ export default function StorePage() {
 
           <section id="vips" aria-label="VIPs mensais" className="relative flex items-center mt-16">
             <div className="absolute inset-0 z-0">
-              <img
+              <Image
                 src="/brand/enderman.webp"
                 alt=""
-                className="w-full h-full object-cover opacity-30"
+                fill
+                loading="lazy"
+                quality={75}
+                sizes="100vw"
+                className="object-cover opacity-30"
                 aria-hidden="true"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/60 to-black/40" />

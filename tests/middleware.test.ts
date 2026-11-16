@@ -57,3 +57,22 @@ test("private admin routes are never indexed or cached on production and preview
   const unrelated = middleware(new NextRequest("https://swiftmc.com.br/store"));
   assert.equal(unrelated.headers.get("cache-control"), null);
 });
+
+test("sensitive account, checkout, and API responses are never cacheable", () => {
+  for (const path of ["/account", "/account/orders", "/checkout", "/checkout/success", "/api/login", "/api/user/orders", "/api/admin/mfa/setup/start", "/api/orders"]) {
+    const response = middleware(new NextRequest(`https://swiftmc.com.br${path}`, {
+      headers: { cookie: "__Host-swiftmc_session=fake" },
+    }));
+    assert.equal(response.headers.get("cache-control"), "private, no-store", path);
+  }
+  for (const path of ["/account", "/account/orders", "/checkout", "/checkout/success"]) {
+    assert.equal(middleware(new NextRequest(`https://swiftmc.com.br${path}`)).headers.get("x-robots-tag"), "noindex, nofollow", path);
+  }
+});
+
+test("public cacheable endpoints keep their explicit service headers", () => {
+  for (const path of ["/api/server-status", "/api/players/online", "/store", "/news"]) {
+    const response = middleware(new NextRequest(`https://swiftmc.com.br${path}`));
+    assert.equal(response.headers.get("cache-control"), null, path);
+  }
+});

@@ -86,7 +86,8 @@ export const PUBLIC_PAGES = {
   "/status": { title: "Status e conexão", description: "Consulte status, jogadores online e conexão do servidor Minecraft Java 1.21.11 Swift MC em swiftmc.com.br." },
   "/lore": { title: "Lore", description: "Lore oficial da Swift MC, publicada quando houver material confirmado pela equipe." },
   "/vote": { title: "Votar", description: "Links de votação da Swift MC serão publicados quando houver confirmação oficial da equipe." },
-  "/privacy": { title: "Política de privacidade", description: "Estrutura da política de privacidade da Swift MC. Texto final pendente de aprovação." },
+  "/privacy": { title: "Aviso de privacidade", description: "Informações iniciais sobre os dados tratados pela Swift MC; documento em revisão." },
+  "/cookies": { title: "Política de cookies", description: "Entenda cookies essenciais e escolha preferências opcionais de privacidade." },
   "/terms": { title: "Termos de compra", description: "Estrutura dos termos de compra da Swift MC. Texto final pendente de aprovação." },
   "/refund": { title: "Política de reembolso", description: "Estrutura da política de reembolso da Swift MC. Texto final pendente de aprovação." },
 
@@ -108,11 +109,18 @@ export function publicPageMetadata(path: keyof typeof PUBLIC_PAGES): Metadata {
   return metadata;
 }
 
+function configuredGoogleVerification(): string | undefined {
+  const token = process.env.GOOGLE_SITE_VERIFICATION?.trim();
+  // A Search Console HTML verification token is public, not a secret.
+  return token && /^[a-zA-Z0-9_-]{15,160}$/.test(token) ? token : undefined;
+}
+
 export const rootMetadata: Metadata = {
   ...createPageMetadata({ title: SITE_NAME, description: SITE_DESCRIPTION }),
   metadataBase: getSiteUrl(),
   title: { default: SITE_NAME, template: "%s | Swift MC" },
   applicationName: SITE_NAME,
+  ...(configuredGoogleVerification() ? { verification: { google: configuredGoogleVerification() } } : {}),
   manifest: "/manifest.webmanifest",
   icons: { icon: { url: BRAND_IMAGE.src, type: "image/webp" }, apple: BRAND_IMAGE.src },
 };

@@ -3,7 +3,9 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import { SiteProviders } from "@/components/site-providers";
 import { getServerConfig } from "@/lib/server-status";
 import { getActiveAnnouncement } from "@/data/content";
-import { rootMetadata } from "@/lib/seo";
+import { rootMetadata, SITE_NAME, SITE_DESCRIPTION, siteUrl } from "@/lib/seo";
+import { JsonLd } from "@/components/seo/json-ld";
+import { ConsentedAnalytics } from "@/components/analytics/consented-analytics";
 import { CookiePreferences } from "@/components/privacy/cookie-preferences";
 import "./globals.css";
 
@@ -20,10 +22,20 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="pt-BR">
       <body className={jakarta.variable}>
+        <JsonLd data={{
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "@id": siteUrl("/#website"),
+          name: SITE_NAME,
+          description: SITE_DESCRIPTION,
+          url: siteUrl("/"),
+          inLanguage: "pt-BR",
+        }} />
         <SiteProviders publicAddress={getServerConfig().publicAddress} announcement={getActiveAnnouncement()}>
           {children}
         </SiteProviders>
         <CookiePreferences />
+        <ConsentedAnalytics />
       </body>
     </html>
   );

@@ -11,13 +11,17 @@ export function ServerStatusProvider({ publicAddress, children }: { publicAddres
   const [state, setState] = useState<StatusState>({ data: null, loading: true, refreshing: false, lastSuccess: null });
   const request = useRef<AbortController | null>(null);
   const refresh = useCallback(async () => {
-    if (request.current) return;
+    if (request.current || document.visibilityState === "hidden") return;
+    if (!navigator.onLine) {
+      setState((previous) => ({ ...previous, loading: false, refreshing: false }));
+      return;
+    }
     const controller = new AbortController();
     request.current = controller;
     setState((previous) => ({ ...previous, refreshing: true }));
     const timeout = setTimeout(() => controller.abort(), 6000);
     try {
-      const response = await fetch("/api/server-status", { signal: controller.signal, cache: "no-store" });
+      const response = await fetch("/api/server-status", { signal: controller.signal, cache: "default" });
       if (!response.ok) throw new Error("Status unavailable");
       const data: ServerStatus = await response.json();
       if (request.current === controller) setState({ data, loading: false, refreshing: false, lastSuccess: new Date().toISOString() });
@@ -31,9 +35,16 @@ export function ServerStatusProvider({ publicAddress, children }: { publicAddres
   useEffect(() => {
     const initial = setTimeout(() => void refresh(), 0);
     const interval = setInterval(() => void refresh(), serverInfo.statusRefreshMs);
+    const refreshIfVisible = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    document.addEventListener("visibilitychange", refreshIfVisible);
+    window.addEventListener("online", refreshIfVisible);
     return () => {
       clearTimeout(initial);
       clearInterval(interval);
+      document.removeEventListener("visibilitychange", refreshIfVisible);
+      window.removeEventListener("online", refreshIfVisible);
       request.current?.abort();
       request.current = null;
     };

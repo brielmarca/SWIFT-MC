@@ -7,6 +7,7 @@ import { getMountSummary, rankArtworkPaths, type Rank } from "@/data/ranks";
 import { useCart } from "./cart-provider";
 import { useRouter } from "next/navigation";
 import type { CSSProperties } from "react";
+import { trackOptInEvent } from "@/lib/analytics/consent";
 
 type RankCardProps = { rank: Rank; variant?: "full" | "preview" };
 
@@ -37,6 +38,7 @@ export function RankCard({ rank, variant = "full" }: RankCardProps) {
   const styles = getRankColorStyles(rank);
 
   const handleAddToCart = () => {
+    trackOptInEvent("select_item", { item_id: rank.slug, item_list_name: "vips" });
     if (variant === "preview") {
       if (isAdded) return;
       addItem(rank.slug);
@@ -47,6 +49,7 @@ export function RankCard({ rank, variant = "full" }: RankCardProps) {
   };
 
   const handleBuyNow = () => {
+    trackOptInEvent("begin_checkout", { item_id: rank.slug });
     if (!hasItem(rank.slug)) addItem(rank.slug);
     router.push("/checkout");
   };

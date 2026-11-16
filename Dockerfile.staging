@@ -6,6 +6,11 @@ COPY prisma ./prisma
 RUN npm ci && npx prisma generate
 
 FROM dependencies AS build
+# Public, optional build-time identifiers only. Never pass keys or secrets here.
+ARG NEXT_PUBLIC_GA4_MEASUREMENT_ID=""
+ARG GOOGLE_SITE_VERIFICATION=""
+ENV NEXT_PUBLIC_GA4_MEASUREMENT_ID=${NEXT_PUBLIC_GA4_MEASUREMENT_ID}
+ENV GOOGLE_SITE_VERIFICATION=${GOOGLE_SITE_VERIFICATION}
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN BUILD_VPS=true npm run build

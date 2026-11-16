@@ -6,7 +6,13 @@ import { useId, useRef, useState } from "react";
 import { getNavigationGroup, isNavigationItemActive, navigationGroups, type NavigationItem } from "@/lib/navigation";
 import { useCart } from "./cart-provider";
 import { Logo } from "./logo";
-import { SiteSearchDialog, useSiteSearchHotkeys } from "./site-search";
+import dynamic from "next/dynamic";
+import { useSiteSearchHotkeys } from "./use-site-search-hotkeys";
+
+const SiteSearchDialog = dynamic(
+  () => import("./site-search").then((module) => module.SiteSearchDialog),
+  { ssr: false },
+);
 import { LogoutButton } from "./auth/logout-button";
 
 export type AuthUser = {

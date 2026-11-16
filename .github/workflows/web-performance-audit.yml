@@ -1,0 +1,98 @@
+name: web-performance-audit
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Public environment to audit (no credentials or admin routes)'
+        required: true
+        default: staging
+        type: choice
+        options:
+          - staging
+          - production
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Public Lighthouse and HTTP cache audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      ORIGIN: ${{ inputs.target == 'production' && 'https://swiftmc.com.br' || 'https://staging.swiftmc.com.br' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Verify Chrome
+        shell: bash
+        run: |
+          command -v google-chrome
+          google-chrome --version
+
+      - name: Read-only HTTP performance and cache report
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p perf
+          node scripts/audit-public-web.mjs "$ORIGIN" | tee perf/http-audit.md
+
+      - name: Lighthouse homepage (mobile)
+        shell: bash
+        run: |
+          npm exec --yes --package=lighthouse@13.6.0 -- lighthouse "$ORIGIN/" \
+            --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
+            --only-categories=performance,accessibility,best-practices,seo \
+            --output=html --output=json --output-path=./perf/home-mobile --quiet
+
+      - name: Lighthouse store (mobile)
+        shell: bash
+        run: |
+          npm exec --yes --package=lighthouse@13.6.0 -- lighthouse "$ORIGIN/store" \
+            --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
+            --only-categories=performance,accessibility,best-practices,seo \
+            --output=html --output=json --output-path=./perf/store-mobile --quiet
+
+      - name: Lighthouse homepage (desktop)
+        shell: bash
+        run: |
+          npm exec --yes --package=lighthouse@13.6.0 -- lighthouse "$ORIGIN/" \
+            --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
+            --preset=desktop --only-categories=performance,accessibility,best-practices,seo \
+            --output=html --output=json --output-path=./perf/home-desktop --quiet
+
+      - name: Summarize measured results
+        if: always()
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE' >> "$GITHUB_STEP_SUMMARY"
+          import fs from 'node:fs';
+          console.log('## Public web performance audit');
+          console.log('');
+          console.log('| Report | Performance | Accessibility | Best Practices | SEO | LCP | CLS |');
+          console.log('|---|---:|---:|---:|---:|---:|---:|');
+          for (const name of ['home-mobile', 'store-mobile', 'home-desktop']) {
+            const path = `perf/${name}.report.json`;
+            if (!fs.existsSync(path)) continue;
+            const data = JSON.parse(fs.readFileSync(path, 'utf8'));
+            const score = (key) => Math.round((data.categories?.[key]?.score ?? 0) * 100);
+            const metric = (key) => data.audits?.[key]?.displayValue ?? 'n/a';
+            console.log(`| ${name} | ${score('performance')} | ${score('accessibility')} | ${score('best-practices')} | ${score('seo')} | ${metric('largest-contentful-paint')} | ${metric('cumulative-layout-shift')} |`);
+          }
+          NODE
+
+      - name: Upload audit reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-performance-${{ inputs.target }}-${{ github.run_id }}
+          path: perf/
+          if-no-files-found: warn
+          retention-days: 14
