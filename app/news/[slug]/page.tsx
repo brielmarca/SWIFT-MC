@@ -3,7 +3,8 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { ArticleCard } from "@/components/content/article-card";
 import { ContentPage } from "@/components/content/content-page";
-import { getNewsBySlug, getPublishedNews, getRelatedNews, type ArticleBlock } from "@/data/content";
+import { type ArticleBlock } from "@/data/content";
+import { findPublicPost, listPublicNews, relatedPublicNews } from "@/lib/editorial/posts";
 import { formatNewsDate } from "@/lib/content-format";
 import { createPageMetadata, SITE_DESCRIPTION, siteUrl } from "@/lib/seo";
 import { JsonLd } from "@/components/seo/json-ld";
@@ -14,7 +15,7 @@ type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const post = getNewsBySlug(slug);
+  const post = await findPublicPost(slug);
   if (!post) return createPageMetadata({ title: "Notícia não encontrada", description: SITE_DESCRIPTION, index: false });
   return createPageMetadata({
     title: post.title,
@@ -45,10 +46,11 @@ function ArticleBody({ block }: { block: ArticleBlock }) {
 
 export default async function NewsArticlePage({ params }: Props) {
   const { slug } = await params;
-  const post = getNewsBySlug(slug);
+  const post = await findPublicPost(slug);
   if (!post) notFound();
-  const related = getRelatedNews(post);
-  const morePosts = related.length ? related : getPublishedNews().filter((item) => item.slug !== post.slug).slice(0, 3);
+  const all = await listPublicNews();
+  const related = relatedPublicNews(post, all);
+  const morePosts = related.length ? related : all.filter((item) => item.slug !== post.slug).slice(0, 3);
 
   return (
     <>
@@ -76,7 +78,7 @@ export default async function NewsArticlePage({ params }: Props) {
 
           {post.image && (
             <div className="relative mx-auto mb-6 aspect-[3/1] w-full max-w-4xl overflow-hidden rounded-xl border border-violet/20 bg-gradient-to-br from-violet/10 to-void">
-              <Image src={post.image.src} alt={post.image.alt} fill sizes="(max-width: 896px) 100vw, 896px" className="object-contain p-5" priority />
+              <Image src={post.image.src} alt={post.image.alt} unoptimized={post.image.src.startsWith("/api/content/images/")} fill sizes="(max-width: 896px) 100vw, 896px" className="object-contain p-5" priority />
             </div>
           )}
 

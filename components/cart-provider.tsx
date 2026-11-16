@@ -202,7 +202,7 @@ function CartDrawer() {
             <h3 className="mt-5 text-lg font-bold uppercase text-ink">Seu carrinho está vazio</h3>
             <p className="mt-2 max-w-xs text-sm leading-6 text-muted">Explore os ranks e escolha as vantagens ideais para sua jornada.</p>
             <Link href="/store#store-search" onClick={closeCart} className="button-primary mt-6">Explorar ranks</Link>
-            <Link href="/checkout" onClick={closeCart} className="button-secondary mt-3">Revisar compra</Link>
+            <Link href="/checkout" onClick={closeCart} className="button-secondary mt-3">Finalizar compra</Link>
           </div>
         ) : (
           <>

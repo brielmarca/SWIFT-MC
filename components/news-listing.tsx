@@ -60,7 +60,7 @@ export function NewsListing({ posts }: { posts: readonly NewsPost[] }) {
       <div className="grid md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
         <div className="relative min-h-44 border-b border-white/10 bg-void/40 md:border-b-0 md:border-r">
           {featured.image ? (
-            <Image src={featured.image.src} alt={featured.image.alt} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-contain p-6" priority />
+            <Image src={featured.image.src} alt={featured.image.alt} unoptimized={featured.image.src.startsWith("/api/content/images/")} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-contain p-6" priority />
           ) : (
             <div className="absolute inset-0 grid place-items-center"><Newspaper size={48} aria-hidden="true" className="text-violet/50" /></div>
           )}

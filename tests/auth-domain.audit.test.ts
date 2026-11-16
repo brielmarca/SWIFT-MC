@@ -35,7 +35,8 @@ test("audit event catalog contains canonical events", () => {
   assert.equal(AUTH_AUDIT_EVENTS.ADMIN_ELEVATION_GRANTED, "ADMIN_ELEVATION_GRANTED");
   assert.equal(AUTH_AUDIT_EVENTS.ADMIN_PROVISIONED, "ADMIN_PROVISIONED");
   assert.equal(AUTH_AUDIT_EVENTS.ADMIN_PROVISIONING_CLAIMED, "ADMIN_PROVISIONING_CLAIMED");
-  assert.equal(Object.keys(AUTH_AUDIT_EVENTS).length, 28);
+  assert.equal(AUTH_AUDIT_EVENTS.CONTENT_POST_PUBLISHED, "CONTENT_POST_PUBLISHED");
+  assert.equal(Object.keys(AUTH_AUDIT_EVENTS).length, 35);
 });
 
 test("audit outcomes are success/failure/rate_limited", () => {

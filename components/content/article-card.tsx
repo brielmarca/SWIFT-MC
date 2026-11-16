@@ -11,6 +11,7 @@ export function ArticleCard({ post, headingId }: { post: NewsPost; headingId?: s
         <div className="relative aspect-[2/1] w-full shrink-0 border-b border-white/10 bg-gradient-to-br from-violet/10 to-void">
           <Image
             src={post.image.src}
+            unoptimized={post.image.src.startsWith("/api/content/images/")}
             alt={post.image.alt}
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"

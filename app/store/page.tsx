@@ -5,6 +5,7 @@ import { Footer } from "@/components/footer";
 import { AuthHeader } from "@/components/auth-header";
 import { StoreCatalog } from "@/components/store-catalog";
 import { CashShop } from "@/components/cash-shop";
+import { ServerStatusChip } from "@/components/server-status-provider";
 
 export const metadata = publicPageMetadata("/store");
 
@@ -28,6 +29,7 @@ export default function StorePage() {
             <p className="page-description">
               Compare os valores mensais e as vantagens para encontrar o nível ideal para sua jornada no SWIFT Survival.
             </p>
+            <div className="mt-5 max-w-xl"><ServerStatusChip /></div>
           </header>
           <nav aria-label="Categorias da loja" className="flex flex-wrap gap-3">
             <a href="#vips" className="network-action">VIPs mensais</a>

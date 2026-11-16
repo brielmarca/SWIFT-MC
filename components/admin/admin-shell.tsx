@@ -3,10 +3,11 @@ import Link from "next/link";
 import { AuthHeader } from "@/components/auth-header";
 import { Footer } from "@/components/footer";
 
-export type AdminSection = "overview" | "orders" | "cancellations" | "users" | "deliveries" | "audit" | "security" | "provisioning";
+export type AdminSection = "overview" | "posts" | "orders" | "cancellations" | "users" | "deliveries" | "audit" | "security" | "provisioning";
 
 const sections: { id: AdminSection; href: string; title: string }[] = [
   { id: "overview", href: "/admin", title: "Visão geral" },
+  { id: "posts", href: "/admin/posts", title: "Publicações" },
   { id: "orders", href: "/admin/orders", title: "Pedidos" },
   { id: "cancellations", href: "/admin/cancellations", title: "Cancelamentos" },
   { id: "users", href: "/admin/users", title: "Usuários" },
