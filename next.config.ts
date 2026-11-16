@@ -27,18 +27,19 @@ const nextConfig: NextConfig = {
     ].join("; ");
     // HSTS belongs on the production HTTPS edge; local/preview HTTP must remain usable.
     return [
-      ...immutableRankArtwork,
       { source: "/brand/:path*", headers: [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" }] },
+      // Specific rules must follow general ones to win header precedence.
+      ...immutableRankArtwork,
       {
-      source: "/:path*",
-      headers: [
+        source: "/:path*",
+        headers: [
         { key: "Content-Security-Policy", value: csp },
         { key: "X-Frame-Options", value: "DENY" },
         { key: "X-Content-Type-Options", value: "nosniff" },
         { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
         { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()" },
-      ],
-    },
+        ],
+      },
     ];
   },
   images: {
