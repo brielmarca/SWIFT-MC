@@ -8,10 +8,10 @@ export const metadata: Metadata = { title: "Nova publicação | Admin SwiftMC", 
 export const dynamic = "force-dynamic";
 
 export default async function NewPostPage() {
-  const admin = await requireAdminPage("content:manage", "/admin/posts/new");
+  const admin = await requireAdminPage("content:manage", "/console-r7m4q9v2/posts/new");
   return <AdminShell title="Nova publicação" description="Escreva e salve um rascunho ou publique a notícia imediatamente."
     section="posts" role={admin.role} email={admin.emailNormalized}>
-    <Link className="mb-5 inline-block text-sm font-bold text-ultraviolet hover:underline" href="/admin/posts">← Voltar para publicações</Link>
+    <Link className="mb-5 inline-block text-sm font-bold text-ultraviolet hover:underline" href="/console-r7m4q9v2/posts">← Voltar para publicações</Link>
     <PostEditor />
   </AdminShell>;
 }

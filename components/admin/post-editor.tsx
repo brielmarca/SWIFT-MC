@@ -65,7 +65,7 @@ export function PostEditor({ initial }: { initial?: EditorInitial }) {
       if (!response.ok) throw new Error(result?.error?.message ?? "Não foi possível salvar.");
       setPost(previous => ({ ...previous, id: result.id || previous.id, revision: result.revision, status }));
       setAlert({ ok: true, message: status === "PUBLISHED" ? "Publicação disponível para os jogadores." : "Rascunho salvo. Não está público." });
-      if (!editing) router.replace(`/admin/posts/${encodeURIComponent(result.id)}`);
+      if (!editing) router.replace(`/console-r7m4q9v2/posts/${encodeURIComponent(result.id)}`);
       router.refresh();
     } catch (error) {
       setAlert({ ok: false, message: error instanceof Error ? error.message : "Falha de conexão." });
@@ -85,7 +85,7 @@ export function PostEditor({ initial }: { initial?: EditorInitial }) {
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result?.error?.message ?? "Não foi possível arquivar.");
-      router.push("/admin/posts");
+      router.push("/console-r7m4q9v2/posts");
       router.refresh();
     } catch (error) {
       setAlert({ ok: false, message: error instanceof Error ? error.message : "Falha de conexão." });

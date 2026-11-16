@@ -185,3 +185,9 @@ npx cf deploy --prebuilt --dry-run --mode production --worker swift-mc
 The dry run reported 557.51 KiB gzip of Worker code and the expected asset/image/text bindings; it uploaded nothing and did not inspect live account configuration.
 
 Build warnings about vinext static route classification (`?`) and ineffective dynamic imports are framework diagnostics, not observed deployment failures. Actual production DNS, account bindings, secret values, and upstream reachability still require verification in the Cloudflare account.
+
+### Media upload storage (R2)
+
+The bucket `swiftmc-media` is private. Cloudflare Workers use the `MEDIA_BUCKET` R2 binding when `MEDIA_R2_BUCKET=swiftmc-media` is present **during the vinext build**. The production VPS instead runs `BACKEND_RUNTIME=node`, and therefore does **not** have Cloudflare Workers bindings. For production Node uploads set `R2_ACCOUNT_ID`, `R2_BUCKET_NAME=swiftmc-media`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` on the VPS private production environment. Generate a bucket-scoped **Object Read & Write** R2 S3 API token in the Cloudflare dashboard and store the two keys only in private server secrets. Never commit them or use a browser-exposed `NEXT_PUBLIC_` variable. Never route the S3 endpoint directly from the frontend.
+
+The app refuses uploads (503) when R2 is not configured. Upload API requires admin+MFA, Origin, CSRF, and enforces a streaming 1 MiB cap; originals are client-compressed WebP with 1600 px maximum width. `/api/media/{uuid}.webp` serves the object publicly through the backend with immutable caching. After credentials are configured, deploy the VPS backend and verify actual HTTP upload, fetch, and 403 unauthenticated denial before announcing availability. Beware storage cost/retention: deleting a news post currently does not delete media assets; the media page currently does not list prior uploads.

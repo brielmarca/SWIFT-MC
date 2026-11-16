@@ -5,6 +5,7 @@ import { assertProductionEnvironment } from "@/lib/production-config";
 import type { AuthBindings } from "./bindings";
 import type { PrismaClient } from "@prisma/client";
 import type { BridgeBindings } from "@/lib/minecraft-bridge/auth";
+import { getNodeR2Bucket } from "./node-r2";
 
 /** Reuses the auth capabilities on Node; counters are atomic and survive restarts. */
 export function getNodeAuthBindings(): AuthBindings & BridgeBindings & { APP_URL: string; DISCORD_CLIENT_ID?: string; DISCORD_CLIENT_SECRET?: string; DISCORD_REDIRECT_URI?: string; AUTH_ENCRYPTION_KEY?: string; AUTH_ADMIN_MFA_REQUIRED?: string } {
@@ -12,6 +13,7 @@ export function getNodeAuthBindings(): AuthBindings & BridgeBindings & { APP_URL
   else assertStagingEnvironment(process.env);
   return {
     APP_URL: process.env.APP_URL!,
+    MEDIA_BUCKET: getNodeR2Bucket(process.env),
     AUTH_HYPERDRIVE: { connectionString: process.env.DATABASE_URL! },
     RESEND_API_KEY: process.env.RESEND_API_KEY,
     EMAIL_FROM: process.env.EMAIL_FROM,

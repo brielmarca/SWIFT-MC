@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
     "MINECRAFT_HOST", "MINECRAFT_PORT", "MINECRAFT_PUBLIC_ADDRESS", "MINECRAFT_DATA_API_URL",
     "AUTH_HYPERDRIVE_ID", "APP_URL", "EMAIL_FROM", "MINECRAFT_FULFILLMENT_URL",
     "MINECRAFT_BRIDGE_SERVER_ID", "MINECRAFT_BRIDGE_ALLOWED_SERVER_IDS",
-    "AUTH_RATE_LIMIT_NAMESPACE_ID",
+    "AUTH_RATE_LIMIT_NAMESPACE_ID", "MEDIA_R2_BUCKET",
   ]);
   const dataApiUrl = env.MINECRAFT_DATA_API_URL?.trim() || "";
   const fulfillmentUrl = env.MINECRAFT_FULFILLMENT_URL?.trim() || "";
@@ -44,6 +44,7 @@ export default defineConfig(({ mode }) => {
       assets: { notFoundHandling: "none" },
       env: {
         ASSETS: bindings.assets(),
+        ...(env.MEDIA_R2_BUCKET?.trim() ? { MEDIA_BUCKET: bindings.r2({ name: env.MEDIA_R2_BUCKET.trim() }) } : {}),
         IMAGES: bindings.images(),
         ...(env.AUTH_HYPERDRIVE_ID?.trim() ? {
           AUTH_HYPERDRIVE: bindings.hyperdrive({ id: env.AUTH_HYPERDRIVE_ID.trim() }),

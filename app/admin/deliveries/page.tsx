@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: "Entregas | Admin Swift MC", robots: 
 export const dynamic = "force-dynamic";
 
 export default async function AdminDeliveriesPage({ searchParams }: { searchParams: Promise<{ page?: string | string[] }> }) {
-  const admin = await requireAdminPage("audit:read", "/admin/deliveries");
+  const admin = await requireAdminPage("audit:read", "/console-r7m4q9v2/deliveries");
   const page = await adminPageNumber(searchParams);
   const env = await getWorkersEnv();
   const db = env.AUTH_HYPERDRIVE ? getPrisma() : null;
@@ -59,7 +59,7 @@ export default async function AdminDeliveriesPage({ searchParams }: { searchPara
               </table>
               {!deliveries.length && <p className="py-5 text-sm text-muted">Nenhuma entrega nesta página.</p>}
             </div>
-            <AdminPagination base="/admin/deliveries" page={page} hasNext={hasNext} />
+            <AdminPagination base="/console-r7m4q9v2/deliveries" page={page} hasNext={hasNext} />
           </section>
         </div>
       )}

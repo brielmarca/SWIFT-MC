@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: "Auditoria | Admin Swift MC", robots:
 export const dynamic = "force-dynamic";
 
 export default async function AdminAuditPage({ searchParams }: { searchParams: Promise<{ page?: string | string[] }> }) {
-  const admin = await requireAdminPage("audit:read", "/admin/audit");
+  const admin = await requireAdminPage("audit:read", "/console-r7m4q9v2/audit");
   const page = await adminPageNumber(searchParams);
   const env = await getWorkersEnv();
   const entries = env.AUTH_HYPERDRIVE ? await getPrisma().authAuditEvent.findMany({
@@ -47,7 +47,7 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: P
             </table>
             {!events.length && <p className="py-5 text-sm text-muted">Nenhum evento nesta página.</p>}
           </div>
-          <AdminPagination base="/admin/audit" page={page} hasNext={hasNext} />
+          <AdminPagination base="/console-r7m4q9v2/audit" page={page} hasNext={hasNext} />
         </section>
       )}
     </AdminShell>

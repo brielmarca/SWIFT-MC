@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: "Usuários | Admin Swift MC", robots:
 export const dynamic = "force-dynamic";
 
 export default async function AdminUsersPage({ searchParams }: { searchParams: Promise<{ page?: string | string[] }> }) {
-  const admin = await requireAdminPage("audit:read", "/admin/users");
+  const admin = await requireAdminPage("audit:read", "/console-r7m4q9v2/users");
   const page = await adminPageNumber(searchParams);
   const env = await getWorkersEnv();
   const entries = env.AUTH_HYPERDRIVE ? await getPrisma().user.findMany({
@@ -51,7 +51,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
             </table>
             {!users.length && <p className="py-5 text-sm text-muted">Nenhum usuário nesta página.</p>}
           </div>
-          <AdminPagination base="/admin/users" page={page} hasNext={hasNext} />
+          <AdminPagination base="/console-r7m4q9v2/users" page={page} hasNext={hasNext} />
         </section>
       )}
     </AdminShell>

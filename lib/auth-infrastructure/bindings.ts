@@ -8,6 +8,10 @@ export interface AuthBindings {
     idFromName(name: string): unknown;
     get(id: unknown): { fetch(request: Request): Promise<Response> };
   };
+  MEDIA_BUCKET?: {
+    put(key: string, value: ArrayBuffer, options?: { httpMetadata?: { contentType?: string; cacheControl?: string } }): Promise<unknown>;
+    get(key: string): Promise<{ body: ReadableStream; httpMetadata?: { contentType?: string } } | null>;
+  };
   RESEND_API_KEY?: string;
   EMAIL_FROM?: string;
   DISCORD_CLIENT_ID?: string;
