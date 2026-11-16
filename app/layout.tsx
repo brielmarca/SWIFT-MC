@@ -5,6 +5,7 @@ import { getServerConfig } from "@/lib/server-status";
 import { getActiveAnnouncement } from "@/data/content";
 import { rootMetadata, SITE_NAME, SITE_DESCRIPTION, siteUrl } from "@/lib/seo";
 import { JsonLd } from "@/components/seo/json-ld";
+import { ConsentedAnalytics } from "@/components/analytics/consented-analytics";
 import { CookiePreferences } from "@/components/privacy/cookie-preferences";
 import "./globals.css";
 
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           {children}
         </SiteProviders>
         <CookiePreferences />
+        <ConsentedAnalytics />
       </body>
     </html>
   );
