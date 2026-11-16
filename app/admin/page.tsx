@@ -40,6 +40,7 @@ export default async function AdminPage() {
   ] : [];
 
   return (
+<<<<<<< HEAD
     <AdminShell title="Painel administrativo" description="Acompanhe a operação da loja e do servidor com dados reais do banco. Os controles de acesso e MFA continuam obrigatórios."
       section="overview" role={user.role} email={user.emailNormalized}>
       {!data ? (
