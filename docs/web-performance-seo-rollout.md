@@ -59,7 +59,7 @@ Mesmo configurado, validar a implementação com Google Tag Assistant e a polít
 
 ## 6. Medir velocidade antes de afirmar resultados
 
-Rodar no GitHub **Actions → web-performance-audit → Run workflow**, escolhendo `staging` ou `production`. O workflow é manual, roda o Lighthouse 13.6.0 (mobile home/loja, desktop home) e uma checagem de TTFB de cabeçalhos/cache de nove URLs públicas. Relatórios HTML/JSON ficam nos artefatos do workflow por 14 dias.
+O workflow `web-performance-audit` é manual: roda Lighthouse 13.6.0 (mobile home/loja, desktop home) e uma checagem de TTFB de cabeçalhos/cache de nove URLs públicas, sem acessar admin. O botão **Actions → web-performance-audit → Run workflow** fica disponível depois que o arquivo de workflow existir também na branch padrão do repositório. Enquanto ele estiver apenas na branch de staging, use os comandos locais abaixo; não mova códigos de aplicação não validados para a branch principal só para habilitar o botão. Relatórios HTML/JSON gerados pelo workflow ficam em artefatos por 14 dias.
 
 Também pode executar no computador:
 ```bash
