@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { createServer, type Socket } from "node:net";
 import test from "node:test";
-import { createStatusCache, queryServer, type ServerStatus } from "@/lib/server-status";
+import { createStatusCache, queryServer, resolveMinecraftStatusTarget, type ServerStatus } from "@/lib/server-status";
 
 async function withServer(handler: (socket: Socket) => void, run: (port: number) => Promise<void>) {
   const sockets = new Set<Socket>();
@@ -78,4 +78,48 @@ test("cache shares concurrent requests, caches offline responses and expires", a
   await new Promise((resolve) => setTimeout(resolve, 30));
   await read();
   assert.equal(calls, 2);
+});
+
+
+test("Minecraft SRV target resolves public domain and preserves player-facing address", async () => {
+  let query = "";
+  const source = { host: "swiftmc.com.br", port: 25565, publicAddress: "swiftmc.com.br" };
+  const resolved = await resolveMinecraftStatusTarget(source, async (name) => {
+    query = name;
+    return [{ name: "enx-soc-10.enx.host.", port: 10198, priority: 0, weight: 0 }];
+  });
+  assert.equal(query, "_minecraft._tcp.swiftmc.com.br");
+  assert.deepEqual(resolved, { host: "enx-soc-10.enx.host", port: 10198, publicAddress: "swiftmc.com.br" });
+});
+
+test("custom server host/port never invoke public DNS SRV lookup", async () => {
+  for (const input of [
+    { host: "minecraft.example.com", port: 25565, publicAddress: "play.example.com" },
+    { host: "swiftmc.com.br", port: 19132, publicAddress: "swiftmc.com.br" },
+  ]) {
+    const output = await resolveMinecraftStatusTarget(input, async () => { throw Error("unexpected SRV query"); });
+    assert.deepEqual(output, input);
+  }
+});
+
+test("invalid or unavailable SRV records do not redirect server pings", async () => {
+  const input = { host: "swiftmc.com.br", port: 25565, publicAddress: "swiftmc.com.br" };
+  assert.deepEqual(await resolveMinecraftStatusTarget(input, async () => { throw Error("ENOTFOUND"); }), input);
+  assert.deepEqual(await resolveMinecraftStatusTarget(input, async () => [{
+    name: "metadata.internal", port: 80, priority: 0, weight: 0,
+  }]), input);
+  assert.deepEqual(await resolveMinecraftStatusTarget(input, async () => [{
+    name: "evil.example.com", port: 0, priority: 0, weight: 0,
+  }]), input);
+});
+
+test("SRV selection prefers the lowest priority and then highest weight", async () => {
+  const input = { host: "swiftmc.com.br", port: 25565, publicAddress: "swiftmc.com.br" };
+  const result = await resolveMinecraftStatusTarget(input, async () => [
+    { name: "backup.example.com", port: 2000, priority: 10, weight: 100 },
+    { name: "primary-low.example.com", port: 2001, priority: 0, weight: 0 },
+    { name: "primary-high.example.com", port: 2002, priority: 0, weight: 5 },
+  ]);
+  assert.equal(result.host, "primary-high.example.com");
+  assert.equal(result.port, 2002);
 });
