@@ -121,7 +121,9 @@ export async function GET(request: Request): Promise<Response> {
       const issued = await services.sessionService.issueSession({
         userId,
         authVersion: user.authVersion,
-        rememberMe: false,
+        // Discord's normal sign-in also survives browser/OS restarts;
+        // ADMIN/OWNER sessions keep their short elevated lifetime.
+        rememberMe: !privilegedAdmin,
         isPrivilegedAdmin: privilegedAdmin,
         mfaVerifiedAt: null,
       });

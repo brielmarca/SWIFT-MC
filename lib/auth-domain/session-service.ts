@@ -32,7 +32,7 @@ function computeExpiry(now: Date, params: { rememberMe: boolean; isPrivilegedAdm
     : SESSION_POLICY.normalAbsoluteSeconds;
   return {
     absoluteExpiresAt: new Date(now.getTime() + absoluteSeconds * 1000),
-    idleExpiresAt: new Date(now.getTime() + SESSION_POLICY.inactivitySeconds * 1000),
+    idleExpiresAt: new Date(now.getTime() + (params.rememberMe ? SESSION_POLICY.rememberMeInactivitySeconds : SESSION_POLICY.inactivitySeconds) * 1000),
   };
 }
 
