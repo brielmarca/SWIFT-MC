@@ -5,7 +5,8 @@ import { ArticleCard } from "@/components/content/article-card";
 import { ContentPage } from "@/components/content/content-page";
 import { getNewsBySlug, getPublishedNews, getRelatedNews, type ArticleBlock } from "@/data/content";
 import { formatNewsDate } from "@/lib/content-format";
-import { createPageMetadata, SITE_DESCRIPTION } from "@/lib/seo";
+import { createPageMetadata, SITE_DESCRIPTION, siteUrl } from "@/lib/seo";
+import { JsonLd } from "@/components/seo/json-ld";
 
 export const dynamic = "force-dynamic";
 
@@ -50,6 +51,17 @@ export default async function NewsArticlePage({ params }: Props) {
   const morePosts = related.length ? related : getPublishedNews().filter((item) => item.slug !== post.slug).slice(0, 3);
 
   return (
+    <>
+    <JsonLd data={{
+      "@context": "https://schema.org",
+      "@type": "Article",
+      headline: post.title,
+      description: post.excerpt,
+      datePublished: post.publishedAt,
+      inLanguage: "pt-BR",
+      mainEntityOfPage: siteUrl(`/news/${encodeURIComponent(post.slug)}`),
+      ...(post.image ? { image: siteUrl(post.image.src) } : {}),
+    }} />
     <ContentPage active="/news" title={post.title} description={post.excerpt} backLabel="Voltar para notícias" metadata={<>
               <span className="content-chip">{post.category}</span>
               <time dateTime={post.publishedAt} className="micro-label">Publicado em {formatNewsDate(post.publishedAt)}</time>
@@ -81,5 +93,6 @@ export default async function NewsArticlePage({ params }: Props) {
             </section>
           )}
     </ContentPage>
+    </>
   );
 }
