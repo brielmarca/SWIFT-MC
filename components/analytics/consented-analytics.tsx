@@ -73,8 +73,15 @@ export function ConsentedAnalytics() {
     }
 
     reconcile();
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === "swiftmc-cookie-preferences-v1" || event.key === null) reconcile();
+    };
     window.addEventListener(CONSENT_CHANGE_EVENT, reconcile);
-    return () => window.removeEventListener(CONSENT_CHANGE_EVENT, reconcile);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener(CONSENT_CHANGE_EVENT, reconcile);
+      window.removeEventListener("storage", onStorage);
+    };
   }, [pathname]);
 
   useEffect(() => {
