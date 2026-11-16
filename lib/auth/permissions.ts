@@ -4,7 +4,7 @@ export const AUTH_ROLES = Object.freeze(["USER", "SUPPORT", "MODERATOR", "ADMIN"
 export type AuthRole = typeof AUTH_ROLES[number];
 export const AUTH_PERMISSIONS = Object.freeze([
   "account:manage-self", "support:read", "support:respond", "moderation:read", "moderation:act",
-  "audit:read", "sessions:revoke-other", "roles:manage", "security:configure",
+  "audit:read", "content:manage", "sessions:revoke-other", "roles:manage", "security:configure",
 ] as const);
 export type AuthPermission = typeof AUTH_PERMISSIONS[number];
 
@@ -12,8 +12,8 @@ export const ROLE_PERMISSIONS: Readonly<Record<AuthRole, readonly AuthPermission
   USER: Object.freeze(["account:manage-self"] as const),
   SUPPORT: Object.freeze(["account:manage-self", "support:read", "support:respond"] as const),
   MODERATOR: Object.freeze(["account:manage-self", "moderation:read", "moderation:act"] as const),
-  ADMIN: Object.freeze(["account:manage-self", "support:read", "support:respond", "moderation:read", "moderation:act", "audit:read", "sessions:revoke-other"] as const),
-  OWNER: Object.freeze(["account:manage-self", "support:read", "support:respond", "moderation:read", "moderation:act", "audit:read", "sessions:revoke-other", "roles:manage", "security:configure"] as const),
+  ADMIN: Object.freeze(["account:manage-self", "support:read", "support:respond", "moderation:read", "moderation:act", "audit:read", "content:manage", "sessions:revoke-other"] as const),
+  OWNER: Object.freeze(["account:manage-self", "support:read", "support:respond", "moderation:read", "moderation:act", "audit:read", "content:manage", "sessions:revoke-other", "roles:manage", "security:configure"] as const),
 });
 
 /** Website roles only, assigned by trusted administration. Never derive from Minecraft ranks.

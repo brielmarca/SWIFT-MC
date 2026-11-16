@@ -1,12 +1,12 @@
 import { Newspaper } from "lucide-react";
 import Link from "next/link";
-import { getLatestNews } from "@/data/content";
+import { listPublicNews } from "@/lib/editorial/posts";
 import { ArticleCard } from "./content/article-card";
 import { SectionHeading } from "./section-heading";
 
 /** Homepage "Novidades" section: at most 3 of the latest published posts. */
-export function NewsTeaser() {
-  const posts = getLatestNews(3);
+export async function NewsTeaser() {
+  const posts = await listPublicNews(3);
   return (
     <section id="novidades" className="section-shell scroll-mt-24 border-t border-white/[0.04]">
       <div className="site-container">

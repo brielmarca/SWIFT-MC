@@ -1,11 +1,10 @@
 "use client";
 
-import { Crown, Diamond, ShieldCheck, Sparkles, Star, ShoppingBag } from "lucide-react";
+import { Crown, Diamond, ShieldCheck, Sparkles, Star } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { getMountSummary, rankArtworkPaths, type Rank } from "@/data/ranks";
 import { useCart } from "./cart-provider";
-import { useRouter } from "next/navigation";
 import type { CSSProperties } from "react";
 import { trackOptInEvent } from "@/lib/analytics/consent";
 
@@ -31,7 +30,6 @@ function getRankColorStyles(rank: Rank) {
 
 export function RankCard({ rank, variant = "full" }: RankCardProps) {
   const { hasItem, addItem, openCart } = useCart();
-  const router = useRouter();
   const isAdded = hasItem(rank.slug);
   const hasPrice = rank.price !== null;
   const artworkSrc = rankArtworkPaths[rank.slug];
@@ -48,11 +46,6 @@ export function RankCard({ rank, variant = "full" }: RankCardProps) {
     }
   };
 
-  const handleBuyNow = () => {
-    trackOptInEvent("begin_checkout", { item_id: rank.slug });
-    if (!hasItem(rank.slug)) addItem(rank.slug);
-    router.push("/checkout");
-  };
 
   return (
     <article
@@ -100,14 +93,6 @@ export function RankCard({ rank, variant = "full" }: RankCardProps) {
         <div className="mt-4 grid gap-2">
           <button
             type="button"
-            onClick={handleBuyNow}
-            className="button-secondary w-full px-4" disabled={!hasPrice}
-          >
-            <ShoppingBag size={16} aria-hidden="true" />
-            Revisar compra
-          </button>
-          <button
-            type="button"
             onClick={handleAddToCart}
             className={`button-secondary w-full px-4 ${styles.buttonSecondary}`}
           >
@@ -117,7 +102,7 @@ export function RankCard({ rank, variant = "full" }: RankCardProps) {
             href={`/ranks/${rank.slug}`}
             className={`inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg text-xs font-bold uppercase tracking-wider focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ultraviolet ${styles.accent} hover:text-ink`}
           >
-            <Diamond size={15} className={styles.accent} aria-hidden="true" /> Ver benefícios
+            <Diamond size={15} className={styles.accent} aria-hidden="true" /> Saiba mais
           </Link>
         </div>
       </div>

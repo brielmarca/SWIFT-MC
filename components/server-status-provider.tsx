@@ -63,7 +63,7 @@ export function ServerStatusChip() {
   return (
     <div className="status-chip h-10 w-full max-w-xl overflow-hidden" role="status">
       <span className={`h-2 w-2 shrink-0 rounded-full ${data?.online ? "bg-ultraviolet" : "bg-muted"}`} aria-hidden="true" />
-      <span className="truncate">{loading ? "Consultando servidor…" : !data ? "Status indisponível" : data.online ? `${data.players} / ${data.maxPlayers} jogadores online` : "Servidor offline ou indisponível"}</span>
+      <span className="truncate">{loading ? "Consultando servidor…" : !data ? "Status indisponível" : data.online ? `Servidor online · ${data.players} / ${data.maxPlayers} jogadores` : "Servidor offline ou indisponível"}</span>
       {data?.online && <span className="ml-auto hidden max-w-40 truncate text-ultraviolet sm:inline">{data.version}</span>}
     </div>
   );

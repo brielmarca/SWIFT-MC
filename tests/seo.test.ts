@@ -17,7 +17,7 @@ test("canonical origin rejects local, private, malformed and credential-bearing 
   assert.deepEqual(publicPageMetadata("/").title, { absolute: "Survival Minecraft | Swift MC" });
 });
 
-test("configured origin is used consistently without losing dynamic route segments", (context) => {
+test("configured origin is used consistently without losing dynamic route segments", async (context) => {
   const original = process.env.NEXT_PUBLIC_SITE_URL;
   context.after(() => {
     if (original === undefined) delete process.env.NEXT_PUBLIC_SITE_URL;
@@ -31,15 +31,15 @@ test("configured origin is used consistently without losing dynamic route segmen
   assert.equal(metadata.twitter?.title, metadata.openGraph?.title);
   assert.equal(siteUrl("/player/Player_123"), "https://www.swiftmc.com.br/player/Player_123");
   assert.equal(robots().sitemap, "https://www.swiftmc.com.br/sitemap.xml");
-  assert.ok(sitemap().every(({ url }) => url.startsWith("https://www.swiftmc.com.br/")));
+  assert.ok((await sitemap()).every(({ url }) => url.startsWith("https://www.swiftmc.com.br/")));
   assert.throws(() => siteUrl("//other.example.com/"));
   assert.throws(() => siteUrl("/\\other.example.com/"));
   assert.throws(() => siteUrl("/\n/other.example.com/"));
 });
 
-test("sitemap includes public routes and only published local dynamic content", (context) => {
+test("sitemap includes public routes and only published local dynamic content", async (context) => {
   context.mock.timers.enable({ apis: ["Date"], now: new Date("2026-09-20T00:00:00Z") });
-  const entries = sitemap();
+  const entries = await sitemap();
   const paths = entries.map(({ url }) => new URL(url).pathname);
   assert.equal(new Set(paths).size, paths.length);
   assert.deepEqual(paths, [

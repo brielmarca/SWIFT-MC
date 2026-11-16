@@ -8,6 +8,7 @@ import { StoreSection } from "@/components/store-section";
 import { publicPageMetadata } from "@/lib/seo";
 
 export const metadata = publicPageMetadata("/");
+export const dynamic = "force-dynamic";
 
 export default function Home() {
   return (
