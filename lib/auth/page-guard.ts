@@ -41,7 +41,7 @@ export async function requirePageSession(
   const env = await getWorkersEnv();
   const token = extractSessionToken(cookieHeader);
   const loginUrl = callbackUrl ? `/login?callbackUrl=${encodeURIComponent(callbackUrl)}` : "/login";
-  const adminLoginUrl = callbackUrl ? `/admin/login?callbackUrl=${encodeURIComponent(callbackUrl)}` : "/admin/login";
+  const adminLoginUrl = callbackUrl ? `/console-r7m4q9v2/login?callbackUrl=${encodeURIComponent(callbackUrl)}` : "/console-r7m4q9v2/login";
   if (!token) {
     redirectTo(options.requireMfa ? adminLoginUrl : loginUrl);
   }

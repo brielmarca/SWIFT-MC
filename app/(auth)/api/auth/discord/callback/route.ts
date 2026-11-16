@@ -133,7 +133,7 @@ export async function GET(request: Request): Promise<Response> {
       setCsrfCookie(headers, generateSessionToken());
       headers.append("Set-Cookie", "__Host-swiftmc_oauth=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0");
       if (privilegedAdmin || mfaConfigured) {
-        const next = mfaConfigured ? `/admin/login?callbackUrl=${encodeURIComponent(returnTo.startsWith("/admin") ? returnTo : "/admin")}` : "/admin/security";
+        const next = mfaConfigured ? `/console-r7m4q9v2/login?callbackUrl=${encodeURIComponent(returnTo.startsWith("/console-r7m4q9v2") ? returnTo : "/console-r7m4q9v2")}` : "/console-r7m4q9v2/security";
         return redirect(next, headers);
       }
       return redirect(returnTo, headers);

@@ -15,6 +15,24 @@ export function middleware(request: NextRequest) {
       return NextResponse.json({ error: { code: 'ORIGIN_UNAUTHORIZED' } }, { status: 403 })
     }
   }
+  // Hide the legacy admin page URLs; rewrite the public console path to the
+  // existing server-rendered pages. API authorization remains independently enforced.
+  const isLegacyAdmin = pathname === '/admin' || pathname.startsWith('/admin/')
+  if (isLegacyAdmin) return new NextResponse(null, {
+    status: 404,
+    headers: { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' },
+  })
+  const adminPrefix = "/console-r7m4q9v2"
+  const isConsole = pathname === adminPrefix || pathname.startsWith(adminPrefix + '/')
+  if (isConsole) {
+    const target = request.nextUrl.clone()
+    target.pathname = '/admin' + pathname.slice(adminPrefix.length)
+    const rewritten = NextResponse.rewrite(target)
+    rewritten.headers.set('Cache-Control', 'private, no-store')
+    rewritten.headers.set('X-Robots-Tag', 'noindex, nofollow')
+    rewritten.headers.set('Referrer-Policy', 'no-referrer')
+    return rewritten
+  }
   const isAuthPage = AUTH_PAGES.includes(pathname)
   const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/')
   const isPrivatePage = pathname === '/account' || pathname.startsWith('/account/') ||

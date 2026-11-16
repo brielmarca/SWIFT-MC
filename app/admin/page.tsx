@@ -27,7 +27,7 @@ async function loadData() {
 }
 
 export default async function AdminPage() {
-  const user = await requireAdminPage("audit:read", "/admin");
+  const user = await requireAdminPage("audit:read", "/console-r7m4q9v2");
   const data = await loadData();
   const cards = data ? [
     { label: "Usuários cadastrados", value: data.users, href: "/admin/users" },
