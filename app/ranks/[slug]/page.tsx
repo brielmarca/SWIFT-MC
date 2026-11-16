@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { createPageMetadata, SITE_DESCRIPTION } from "@/lib/seo";
+import { createPageMetadata, SITE_DESCRIPTION, siteUrl } from "@/lib/seo";
+import { JsonLd } from "@/components/seo/json-ld";
 import { getRank, ranks } from "@/data/ranks";
 import { RankPageClient } from "./rank-page-client";
 
@@ -34,5 +35,16 @@ export default async function RankPage({ params }: RankPageProps) {
     return <div>Rank não encontrado</div>;
   }
 
-  return <RankPageClient rank={rank} />;
+  return <>
+    <JsonLd data={{
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Início", item: siteUrl("/") },
+        { "@type": "ListItem", position: 2, name: "Loja", item: siteUrl("/store") },
+        { "@type": "ListItem", position: 3, name: `Rank ${rank.name}`, item: siteUrl(`/ranks/${encodeURIComponent(rank.slug)}`) },
+      ],
+    }} />
+    <RankPageClient rank={rank} />
+  </>;
 }
