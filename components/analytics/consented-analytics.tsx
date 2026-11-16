@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { hasOptionalCookieConsent } from "@/components/privacy/cookie-preferences";
-import { analyticsConfigured, analyticsWindow, ga4MeasurementId, trackOptInEvent } from "@/lib/analytics/consent";
+import { analyticsConfigured, analyticsWindow, ga4MeasurementId, isPublicAnalyticsPath, trackOptInEvent } from "@/lib/analytics/consent";
 
 const CONSENT_CHANGE_EVENT = "swiftmc-cookie-preferences-changed";
 
@@ -31,9 +31,10 @@ export function ConsentedAnalytics() {
     if (!analyticsConfigured()) return;
 
     function reconcile() {
-      if (hasOptionalCookieConsent("analytics")) {
+      if (hasOptionalCookieConsent("analytics") && isPublicAnalyticsPath(window.location.pathname)) {
         if (loaded.current) return;
         loaded.current = true;
+        lastPath.current = window.location.pathname;
         const measurementId = ga4MeasurementId();
         const win = analyticsWindow();
         win.dataLayer ??= [];
@@ -74,7 +75,7 @@ export function ConsentedAnalytics() {
     reconcile();
     window.addEventListener(CONSENT_CHANGE_EVENT, reconcile);
     return () => window.removeEventListener(CONSENT_CHANGE_EVENT, reconcile);
-  }, []);
+  }, [pathname]);
 
   useEffect(() => {
     if (!pathname) return;
