@@ -13,6 +13,7 @@ test("audit event catalog contains canonical events", () => {
   assert.equal(AUTH_AUDIT_EVENTS.SESSION_REVOKED, "SESSION_REVOKED");
   assert.equal(AUTH_AUDIT_EVENTS.LOGOUT_ALL, "LOGOUT_ALL");
   assert.equal(AUTH_AUDIT_EVENTS.PASSWORD_CHANGED, "PASSWORD_CHANGED");
+  assert.equal(AUTH_AUDIT_EVENTS.PASSWORD_CREATED, "PASSWORD_CREATED");
   assert.equal(AUTH_AUDIT_EVENTS.PASSWORD_RESET_REQUESTED, "PASSWORD_RESET_REQUESTED");
   assert.equal(AUTH_AUDIT_EVENTS.PASSWORD_RESET_COMPLETED, "PASSWORD_RESET_COMPLETED");
   assert.equal(AUTH_AUDIT_EVENTS.OAUTH_STARTED, "OAUTH_STARTED");
@@ -34,7 +35,7 @@ test("audit event catalog contains canonical events", () => {
   assert.equal(AUTH_AUDIT_EVENTS.ADMIN_ELEVATION_GRANTED, "ADMIN_ELEVATION_GRANTED");
   assert.equal(AUTH_AUDIT_EVENTS.ADMIN_PROVISIONED, "ADMIN_PROVISIONED");
   assert.equal(AUTH_AUDIT_EVENTS.ADMIN_PROVISIONING_CLAIMED, "ADMIN_PROVISIONING_CLAIMED");
-  assert.equal(Object.keys(AUTH_AUDIT_EVENTS).length, 27);
+  assert.equal(Object.keys(AUTH_AUDIT_EVENTS).length, 28);
 });
 
 test("audit outcomes are success/failure/rate_limited", () => {
