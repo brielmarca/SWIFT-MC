@@ -41,6 +41,9 @@ jobs:
           context: .
           file: Dockerfile.staging
           target: runtime
+          build-args: |
+            NEXT_PUBLIC_GA4_MEASUREMENT_ID=${{ vars.SWIFTMC_GA4_MEASUREMENT_ID }}
+            GOOGLE_SITE_VERIFICATION=${{ vars.SWIFTMC_GOOGLE_SITE_VERIFICATION }}
           push: false
           load: false
           platforms: linux/amd64
