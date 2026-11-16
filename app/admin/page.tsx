@@ -25,7 +25,7 @@ async function loadData() {
 }
 
 export default async function AdminPage() {
-  await requireAdminPage("audit:read", "/admin");
+  await requireAdminPage("audit:read", "/console-r7m4q9v2");
   const data = await loadData();
   return (
     <>
@@ -50,8 +50,8 @@ export default async function AdminPage() {
               </dl>
               <div className="mt-5 flex flex-wrap gap-3">
                 <Link href="/security" className="button-secondary px-4">Segurança/MFA</Link>
-                <Link href="/admin/provisioning" className="button-secondary px-4">Provisionamento admin</Link>
-                <Link href="/admin/media" className="button-secondary px-4">Biblioteca de imagens</Link>
+                <Link href="/console-r7m4q9v2/provisioning" className="button-secondary px-4">Provisionamento admin</Link>
+                <Link href="/console-r7m4q9v2/media" className="button-secondary px-4">Biblioteca de imagens</Link>
               </div>
             </section>
             <section className="glass-panel p-5 sm:p-6">

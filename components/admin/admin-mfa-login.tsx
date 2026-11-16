@@ -16,7 +16,7 @@ export function AdminMfaLogin({ callbackUrl, displayName, mfaEnabled, pendingSet
     if (!mfaEnabled) return;
     void (async () => {
       const csrf = extractCsrfTokenFromCookie(); if (!csrf) return;
-      const res = await fetch("/api/admin/mfa/challenge/issue", { method: "POST", headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf }, body: JSON.stringify({ purpose: "ELEVATION" }) });
+      const res = await fetch("/api/console-r7m4q9v2/mfa/challenge/issue", { method: "POST", headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf }, body: JSON.stringify({ purpose: "ELEVATION" }) });
       const data = await res.json().catch(() => null);
       if (res.ok && data?.challengeToken) setChallengeToken(data.challengeToken);
       else setMsg(data?.error?.message || "Não foi possível iniciar o desafio MFA.");
@@ -28,7 +28,7 @@ export function AdminMfaLogin({ callbackUrl, displayName, mfaEnabled, pendingSet
       <div className="space-y-4">
         <p className="text-sm text-ink">Olá, <span className="font-semibold">{displayName}</span>. Sua conta administrativa exige MFA ativo antes do acesso ao painel.</p>
         <p className="text-sm text-muted">Conclua a configuração segura do autenticador. O acesso administrativo permanecerá bloqueado até a confirmação.</p>
-        <a href="/admin/security" className="button-primary inline-flex">Configurar MFA</a>
+        <a href="/console-r7m4q9v2/security" className="button-primary inline-flex">Configurar MFA</a>
       </div>
     );
   }
@@ -38,14 +38,14 @@ export function AdminMfaLogin({ callbackUrl, displayName, mfaEnabled, pendingSet
     if (!csrf || !challengeToken) { setMsg("Recarregue a página e tente novamente."); return; }
     setPending(true); setMsg(null);
     try {
-      const res = await fetch("/api/admin/mfa/challenge/verify", {
+      const res = await fetch("/api/console-r7m4q9v2/mfa/challenge/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf },
         body: JSON.stringify(useRecovery ? { challengeToken, recoveryCode: recoveryCode.trim(), purpose: "ELEVATION" } : { challengeToken, code: code.replace(/\D/g, "").slice(0,6), purpose: "ELEVATION" }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error?.message || "Verificação inválida.");
-      window.location.href = callbackUrl || "/admin";
+      window.location.href = callbackUrl || "/console-r7m4q9v2";
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Código inválido ou expirado.");
       setPending(false);

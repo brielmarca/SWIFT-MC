@@ -105,8 +105,8 @@ export function AuthForm({ mode, returnPath = "/" }: { mode: AuthMode; returnPat
         if (mode === "login" || mode === "verify") {
           if (mode === "verify") form.reset();
           if (mode === "login" && (result.adminElevationRequired || result.mfaRequired)) {
-            const target = typeof returnPath === "string" && returnPath.startsWith("/admin") ? returnPath : "/admin";
-            window.location.href = `/admin/login?callbackUrl=${encodeURIComponent(target)}`;
+            const target = typeof returnPath === "string" && returnPath.startsWith("/console-r7m4q9v2") ? returnPath : "/console-r7m4q9v2";
+            window.location.href = `/console-r7m4q9v2/login?callbackUrl=${encodeURIComponent(target)}`;
             return;
           }
           window.location.href = mode === "login" ? returnPath : "/";

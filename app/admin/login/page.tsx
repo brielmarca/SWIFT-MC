@@ -15,8 +15,8 @@ export default async function AdminLoginPage({ searchParams }: { searchParams: P
   const cookie = (await headers()).get("cookie");
   const session = await getOptionalPageSession(cookie);
   const cb = (await searchParams).callbackUrl;
-  const callbackUrl = typeof cb === "string" && cb.startsWith("/admin") ? cb : "/admin";
-  if (!session) redirect(`/login?callbackUrl=${encodeURIComponent("/admin/login")}`);
+  const callbackUrl = typeof cb === "string" && cb.startsWith("/console-r7m4q9v2") ? cb : "/console-r7m4q9v2";
+  if (!session) redirect(`/login?callbackUrl=${encodeURIComponent("/console-r7m4q9v2/login")}`);
   if (session.user.status !== "ACTIVE" || !hasPermission(session.user.role, "audit:read")) redirect("/account");
   if (session.user.isMfaVerified) redirect(callbackUrl);
   const mfa = await getMfaState(session.user.id).catch(() => ({ enabled: false, pending: false, recoveryCodesRemaining: 0 }));

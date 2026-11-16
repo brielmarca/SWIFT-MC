@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Provisionamento admin | Swift MC", r
 export const dynamic = "force-dynamic";
 
 export default async function AdminProvisioningPage() {
-  await requireAdminPage("security:configure", "/admin/provisioning");
+  await requireAdminPage("security:configure", "/console-r7m4q9v2/provisioning");
   const env = await getWorkersEnv();
   const items = env.AUTH_HYPERDRIVE ? await getPrisma().provisionedAdmin.findMany({ orderBy: { createdAt: "desc" }, take: 50, select: { id: true, discordSubject: true, targetRole: true, claimedAt: true, consumedAt: true, createdAt: true } }) : [];
   return (

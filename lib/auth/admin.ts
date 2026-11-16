@@ -10,10 +10,10 @@ function isAuthorizedAdmin(user: { status: string; role: string }, permission: A
   return user.status === "ACTIVE" && hasPermission(user.role, ADMIN_BASE_PERMISSION) && hasPermission(user.role, permission);
 }
 
-export async function requireAdminPage(permission: AuthPermission = ADMIN_BASE_PERMISSION, callbackUrl = "/admin") {
+export async function requireAdminPage(permission: AuthPermission = ADMIN_BASE_PERMISSION, callbackUrl = "/console-r7m4q9v2") {
   const cookie = (await headers()).get("cookie");
   const session = await requirePageSession(cookie, callbackUrl, { requiredPermission: permission, requireMfa: true });
-  if (!isAuthorizedAdmin(session.user, permission) || !session.user.isMfaVerified) redirect(callbackUrl.startsWith("/admin") ? "/admin/login" : "/account");
+  if (!isAuthorizedAdmin(session.user, permission) || !session.user.isMfaVerified) redirect(callbackUrl.startsWith("/console-r7m4q9v2") ? "/console-r7m4q9v2/login" : "/account");
   return session.user;
 }
 

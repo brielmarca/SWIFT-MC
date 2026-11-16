@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminSecurityPage() {
   const cookie = (await headers()).get("cookie");
   const session = await getOptionalPageSession(cookie);
-  if (!session) redirect("/login?callbackUrl=/admin/security");
+  if (!session) redirect("/login?callbackUrl=/console-r7m4q9v2/security");
   if (session.user.status !== "ACTIVE" || !hasPermission(session.user.role, "audit:read")) redirect("/account");
   // Allow access for admin-capable users to configure MFA even if not yet elevated, but only if MFA not configured or for restricted setup; full elevated actions handled in UI/API.
   const mfa = await getMfaState(session.user.id).catch(() => ({ enabled: false, pending: false, recoveryCodesRemaining: 0 }));

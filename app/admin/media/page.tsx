@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: "Imagens | Swift MC", robots: { index
 export const dynamic = "force-dynamic";
 
 export default async function MediaAdminPage() {
-  await requireAdminPage("audit:read", "/admin/media");
+  await requireAdminPage("audit:read", "/console-r7m4q9v2/media");
   return <>
     <AuthHeader />
     <main id="main-content" className="site-container min-h-[70vh] py-8 sm:py-12">
