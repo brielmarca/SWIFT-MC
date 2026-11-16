@@ -20,7 +20,7 @@ export function middleware(request: NextRequest) {
   const isLegacyAdmin = pathname === '/admin' || pathname.startsWith('/admin/')
   if (isLegacyAdmin) return new NextResponse(null, {
     status: 404,
-    headers: { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' },
+    headers: { 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex, nofollow, noarchive', 'Referrer-Policy': 'no-referrer' },
   })
   const adminPrefix = "/console-r7m4q9v2"
   const isConsole = pathname === adminPrefix || pathname.startsWith(adminPrefix + '/')
@@ -29,7 +29,7 @@ export function middleware(request: NextRequest) {
     target.pathname = '/admin' + pathname.slice(adminPrefix.length)
     const rewritten = NextResponse.rewrite(target)
     rewritten.headers.set('Cache-Control', 'private, no-store')
-    rewritten.headers.set('X-Robots-Tag', 'noindex, nofollow')
+    rewritten.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive')
     rewritten.headers.set('Referrer-Policy', 'no-referrer')
     return rewritten
   }

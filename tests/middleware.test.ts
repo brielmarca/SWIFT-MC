@@ -58,6 +58,26 @@ test("private admin routes are never indexed or cached on production and preview
   assert.equal(unrelated.headers.get("cache-control"), null);
 });
 
+test("legacy admin routes return 404; private console URLs rewrite without caching", () => {
+  for (const path of ["/admin", "/admin/posts", "/admin/media"]) {
+    const response = middleware(new NextRequest(`https://swiftmc.com.br${path}`));
+    assert.equal(response.status, 404, path);
+    assert.equal(response.headers.get("cache-control"), "private, no-store");
+  }
+  const consolePaths: Record<string, string> = {
+    "/console-r7m4q9v2": "/admin",
+    "/console-r7m4q9v2/posts": "/admin/posts",
+    "/console-r7m4q9v2/media": "/admin/media",
+  };
+  for (const [path, internal] of Object.entries(consolePaths)) {
+    const response = middleware(new NextRequest(`https://swiftmc.com.br${path}`));
+    assert.equal(response.status, 200, path);
+    assert.equal(response.headers.get("x-middleware-rewrite"), `https://swiftmc.com.br${internal}`);
+    assert.equal(response.headers.get("cache-control"), "private, no-store");
+    assert.equal(response.headers.get("x-robots-tag"), "noindex, nofollow, noarchive");
+  }
+});
+
 test("sensitive account, checkout, and API responses are never cacheable", () => {
   for (const path of ["/account", "/account/orders", "/checkout", "/checkout/success", "/api/login", "/api/user/orders", "/api/admin/mfa/setup/start", "/api/orders"]) {
     const response = middleware(new NextRequest(`https://swiftmc.com.br${path}`, {
