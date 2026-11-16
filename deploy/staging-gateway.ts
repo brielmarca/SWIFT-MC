@@ -68,7 +68,7 @@ export async function proxyStagingRequest(request: Request, env: GatewayEnv, ups
       // explicitly approved asset policy.
       result.headers.delete("pragma");
       result.headers.delete("expires");
-    } else if (!publicAsset || !safeResponse || variesByIdentity || brandAsset) {
+    } else if (!publicAsset || !safeResponse || variesByIdentity || url.pathname.startsWith("/brand/")) {
       result.headers.set("Cache-Control", "private, no-store");
     }
     // Absolute application redirects must remain on the public staging origin.
