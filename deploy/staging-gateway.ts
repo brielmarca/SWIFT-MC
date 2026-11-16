@@ -31,7 +31,7 @@ export async function proxyStagingRequest(request: Request, env: GatewayEnv, ups
   // Public, repository-owned brand assets are static and may never depend on a
   // visitor's cookies or Authorization. Strip them before asking the origin.
   // Do not extend this rule to HTML, image optimizer routes, APIs or uploads.
-  const brandAsset = /^\\/brand\\/(?:[a-z0-9_-]+\\/)*[a-z0-9_-]+\\.(?:webp|avif|png|jpe?g|svg|ico)$/i.test(url.pathname) && !url.search;
+  const brandAsset = /^\/brand\/(?:[a-z0-9_-]+\/)*[a-z0-9_-]+\.(?:webp|avif|png|jpe?g|svg|ico)$/i.test(url.pathname) && !url.search;
   const headers = new Headers(request.headers);
   if (brandAsset) {
     headers.delete("cookie");
@@ -56,11 +56,11 @@ export async function proxyStagingRequest(request: Request, env: GatewayEnv, ups
     const safeResponse = ["GET", "HEAD"].includes(request.method) &&
       response.status === 200 && !response.headers.has("set-cookie");
     const vary = response.headers.get("vary") ?? "";
-    const variesByIdentity = /(?:^|,)\\s*(?:cookie|authorization)\\s*(?:,|$)/i.test(vary) || vary.trim() === "*";
+    const variesByIdentity = /(?:^|,)\s*(?:cookie|authorization)\s*(?:,|$)/i.test(vary) || vary.trim() === "*";
     const cacheableBrand = brandAsset && safeResponse && !variesByIdentity &&
       (response.headers.get("content-type") ?? "").toLowerCase().startsWith("image/");
     if (cacheableBrand) {
-      const immutableRank = /^\/brand\/ranks\/(?:swift|eclipse|cosmic|overdrive)-v2\\.webp$/.test(url.pathname);
+      const immutableRank = /^\/brand\/ranks\/(?:swift|eclipse|cosmic|overdrive)-v2\.webp$/.test(url.pathname);
       result.headers.set("Cache-Control", immutableRank
         ? "public, max-age=31536000, immutable"
         : "public, max-age=86400, stale-while-revalidate=604800");
