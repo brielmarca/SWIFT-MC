@@ -101,3 +101,67 @@ test("gateway refuses untrusted origins and oversize webhook bodies before upstr
   assert.equal((await proxyStagingRequest(new Request("https://swiftmc.com.br/api/session"), config, upstream)).status, 503);
   assert.equal((await proxyStagingRequest(new Request(env.APP_URL + "/api/webhooks/stripe", { method: "POST", body: "x".repeat(1024 * 1024 + 1) }), config, upstream)).status, 413);
 });
+
+test("staging gateway explicitly restores long cache for official versioned WebP art", async () => {
+  const url = env.APP_URL + "/brand/ranks/swift-v2.webp";
+  const response = await proxyStagingRequest(new Request(url, {
+    headers: { cookie: "session=secret", authorization: "Bearer secret", "x-swift-backend-key": "forged" },
+  }), { ...env, BACKEND_ORIGIN: "https://backend.example.test" }, async (_target, init) => {
+    const forwarded = new Headers(init!.headers);
+    assert.equal(forwarded.get("cookie"), null);
+    assert.equal(forwarded.get("authorization"), null);
+    assert.equal(forwarded.get("x-swift-backend-key"), env.BACKEND_PROXY_SECRET);
+    return new Response("webp-binary-placeholder", {
+      status: 200,
+      headers: {
+        "Content-Type": "image/webp",
+        "Cache-Control": "private, no-store",
+        "Pragma": "no-cache",
+        "Expires": "0",
+      },
+    });
+  });
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("cache-control"), "public, max-age=31536000, immutable");
+  assert.equal(response.headers.get("pragma"), null);
+  assert.equal(response.headers.get("expires"), null);
+});
+
+test("staging gateway restores one-day caching on public unversioned art and HEAD", async () => {
+  const response = await proxyStagingRequest(new Request(env.APP_URL + "/brand/enderman.webp", { method: "HEAD" }), {
+    ...env, BACKEND_ORIGIN: "https://backend.example.test",
+  }, async () => new Response(null, {
+    status: 200, headers: { "Content-Type": "image/webp", "Cache-Control": "private, no-store" },
+  }));
+  assert.equal(response.headers.get("cache-control"), "public, max-age=86400, stale-while-revalidate=604800");
+});
+
+test("staging gateway never caches private or unsafe image-like responses", async () => {
+  const cases: { path: string; status: number; headers: Record<string, string>; expected: string }[] = [
+    { path: "/brand/ranks/swift-v2.webp?variant=private", status: 200, headers: { "Content-Type": "image/webp" }, expected: "private, no-store" },
+    { path: "/brand/ranks/swift-v2.webp", status: 404, headers: { "Content-Type": "image/webp" }, expected: "private, no-store" },
+    { path: "/brand/ranks/swift-v2.webp", status: 200, headers: { "Content-Type": "text/html" }, expected: "private, no-store" },
+    { path: "/brand/ranks/swift-v2.webp", status: 200, headers: { "Content-Type": "image/webp", "Set-Cookie": "session=secret" }, expected: "private, no-store" },
+    { path: "/brand/ranks/swift-v2.webp", status: 200, headers: { "Content-Type": "image/webp", Vary: "Cookie, Accept-Encoding" }, expected: "private, no-store" },
+    { path: "/brand/ranks/swift-v2.webp", status: 200, headers: { "Content-Type": "image/webp", Vary: "*" }, expected: "private, no-store" },
+    { path: "/account", status: 200, headers: { "Content-Type": "image/webp", "Cache-Control": "public, max-age=31536000" }, expected: "private, no-store" },
+    { path: "/api/admin/users", status: 200, headers: { "Content-Type": "image/webp", "Cache-Control": "public, max-age=31536000" }, expected: "private, no-store" },
+    { path: "/brand/ranks/swift-v2.webp", status: 200, headers: { "Content-Type": "image/webp" }, expected: "private, no-store" },
+  ];
+  for (const [index, item] of cases.entries()) {
+    const method = index === cases.length - 1 ? "POST" : "GET";
+    const response = await proxyStagingRequest(new Request(env.APP_URL + item.path, { method }), {
+      ...env, BACKEND_ORIGIN: "https://backend.example.test",
+    }, async () => new Response("test", { status: item.status, headers: item.headers }));
+    assert.equal(response.headers.get("cache-control"), item.expected, item.path + " [" + index + "]");
+  }
+});
+
+test("staging gateway preserves existing cache policy for fingerprinted Next static assets", async () => {
+  const response = await proxyStagingRequest(new Request(env.APP_URL + "/_next/static/css/abc123.css"), {
+    ...env, BACKEND_ORIGIN: "https://backend.example.test",
+  }, async () => new Response(".app{}", {
+    status: 200, headers: { "Content-Type": "text/css", "Cache-Control": "public, max-age=31536000, immutable" },
+  }));
+  assert.equal(response.headers.get("cache-control"), "public, max-age=31536000, immutable");
+});
