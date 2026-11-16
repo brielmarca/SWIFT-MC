@@ -28,7 +28,15 @@ export async function proxyStagingRequest(request: Request, env: GatewayEnv, ups
     let offset = 0;
     for (const chunk of chunks) { body.set(chunk, offset); offset += chunk.length; }
   }
+  // Public, repository-owned brand assets are static and may never depend on a
+  // visitor's cookies or Authorization. Strip them before asking the origin.
+  // Do not extend this rule to HTML, image optimizer routes, APIs or uploads.
+  const brandAsset = /^\/brand\/(?:[a-z0-9_-]+\/)*[a-z0-9_-]+\.(?:webp|avif|png|jpe?g|svg|ico)$/i.test(url.pathname) && !url.search;
   const headers = new Headers(request.headers);
+  if (brandAsset) {
+    headers.delete("cookie");
+    headers.delete("authorization");
+  }
   for (const key of ["host", "connection", "content-length", "forwarded", "x-forwarded-for", "x-forwarded-host", "x-forwarded-proto", "x-swift-backend-key"]) headers.delete(key);
   headers.set("x-swift-backend-key", env.BACKEND_PROXY_SECRET);
   headers.set("x-forwarded-host", url.host);
@@ -40,9 +48,27 @@ export async function proxyStagingRequest(request: Request, env: GatewayEnv, ups
     const response = await upstream(target, { method: request.method, headers, body, redirect: "manual", signal: AbortSignal.timeout(25_000) });
     const result = new Response(response.body, response);
     result.headers.set("X-Robots-Tag", "noindex, nofollow");
-    // Only successful, cookie-free public assets may retain upstream caching.
+    // Fix upstream/edge `private, no-store` being applied to official public
+    // WebP artwork. Allow only successful, cookie-free image responses whose
+    // MIME type is an image and whose cache does not vary by authentication.
+    // Never override private page/API, errors, redirects, or user uploads.
     const publicAsset = /^\/(?:_next\/static\/|brand\/)/.test(url.pathname);
-    if (!publicAsset || !["GET", "HEAD"].includes(request.method) || response.status !== 200 || response.headers.has("set-cookie")) {
+    const safeResponse = ["GET", "HEAD"].includes(request.method) &&
+      response.status === 200 && !response.headers.has("set-cookie");
+    const vary = response.headers.get("vary") ?? "";
+    const variesByIdentity = /(?:^|,)\s*(?:cookie|authorization)\s*(?:,|$)/i.test(vary) || vary.trim() === "*";
+    const cacheableBrand = brandAsset && safeResponse && !variesByIdentity &&
+      (response.headers.get("content-type") ?? "").toLowerCase().startsWith("image/");
+    if (cacheableBrand) {
+      const immutableRank = /^\/brand\/ranks\/(?:swift|eclipse|cosmic|overdrive)-v2\.webp$/.test(url.pathname);
+      result.headers.set("Cache-Control", immutableRank
+        ? "public, max-age=31536000, immutable"
+        : "public, max-age=86400, stale-while-revalidate=604800");
+      // Prevent a stale upstream no-cache directive from contradicting the
+      // explicitly approved asset policy.
+      result.headers.delete("pragma");
+      result.headers.delete("expires");
+    } else if (!publicAsset || !safeResponse || variesByIdentity || url.pathname.startsWith("/brand/")) {
       result.headers.set("Cache-Control", "private, no-store");
     }
     // Absolute application redirects must remain on the public staging origin.
