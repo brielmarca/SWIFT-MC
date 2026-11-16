@@ -3,18 +3,19 @@ import Link from "next/link";
 import { AuthHeader } from "@/components/auth-header";
 import { Footer } from "@/components/footer";
 
-export type AdminSection = "overview" | "posts" | "orders" | "cancellations" | "users" | "deliveries" | "audit" | "security" | "provisioning";
+export type AdminSection = "overview" | "posts" | "orders" | "cancellations" | "users" | "deliveries" | "audit" | "security" | "provisioning" | "media";
 
 const sections: { id: AdminSection; href: string; title: string }[] = [
-  { id: "overview", href: "/admin", title: "Visão geral" },
-  { id: "posts", href: "/admin/posts", title: "Publicações" },
-  { id: "orders", href: "/admin/orders", title: "Pedidos" },
-  { id: "cancellations", href: "/admin/cancellations", title: "Cancelamentos" },
-  { id: "users", href: "/admin/users", title: "Usuários" },
-  { id: "deliveries", href: "/admin/deliveries", title: "Entregas" },
-  { id: "audit", href: "/admin/audit", title: "Auditoria" },
-  { id: "security", href: "/admin/security", title: "Segurança" },
-  { id: "provisioning", href: "/admin/provisioning", title: "Administradores" },
+  { id: "overview", href: "/console-r7m4q9v2", title: "Visão geral" },
+  { id: "media", href: "/console-r7m4q9v2/media", title: "Imagens" },
+  { id: "posts", href: "/console-r7m4q9v2/posts", title: "Publicações" },
+  { id: "orders", href: "/console-r7m4q9v2/orders", title: "Pedidos" },
+  { id: "cancellations", href: "/console-r7m4q9v2/cancellations", title: "Cancelamentos" },
+  { id: "users", href: "/console-r7m4q9v2/users", title: "Usuários" },
+  { id: "deliveries", href: "/console-r7m4q9v2/deliveries", title: "Entregas" },
+  { id: "audit", href: "/console-r7m4q9v2/audit", title: "Auditoria" },
+  { id: "security", href: "/console-r7m4q9v2/security", title: "Segurança" },
+  { id: "provisioning", href: "/console-r7m4q9v2/provisioning", title: "Administradores" },
 ];
 
 export function AdminShell({

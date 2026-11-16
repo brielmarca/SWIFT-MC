@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: "Pedidos | Admin Swift MC", robots: {
 export const dynamic = "force-dynamic";
 
 export default async function AdminOrdersPage({ searchParams }: { searchParams: Promise<{ page?: string | string[] }> }) {
-  const admin = await requireAdminPage("audit:read", "/admin/orders");
+  const admin = await requireAdminPage("audit:read", "/console-r7m4q9v2/orders");
   const page = await adminPageNumber(searchParams);
   const env = await getWorkersEnv();
   const entries = env.AUTH_HYPERDRIVE ? await getPrisma().order.findMany({
@@ -54,7 +54,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
             </table>
             {!orders.length && <p className="py-5 text-sm text-muted">Nenhum pedido nesta página.</p>}
           </div>
-          <AdminPagination base="/admin/orders" page={page} hasNext={hasNext} />
+          <AdminPagination base="/console-r7m4q9v2/orders" page={page} hasNext={hasNext} />
         </section>
       )}
     </AdminShell>

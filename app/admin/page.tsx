@@ -30,17 +30,16 @@ export default async function AdminPage() {
   const user = await requireAdminPage("audit:read", "/console-r7m4q9v2");
   const data = await loadData();
   const cards = data ? [
-    { label: "Usuários cadastrados", value: data.users, href: "/admin/users" },
-    { label: "Pedidos registrados", value: data.orders, href: "/admin/orders" },
-    { label: "Pedidos pagos ou entregues", value: data.approvedOrders, href: "/admin/orders" },
-    { label: "VIPs ativos", value: data.activeVips, href: "/admin/deliveries" },
-    { label: "Processamentos pendentes", value: data.fulfillmentsPending, href: "/admin/deliveries" },
-    { label: "Entregas Bridge pendentes", value: data.bridgePending, href: "/admin/deliveries" },
-    { label: "Cancelamentos solicitados", value: data.cancellationOpen, href: "/admin/cancellations" },
+    { label: "Usuários cadastrados", value: data.users, href: "/console-r7m4q9v2/users" },
+    { label: "Pedidos registrados", value: data.orders, href: "/console-r7m4q9v2/orders" },
+    { label: "Pedidos pagos ou entregues", value: data.approvedOrders, href: "/console-r7m4q9v2/orders" },
+    { label: "VIPs ativos", value: data.activeVips, href: "/console-r7m4q9v2/deliveries" },
+    { label: "Processamentos pendentes", value: data.fulfillmentsPending, href: "/console-r7m4q9v2/deliveries" },
+    { label: "Entregas Bridge pendentes", value: data.bridgePending, href: "/console-r7m4q9v2/deliveries" },
+    { label: "Cancelamentos solicitados", value: data.cancellationOpen, href: "/console-r7m4q9v2/cancellations" },
   ] : [];
 
   return (
-<<<<<<< HEAD
     <AdminShell title="Painel administrativo" description="Acompanhe a operação da loja e do servidor com dados reais do banco. Os controles de acesso e MFA continuam obrigatórios."
       section="overview" role={user.role} email={user.emailNormalized}>
       {!data ? (
@@ -61,7 +60,7 @@ export default async function AdminPage() {
             <section className="glass-panel overflow-hidden p-5 sm:p-6">
               <div className="flex items-center justify-between gap-3">
                 <h2 className="text-lg font-bold text-ink">Pedidos recentes</h2>
-                <Link href="/admin/orders" className="text-sm font-semibold text-ultraviolet">Ver todos</Link>
+                <Link href="/console-r7m4q9v2/orders" className="text-sm font-semibold text-ultraviolet">Ver todos</Link>
               </div>
               <div className="mt-4 space-y-3">
                 {data.recentOrders.map(order => (
@@ -76,7 +75,7 @@ export default async function AdminPage() {
             <section className="glass-panel overflow-hidden p-5 sm:p-6">
               <div className="flex items-center justify-between gap-3">
                 <h2 className="text-lg font-bold text-ink">Auditoria recente</h2>
-                <Link href="/admin/audit" className="text-sm font-semibold text-ultraviolet">Ver eventos</Link>
+                <Link href="/console-r7m4q9v2/audit" className="text-sm font-semibold text-ultraviolet">Ver eventos</Link>
               </div>
               <div className="mt-4 space-y-3">
                 {data.recentAudit.map(event => (

@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: "Solicitações de cancelamento | Swi
 export const dynamic = "force-dynamic";
 
 export default async function AdminCancellationsPage({ searchParams }: { searchParams: Promise<{ page?: string | string[] }> }) {
-  const admin = await requireAdminPage("audit:read", "/admin/cancellations");
+  const admin = await requireAdminPage("audit:read", "/console-r7m4q9v2/cancellations");
   const page = await adminPageNumber(searchParams);
   const env = await getWorkersEnv();
   const rows = env.AUTH_HYPERDRIVE ? await getPrisma().orderCancellationRequest.findMany({
@@ -51,7 +51,7 @@ export default async function AdminCancellationsPage({ searchParams }: { searchP
             ))}
             {!entries.length && <p className="text-sm text-muted">Nenhuma solicitação nesta página.</p>}
           </div>
-          <AdminPagination base="/admin/cancellations" page={page} hasNext={hasNext} />
+          <AdminPagination base="/console-r7m4q9v2/cancellations" page={page} hasNext={hasNext} />
         </section>
       )}
     </AdminShell>
