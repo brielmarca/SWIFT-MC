@@ -12,13 +12,14 @@ const nextConfig: NextConfig = {
     // Static Next/RSC and vinext bootstrap scripts require inline scripts today.
     // This is a baseline CSP, not a nonce-based XSS defense. No unsafe-eval in production.
     const development = process.env.NODE_ENV === "development";
+    const ga4Configured = /^G-[A-Z0-9]{6,16}$/.test((process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID ?? "").trim());
     const csp = [
       "default-src 'self'",
-      `script-src 'self' 'unsafe-inline'${development ? " 'unsafe-eval'" : ""}`,
+      `script-src 'self' 'unsafe-inline'${development ? " 'unsafe-eval'" : ""}${ga4Configured ? " https://www.googletagmanager.com" : ""}`,
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
-      "img-src 'self' data: blob:",
-      `connect-src 'self'${development ? " ws: wss:" : ""}`,
+      `img-src 'self' data: blob:${ga4Configured ? " https://www.google-analytics.com" : ""}`,
+      `connect-src 'self'${development ? " ws: wss:" : ""}${ga4Configured ? " https://www.google-analytics.com https://region1.google-analytics.com" : ""}`,
       "object-src 'none'",
       "base-uri 'none'",
       "frame-ancestors 'none'",
