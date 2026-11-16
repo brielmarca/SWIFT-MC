@@ -17,13 +17,22 @@ export function middleware(request: NextRequest) {
   }
   const isAuthPage = AUTH_PAGES.includes(pathname)
   const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/')
+  const isPrivatePage = /^(?:\\/account|\\/checkout)(?:\\/|$)/.test(pathname)
+  // Public read-only API caches retain their explicit upstream policies.
+  const isPrivateApi = pathname.startsWith('/api/') &&
+    pathname !== '/api/server-status' && pathname !== '/api/players/online'
   const response = NextResponse.next()
-  // Private administrative routes must not be indexed or cached even on
-  // the canonical host. Discovery controls complement server-side auth/MFA.
+  // Never allow shared caches to hold session-specific HTML or APIs.
+  // These response headers supplement server authorization and do not cache
+  // authenticated output, even if a CDN is later configured more aggressively.
+  if (isAdminRoute || isPrivatePage || isPrivateApi) {
+    response.headers.set('Cache-Control', 'private, no-store')
+  }
   if (isAdminRoute) {
     response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive')
-    response.headers.set('Cache-Control', 'private, no-store')
     response.headers.set('Referrer-Policy', 'no-referrer')
+  } else if (isPrivatePage) {
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow')
   }
   // Canonical metadata may still point to production on preview deployments.
   // Protect the actual serving host independently of that build-time setting.
