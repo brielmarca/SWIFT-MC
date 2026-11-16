@@ -1,5 +1,10 @@
 import type { NextConfig } from "next";
 
+const immutableRankArtwork = ["swift", "eclipse", "cosmic", "overdrive"].map((slug) => ({
+  source: `/brand/ranks/${slug}-v2.webp`,
+  headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
+}));
+
 const nextConfig: NextConfig = {
   output: process.env.BUILD_VPS === "true" ? "standalone" : undefined,
   poweredByHeader: false,
@@ -20,7 +25,10 @@ const nextConfig: NextConfig = {
       "form-action 'self'",
     ].join("; ");
     // HSTS belongs on the production HTTPS edge; local/preview HTTP must remain usable.
-    return [{ source: "/brand/:path*", headers: [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" }] }, {
+    return [
+      ...immutableRankArtwork,
+      { source: "/brand/:path*", headers: [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" }] },
+      {
       source: "/:path*",
       headers: [
         { key: "Content-Security-Policy", value: csp },
@@ -29,7 +37,8 @@ const nextConfig: NextConfig = {
         { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
         { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()" },
       ],
-    }];
+    },
+    ];
   },
   images: {
     formats: ["image/avif", "image/webp"],
