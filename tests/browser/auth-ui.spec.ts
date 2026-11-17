@@ -4,7 +4,7 @@ const resetToken = "A".repeat(43);
 const email = "ui-only@example.test";
 const password = "UI-only password 123!";
 const routes = [
-  { path: "/login", title: "Bem-vindo de volta", action: "Entrar", endpoint: "/api/login", body: { email, password } },
+  { path: "/login", title: "Bem-vindo de volta", action: "Entrar", endpoint: "/api/login", body: { email, password, rememberMe: true } },
   { path: "/register", title: "Entre para o Swift MC", action: "Criar conta", endpoint: "/api/register", body: { email } },
   { path: "/forgot-password", title: "Recupere sua conta", action: "Enviar instruções", endpoint: "/api/password-reset/request", body: { email } },
   { path: "/reset-password", title: "Defina uma nova senha", action: "Redefinir senha", endpoint: "/api/password-reset/complete", body: { email, newPassword: password, challengeToken: resetToken } },
@@ -96,6 +96,8 @@ test("keyboard navigation, password visibility, and auth links", async ({ page }
   await page.keyboard.press("Space");
   await expect(password).toHaveAttribute("type", "password");
   await page.keyboard.press("Tab");
+  await expect(page.getByRole("checkbox", { name: "Manter conectado neste dispositivo" })).toBeFocused();
+  await page.keyboard.press("Tab");
   await expect(page.getByRole("link", { name: "Esqueci minha senha" })).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL("/forgot-password");
@@ -106,14 +108,15 @@ test("keyboard navigation, password visibility, and auth links", async ({ page }
   await expect(page).toHaveURL("/login");
 });
 
-test("Discord button is disabled without OAuth backend", async ({ page, context }) => {
+test("Discord returns an accessible retryable failure when OAuth backend is unavailable", async ({ page, context }) => {
   await page.goto("/login");
   const requests: string[] = [];
   page.on("request", (request) => {
     if (new URL(request.url()).origin !== "http://127.0.0.1:3100" || request.url().includes("/api/") || request.method() === "POST" || request.isNavigationRequest()) requests.push(request.url());
   });
   await page.getByRole("button", { name: "Entrar com Discord" }).click();
-  await expect(page.getByRole("button", { name: "Entrar com Discord" })).toBeDisabled();
+  await expect(page.getByRole("alert").last()).toHaveText("Não foi possível iniciar o login com Discord.");
+  await expect(page.getByRole("button", { name: "Entrar com Discord" })).toBeEnabled();
   await expect(page).toHaveURL("/login");
   expect(context.pages()).toHaveLength(1);
   expect(requests).toEqual([]);
