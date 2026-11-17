@@ -30,6 +30,13 @@ test("production gateway injects private key and preserves raw Stripe webhook bo
   assert.equal(response.headers.get("cache-control"), null);
 });
 
+test("production gateway redirects www to the canonical domain without contacting backend", async () => {
+  const upstream = async () => { throw new Error("must not fetch for www redirects"); };
+  const response = await proxyProductionRequest(new Request("https://www.swiftmc.com.br/store?category=vip"), env, upstream);
+  assert.equal(response.status, 308);
+  assert.equal(response.headers.get("location"), "https://swiftmc.com.br/store?category=vip");
+});
+
 test("production gateway rewrites backend redirects and rejects untrusted/staging origins", async () => {
   const redirect = await proxyProductionRequest(new Request("https://swiftmc.com.br/checkout"), env, async () =>
     new Response(null, { status: 302, headers: { location: "https://origin.swiftmc.com.br/account/orders" } }));

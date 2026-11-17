@@ -3,6 +3,10 @@ type GatewayEnv = { BACKEND_ORIGIN: string; BACKEND_PROXY_SECRET: string; APP_UR
 /** Single-origin production gateway. No database or provider credentials on Workers. */
 export async function proxyProductionRequest(request: Request, env: GatewayEnv, upstream: typeof fetch = fetch): Promise<Response> {
   const url = new URL(request.url);
+  // Keep all public traffic on the canonical hostname, including Instagram's in-app browser.
+  if (url.origin === "https://www.swiftmc.com.br") {
+    return Response.redirect(`https://swiftmc.com.br${url.pathname}${url.search}`, 308);
+  }
   let origin: URL;
   try {
     origin = new URL(env.BACKEND_ORIGIN);
