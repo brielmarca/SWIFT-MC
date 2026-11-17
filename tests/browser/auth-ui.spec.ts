@@ -1,5 +1,13 @@
 import { expect, test } from "@playwright/test";
 
+test.beforeEach(async ({ page }) => {
+  // Authentication flows are exercised after optional cookies were rejected.
+  // First-visit consent behavior is covered by cookie-consent.spec.ts.
+  await page.addInitScript(() => localStorage.setItem("swiftmc-cookie-preferences-v1", JSON.stringify({
+    version: 1, necessary: true, analytics: false, marketing: false, updatedAt: "2026-11-16T00:00:00.000Z",
+  })));
+});
+
 const resetToken = "A".repeat(43);
 const email = "ui-only@example.test";
 const password = "UI-only password 123!";
@@ -69,7 +77,10 @@ for (const route of routes) {
     await expect(page.getByLabel("Email", { exact: true })).toHaveValue(email);
     await expect(submit).toBeEnabled();
     await expect(page).toHaveURL(url);
-    expect(await page.evaluate(() => ({ local: { ...localStorage }, session: { ...sessionStorage } }))).toEqual({ local: {}, session: {} });
+    expect(await page.evaluate(() => ({
+      extraLocal: Object.keys(localStorage).filter(key => key !== "swiftmc-cookie-preferences-v1"),
+      session: { ...sessionStorage },
+    }))).toEqual({ extraLocal: [], session: {} });
     await page.reload();
     await expect(page.getByRole("form").getByRole("alert")).toHaveCount(0);
     for (const input of await page.getByRole("main").locator('input:not([type="checkbox"])').all()) await expect(input).toHaveValue("");
@@ -122,7 +133,10 @@ test("Discord 503 produces an accessible retryable failure without external navi
   expect(context.pages()).toHaveLength(1);
   expect(requests).toEqual(["http://127.0.0.1:3100/api/auth/discord/start"]);
     expect((await context.cookies()).map(cookie => cookie.name)).toEqual(["__Host-swiftmc_csrf"]);
-  expect(await page.evaluate(() => [localStorage.length, sessionStorage.length])).toEqual([0, 0]);
+  expect(await page.evaluate(() => [
+    Object.keys(localStorage).filter(key => key !== "swiftmc-cookie-preferences-v1").length,
+    sessionStorage.length,
+  ])).toEqual([0, 0]);
 });
 
 for (const route of ["/reset-password"]) {
