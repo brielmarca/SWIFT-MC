@@ -27,7 +27,7 @@ test("production gateway injects private key and preserves raw Stripe webhook bo
     return new Response(JSON.stringify({ received: true }), { status: 200, headers: { "content-type": "application/json" } });
   });
   assert.equal(response.status, 200);
-  assert.equal(response.headers.get("cache-control"), null);
+  assert.equal(response.headers.get("cache-control"), "private, no-store");
 });
 
 test("production gateway redirects www to the canonical domain without contacting backend", async () => {

@@ -13,7 +13,7 @@ test("Cash section shows unavailable purchase state without creating writes", as
   await expect(first.getByText("50 Cash.", { exact: true })).toBeVisible();
   await first.getByRole("button", { name: "Compra indisponível — 50 Cash", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "50 Cash", exact: true });
-  await expect(dialog).toContainText("Compras e entrega de Cash ficam indisponíveis");
+  await expect(dialog).toContainText("Compras temporariamente indisponíveis. Tente novamente mais tarde.");
   await dialog.getByRole("button", { name: "Voltar aos pacotes", exact: true }).click();
   expect(writes).toEqual([]);
 });

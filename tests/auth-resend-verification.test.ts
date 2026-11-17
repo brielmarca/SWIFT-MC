@@ -112,7 +112,7 @@ function request(body?: object, overrides: Record<string, string> = {}) {
   return new Request(`https://swiftmc.example/api/auth/resend-verification`, {
     method: "POST",
     headers: { origin: "https://swiftmc.example", "content-type": "application/json", "sec-fetch-site": "same-origin",
-      cookie: `__Host-swiftmc_session=dummy; __Host-swiftmc_csrf=csrf-token`, "x-csrf-token": "csrf-token", ...overrides },
+      cookie: `__Host-swiftmc_session=dummy; __Host-swiftmc_csrf=CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC`, "x-csrf-token": "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC", ...overrides },
     body: body ? JSON.stringify(body) : undefined,
   });
 }

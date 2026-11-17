@@ -38,7 +38,7 @@ function email() { const value = `${prefix}-${emails.length}@integration.invalid
 function request(body: object, headers: Record<string, string> = {}) {
   return new Request(`${env.APP_URL}/api/verify-email`, { method: "POST", headers: {
     origin: env.APP_URL, "content-type": "application/json", "sec-fetch-site": "same-origin",
-    cookie: "__Host-swiftmc_csrf=integration-csrf", "x-csrf-token": "integration-csrf", ...headers,
+    cookie: "__Host-swiftmc_csrf=CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC", "x-csrf-token": "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC", ...headers,
   }, body: JSON.stringify(body) });
 }
 function link(recipient: string) {

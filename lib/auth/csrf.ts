@@ -23,7 +23,8 @@ export function digestCsrfToken(token: string): string {
  * Compares a CSRF token against its stored digest using constant-time comparison.
  */
 export function csrfTokenMatches(token: string, digest: string): boolean {
-  if (typeof token !== "string" || typeof digest !== "string") return false;
+  if (typeof token !== "string" || token.length < 20 || token.length > 128 ||
+      typeof digest !== "string" || !/^[a-f0-9]{64}$/.test(digest)) return false;
   const expected = digestCsrfToken(token);
   return timingSafeEqual(Buffer.from(expected, "hex"), Buffer.from(digest, "hex"));
 }

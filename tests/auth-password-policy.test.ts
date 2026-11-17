@@ -79,7 +79,7 @@ function authRequest(path: string, body?: object, overrides: Record<string, stri
   return new Request(`https://swiftmc.example${path}`, {
     method: body ? "POST" : "GET",
     headers: { origin: "https://swiftmc.example", "content-type": "application/json", "sec-fetch-site": "same-origin",
-      cookie: `__Host-swiftmc_session=${rawToken}; __Host-swiftmc_csrf=csrf-token`, "x-csrf-token": "csrf-token", ...overrides },
+      cookie: `__Host-swiftmc_session=${rawToken}; __Host-swiftmc_csrf=CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC`, "x-csrf-token": "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC", ...overrides },
     body: body ? JSON.stringify(body) : undefined,
   });
 }

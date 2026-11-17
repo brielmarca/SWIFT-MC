@@ -5,7 +5,7 @@ import { createRateLimiter, rateLimitResponse } from "@/lib/auth-infrastructure/
 import {
   extractCsrfTokenFromCookie, extractCsrfTokenFromHeader,
 } from "@/lib/auth/csrf";
-import { createHash } from "node:crypto";
+import { createHash, timingSafeEqual } from "node:crypto";
 
 const SESSION_COOKIE_NAME = "__Host-swiftmc_session";
 
@@ -30,9 +30,10 @@ export function validateCsrfToken(request: Request): boolean {
   const cookieToken = extractCsrfTokenFromCookie(cookieHeader);
   const headerToken = extractCsrfTokenFromHeader(request.headers);
 
-  if (!cookieToken || !headerToken) return false;
-  if (cookieToken !== headerToken) return false;
-  return true;
+  if (!cookieToken || !headerToken || cookieToken.length < 20 ||
+      cookieToken.length > 128 || headerToken.length !== cookieToken.length) return false;
+  // Fixed-size secrets; compare in constant time rather than plain string equality.
+  return timingSafeEqual(Buffer.from(cookieToken, "utf8"), Buffer.from(headerToken, "utf8"));
 }
 
 /**

@@ -77,7 +77,7 @@ test("keyboard navigation, password visibility, and auth links", async ({ page }
   await page.keyboard.press("Tab");
   await expect(page.getByRole("link", { name: "← Voltar à Swift MC" })).toBeFocused();
   await page.keyboard.press("Tab");
-  await expect(page.getByRole("button", { name: "Continuar com Discord" })).toBeFocused();
+  await expect(page.getByRole("button", { name: "Entrar com Discord" })).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(page.getByLabel("Email", { exact: true })).toBeFocused();
   await page.keyboard.press("Tab");
@@ -101,18 +101,20 @@ test("keyboard navigation, password visibility, and auth links", async ({ page }
   await expect(page).toHaveURL("/login");
 });
 
-test("Discord button is disabled without OAuth backend", async ({ page, context }) => {
+test("Discord login fails closed when OAuth provider is unavailable", async ({ page, context }) => {
   await page.goto("/login");
   const requests: string[] = [];
   page.on("request", (request) => {
     if (new URL(request.url()).origin !== "http://127.0.0.1:3100" || request.url().includes("/api/") || request.method() === "POST" || request.isNavigationRequest()) requests.push(request.url());
   });
-  await page.getByRole("button", { name: "Continuar com Discord" }).click();
-  await expect(page.getByRole("button", { name: "Continuar com Discord" })).toBeDisabled();
+  await page.getByRole("button", { name: "Entrar com Discord" }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "Não foi possível iniciar o login com Discord." })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Entrar com Discord" })).toBeEnabled();
   await expect(page).toHaveURL("/login");
   expect(context.pages()).toHaveLength(1);
-  expect(requests).toEqual([]);
-    expect((await context.cookies()).map(cookie => cookie.name)).toEqual(["__Host-swiftmc_csrf"]);
+  // One same-origin OAuth-start request may fail, but never navigate away or leak credentials.
+  expect(requests).toEqual(["http://127.0.0.1:3100/api/auth/discord/start"]);
+  expect((await context.cookies()).map(cookie => cookie.name)).toEqual(["__Host-swiftmc_csrf"]);
   expect(await page.evaluate(() => [localStorage.length, sessionStorage.length])).toEqual([0, 0]);
 });
 

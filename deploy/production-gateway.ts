@@ -1,3 +1,5 @@
+import { applyGatewayResponseSecurity, cleanGatewayHeaders } from "./gateway-security";
+
 type GatewayEnv = { BACKEND_ORIGIN: string; BACKEND_PROXY_SECRET: string; APP_URL: string };
 
 /** Single-origin production gateway. No database or provider credentials on Workers. */
@@ -17,6 +19,9 @@ export async function proxyProductionRequest(request: Request, env: GatewayEnv, 
         !env.BACKEND_PROXY_SECRET || env.BACKEND_PROXY_SECRET.length < 32) throw new Error();
   } catch { return Response.json({ error: { code: "GATEWAY_UNCONFIGURED" } }, { status: 503 }); }
   if (!["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"].includes(request.method)) return new Response(null, { status: 405 });
+  // Conflicting message framing cannot be proxied safely.
+  if (request.headers.has("transfer-encoding") && request.headers.has("content-length"))
+    return new Response(null, { status: 400, headers: { "Cache-Control": "no-store" } });
   // Buffer a bounded body without parsing it: Stripe signature bytes remain intact.
   let body: Uint8Array<ArrayBuffer> | undefined;
   if (request.body) {
@@ -34,17 +39,16 @@ export async function proxyProductionRequest(request: Request, env: GatewayEnv, 
     let offset = 0;
     for (const chunk of chunks) { body.set(chunk, offset); offset += chunk.length; }
   }
-  const headers = new Headers(request.headers);
-  for (const key of ["host", "connection", "content-length", "forwarded", "x-forwarded-for", "x-forwarded-host", "x-forwarded-proto", "x-swift-backend-key"]) headers.delete(key);
-  headers.set("x-swift-backend-key", env.BACKEND_PROXY_SECRET);
-  headers.set("x-forwarded-host", url.host);
-  headers.set("x-forwarded-proto", "https");
+  const headers = cleanGatewayHeaders(request.headers, env.BACKEND_PROXY_SECRET, url.host);
   const target = new URL(origin);
   target.pathname = url.pathname;
   target.search = url.search;
   try {
     const response = await upstream(target, { method: request.method, headers, body, redirect: "manual", signal: AbortSignal.timeout(25_000) });
     const result = new Response(response.body, response);
+    applyGatewayResponseSecurity(result, url.pathname, request.method);
+    // HTTPS-only production site; do not include subdomains until each is audited.
+    result.headers.set("Strict-Transport-Security", "max-age=31536000");
     // Absolute application redirects must remain on the public production origin.
     const location = result.headers.get("location");
     if (location?.startsWith(origin.origin + "/")) result.headers.set("location", env.APP_URL + location.slice(origin.origin.length));

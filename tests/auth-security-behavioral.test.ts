@@ -73,7 +73,7 @@ function request(path: string, body?: object, overrides: Record<string, string> 
   return new Request(`https://swiftmc.example${path}`, {
     method: body ? "POST" : "GET",
     headers: { origin: "https://swiftmc.example", "content-type": "application/json", "sec-fetch-site": "same-origin",
-      cookie: `__Host-swiftmc_session=${rawToken}; __Host-swiftmc_csrf=csrf-token`, "x-csrf-token": "csrf-token", ...overrides },
+      cookie: `__Host-swiftmc_session=${rawToken}; __Host-swiftmc_csrf=CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC`, "x-csrf-token": "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC", ...overrides },
     body: body ? JSON.stringify(body) : undefined,
   });
 }
@@ -165,7 +165,7 @@ test("verify-email rate key cannot be rotated using an attacker-controlled email
   allow = false;
   const body = { email: "alice@example.com", password: "Strong-password123!", displayName: "Alice", challengeToken: "T".repeat(43) };
   for (const emailCookie of ["one", "two"]) {
-    const response = await verify.POST(request("/api/verify-email", body, { cookie: `__Host-swiftmc_csrf=csrf-token; email=${emailCookie}` }));
+    const response = await verify.POST(request("/api/verify-email", body, { cookie: `__Host-swiftmc_csrf=CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC; email=${emailCookie}` }));
     assert.equal(response.status, 429);
   }
   assert.equal(new Set(keys).size, 1);

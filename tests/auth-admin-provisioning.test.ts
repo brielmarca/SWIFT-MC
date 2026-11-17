@@ -39,7 +39,7 @@ beforeEach(() => { creates = []; audits = []; allowLimit = true; currentUser = o
 function req(body?: object, overrides: Record<string, string> = {}) {
   return new Request("https://swiftmc.example/api/admin/provisioned-admins", {
     method: body ? "POST" : "GET",
-    headers: { origin: "https://swiftmc.example", "content-type": "application/json", "sec-fetch-site": "same-origin", cookie: "__Host-swiftmc_csrf=x", "x-csrf-token": "x", ...overrides },
+    headers: { origin: "https://swiftmc.example", "content-type": "application/json", "sec-fetch-site": "same-origin", cookie: "__Host-swiftmc_csrf=CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC", "x-csrf-token": "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC", ...overrides },
     body: body ? JSON.stringify(body) : undefined,
   });
 }

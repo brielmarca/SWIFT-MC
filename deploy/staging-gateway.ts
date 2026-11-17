@@ -1,3 +1,5 @@
+import { applyGatewayResponseSecurity, cleanGatewayHeaders } from "./gateway-security";
+
 type GatewayEnv = { BACKEND_ORIGIN: string; BACKEND_PROXY_SECRET: string; APP_URL: string };
 
 /** Single-origin frontend/API gateway. No database or provider credentials on Workers. */
@@ -11,6 +13,8 @@ export async function proxyStagingRequest(request: Request, env: GatewayEnv, ups
         !env.BACKEND_PROXY_SECRET || env.BACKEND_PROXY_SECRET.length < 32) throw new Error();
   } catch { return Response.json({ error: { code: "GATEWAY_UNCONFIGURED" } }, { status: 503 }); }
   if (!["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"].includes(request.method)) return new Response(null, { status: 405 });
+  if (request.headers.has("transfer-encoding") && request.headers.has("content-length"))
+    return new Response(null, { status: 400, headers: { "Cache-Control": "no-store" } });
   // Buffer a bounded body without parsing it: Stripe signature bytes remain intact.
   let body: Uint8Array<ArrayBuffer> | undefined;
   if (request.body) {
@@ -28,23 +32,16 @@ export async function proxyStagingRequest(request: Request, env: GatewayEnv, ups
     let offset = 0;
     for (const chunk of chunks) { body.set(chunk, offset); offset += chunk.length; }
   }
-  const headers = new Headers(request.headers);
-  for (const key of ["host", "connection", "content-length", "forwarded", "x-forwarded-for", "x-forwarded-host", "x-forwarded-proto", "x-swift-backend-key"]) headers.delete(key);
-  headers.set("x-swift-backend-key", env.BACKEND_PROXY_SECRET);
-  headers.set("x-forwarded-host", url.host);
-  headers.set("x-forwarded-proto", "https");
+  const headers = cleanGatewayHeaders(request.headers, env.BACKEND_PROXY_SECRET, url.host);
   const target = new URL(origin);
   target.pathname = url.pathname;
   target.search = url.search;
   try {
     const response = await upstream(target, { method: request.method, headers, body, redirect: "manual", signal: AbortSignal.timeout(25_000) });
     const result = new Response(response.body, response);
+    applyGatewayResponseSecurity(result, url.pathname, request.method);
+    // Staging stays invisible to crawlers even when production paths are indexable.
     result.headers.set("X-Robots-Tag", "noindex, nofollow");
-    // Only successful, cookie-free public assets may retain upstream caching.
-    const publicAsset = /^\/(?:_next\/static\/|brand\/)/.test(url.pathname);
-    if (!publicAsset || !["GET", "HEAD"].includes(request.method) || response.status !== 200 || response.headers.has("set-cookie")) {
-      result.headers.set("Cache-Control", "private, no-store");
-    }
     // Absolute application redirects must remain on the public staging origin.
     const location = result.headers.get("location");
     if (location?.startsWith(origin.origin + "/")) result.headers.set("location", env.APP_URL + location.slice(origin.origin.length));
