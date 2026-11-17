@@ -37,6 +37,18 @@ test("production gateway redirects www to the canonical domain without contactin
   assert.equal(response.headers.get("location"), "https://swiftmc.com.br/store?category=vip");
 });
 
+test("production gateway forces HTTP to HTTPS for Instagram's in-app browser", async () => {
+  const upstream = async () => { throw new Error("must not fetch over HTTP"); };
+  for (const source of ["http://swiftmc.com.br/", "http://www.swiftmc.com.br/"]) {
+    const response = await proxyProductionRequest(new Request(source), env, upstream);
+    assert.equal(response.status, 308);
+    assert.equal(response.headers.get("location"), "https://swiftmc.com.br/");
+  }
+  const deepLink = await proxyProductionRequest(new Request("http://swiftmc.com.br/store?category=vip"), env, upstream);
+  assert.equal(deepLink.headers.get("location"), "https://swiftmc.com.br/store?category=vip");
+  assert.equal((await proxyProductionRequest(new Request("http://evil.example/"), env, upstream)).status, 503);
+});
+
 test("production gateway rewrites backend redirects and rejects untrusted/staging origins", async () => {
   const redirect = await proxyProductionRequest(new Request("https://swiftmc.com.br/checkout"), env, async () =>
     new Response(null, { status: 302, headers: { location: "https://origin.swiftmc.com.br/account/orders" } }));
