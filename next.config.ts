@@ -9,11 +9,12 @@ const nextConfig: NextConfig = {
     const development = process.env.NODE_ENV === "development";
     const csp = [
       "default-src 'self'",
-      `script-src 'self' 'unsafe-inline'${development ? " 'unsafe-eval'" : ""}`,
+      `script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com${development ? " 'unsafe-eval'" : ""}`,
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: blob:",
-      `connect-src 'self'${development ? " ws: wss:" : ""}`,
+      `connect-src 'self' https://challenges.cloudflare.com${development ? " ws: wss:" : ""}`,
+      "frame-src https://challenges.cloudflare.com",
       "object-src 'none'",
       "base-uri 'none'",
       "frame-ancestors 'none'",

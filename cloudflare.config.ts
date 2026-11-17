@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
     "MINECRAFT_HOST", "MINECRAFT_PORT", "MINECRAFT_PUBLIC_ADDRESS", "MINECRAFT_DATA_API_URL",
     "AUTH_HYPERDRIVE_ID", "APP_URL", "EMAIL_FROM", "MINECRAFT_FULFILLMENT_URL",
     "MINECRAFT_BRIDGE_SERVER_ID", "MINECRAFT_BRIDGE_ALLOWED_SERVER_IDS",
-    "AUTH_RATE_LIMIT_NAMESPACE_ID", "MEDIA_R2_BUCKET",
+    "AUTH_RATE_LIMIT_NAMESPACE_ID", "MEDIA_R2_BUCKET", "TURNSTILE_ENABLED", "TURNSTILE_SITE_KEY",
   ]);
   const dataApiUrl = env.MINECRAFT_DATA_API_URL?.trim() || "";
   const fulfillmentUrl = env.MINECRAFT_FULFILLMENT_URL?.trim() || "";
@@ -21,6 +21,7 @@ export default defineConfig(({ mode }) => {
     env.AUTH_RATE_LIMIT_NAMESPACE_ID?.trim() || process.env.AUTH_RATE_LIMIT_NAMESPACE_ID?.trim() || "";
   const rateLimitNamespaceId = /^[0-9]{1,10}$/.test(rateLimitNamespaceRaw) ? rateLimitNamespaceRaw : "1001";
   const stagingDiagnostics = mode === "auth-staging";
+  const turnstileEnabled = env.TURNSTILE_ENABLED?.trim() === "true";
   // Isolated staging deployments may override the Worker name (e.g.
   // CF_WORKER_NAME=swift-mc-staging). Only valid Cloudflare Worker names are
   // accepted; anything else falls back to the default so a stray build
@@ -57,6 +58,9 @@ export default defineConfig(({ mode }) => {
         } : {}),
         NODE_ENV: bindings.text(mode === "development" ? "development" : "production"),
         APP_URL: bindings.text(env.APP_URL?.trim() || ""),
+        TURNSTILE_ENABLED: bindings.text(turnstileEnabled ? "true" : "false"),
+        TURNSTILE_SITE_KEY: bindings.text(env.TURNSTILE_SITE_KEY?.trim() || ""),
+        ...(turnstileEnabled ? { TURNSTILE_SECRET_KEY: bindings.secret() } : {}),
         RESEND_API_KEY: bindings.secret(),
         STRIPE_SECRET_KEY: bindings.secret(),
         STRIPE_WEBHOOK_SECRET: bindings.secret(),

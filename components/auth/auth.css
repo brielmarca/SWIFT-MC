@@ -61,3 +61,7 @@
 @media (prefers-reduced-motion: reduce) {
   .auth-shell *, .auth-shell *::before, .auth-shell *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
+
+.auth-turnstile { display: flex; min-height: 66px; align-items: center; justify-content: flex-start; max-width: 100%; }
+.auth-turnstile > div { max-width: 100%; }
+.auth-captcha-hint { margin: 8px 0 0; color: #aaa7bb; font-size: 12px; line-height: 1.5; }

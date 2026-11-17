@@ -7,6 +7,7 @@ import { generateSecurityToken, digestSecurityToken } from "@/lib/auth/tokens";
 import { buildDiscordAuthorizeUrl, discordConfigured, encryptSecret, pkceChallenge, pkceVerifier } from "@/lib/auth/discord-oauth";
 import { createHash } from "node:crypto";
 import type { AuthBindings } from "@/lib/auth-infrastructure/bindings";
+import { requireTurnstile } from "@/lib/auth/turnstile";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,9 +31,13 @@ export async function POST(request: Request): Promise<Response> {
     if (!(await rateLimiter.check({ key }))) return rateLimitResponse();
   } catch { return rateLimitResponse(); }
 
-  let body: { returnPath?: string; intent?: string } = {};
+  let body: { returnPath?: string; intent?: string; turnstileToken?: unknown } = {};
   try { body = await request.json() as typeof body; } catch { /* ignore */ }
   const intent = body.intent === "LINK" ? "LINK" : "LOGIN";
+  if (intent === "LOGIN") {
+    const captchaError = await requireTurnstile(request, body, env, ["login", "register"]);
+    if (captchaError) return captchaError;
+  }
   const returnPath = internalReturnPath(body.returnPath || "/account") || "/account";
   const session = await getOptionalSession(request, env);
   if (intent === "LINK" && !session) return jsonError("UNAUTHENTICATED", "Sessão inválida ou expirada.", 401);
