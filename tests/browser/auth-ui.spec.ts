@@ -44,8 +44,13 @@ for (const route of routes) {
       const brand = await page.getByRole("region", { name: "Swift MC", exact: true }).boundingBox();
       expect(brand!.width / 1440).toBeCloseTo(.57, 2);
     }
-    for (const control of await page.getByRole("main").locator("input, button, a").all()) {
+    for (const control of await page.getByRole("main").locator('input:not([type="checkbox"]), button, a').all()) {
       expect((await control.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    }
+    // The native checkbox is visually small but its enclosing label is the 44px target.
+    if (route.path === "/login") {
+      const clickableLabel = await page.getByText("Manter conectado neste dispositivo").boundingBox();
+      expect(clickableLabel!.height).toBeGreaterThanOrEqual(44);
     }
     const submit = page.getByRole("button", { name: route.action, exact: true });
     await expect(submit).toBeEnabled();
@@ -67,7 +72,7 @@ for (const route of routes) {
     expect(await page.evaluate(() => ({ local: { ...localStorage }, session: { ...sessionStorage } }))).toEqual({ local: {}, session: {} });
     await page.reload();
     await expect(page.getByRole("form").getByRole("alert")).toHaveCount(0);
-    for (const input of await page.locator("input").all()) await expect(input).toHaveValue("");
+    for (const input of await page.getByRole("main").locator('input:not([type="checkbox"])').all()) await expect(input).toHaveValue("");
   });
 }
 
@@ -77,7 +82,7 @@ test("keyboard navigation, password visibility, and auth links", async ({ page }
   await page.keyboard.press("Tab");
   await expect(page.getByRole("link", { name: "← Voltar à Swift MC" })).toBeFocused();
   await page.keyboard.press("Tab");
-  await expect(page.getByRole("button", { name: "Continuar com Discord" })).toBeFocused();
+  await expect(page.getByRole("button", { name: "Entrar com Discord" })).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(page.getByLabel("Email", { exact: true })).toBeFocused();
   await page.keyboard.press("Tab");
@@ -107,8 +112,8 @@ test("Discord button is disabled without OAuth backend", async ({ page, context 
   page.on("request", (request) => {
     if (new URL(request.url()).origin !== "http://127.0.0.1:3100" || request.url().includes("/api/") || request.method() === "POST" || request.isNavigationRequest()) requests.push(request.url());
   });
-  await page.getByRole("button", { name: "Continuar com Discord" }).click();
-  await expect(page.getByRole("button", { name: "Continuar com Discord" })).toBeDisabled();
+  await page.getByRole("button", { name: "Entrar com Discord" }).click();
+  await expect(page.getByRole("button", { name: "Entrar com Discord" })).toBeDisabled();
   await expect(page).toHaveURL("/login");
   expect(context.pages()).toHaveLength(1);
   expect(requests).toEqual([]);
