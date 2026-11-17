@@ -8,12 +8,11 @@ export type SecurityTokenPurpose = typeof SECURITY_TOKEN_PURPOSES[number];
 
 /** Tokens are bearer secrets: never log them or include them in audit metadata. */
 export function generateSessionToken(): string {
-  return randomBytes(32).toString("base64url");
+  return randomBytes(32).toString("base64url").replace(/=+$/, "");
 }
 
 export function isValidToken(token: unknown): token is string {
-  return typeof token === "string" && /^[A-Za-z0-9_-]{43}$/.test(token) &&
-    Buffer.from(token, "base64url").toString("base64url") === token;
+  return typeof token === "string" && /^[A-Za-z0-9_-]+$/.test(token);
 }
 
 function digest(token: string, purpose: string): string {

@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: process.env.BUILD_VPS === "true" ? "standalone" : undefined,
   poweredByHeader: false,
   async headers() {
     // Static Next/RSC and vinext bootstrap scripts require inline scripts today.
@@ -19,7 +20,7 @@ const nextConfig: NextConfig = {
       "form-action 'self'",
     ].join("; ");
     // HSTS belongs on the production HTTPS edge; local/preview HTTP must remain usable.
-    return [{
+    return [{ source: "/brand/:path*", headers: [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" }] }, {
       source: "/:path*",
       headers: [
         { key: "Content-Security-Policy", value: csp },

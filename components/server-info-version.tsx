@@ -7,7 +7,7 @@ export function ServerInfoVersion() {
   const { data, loading } = useServerStatus();
   return (
     <dd className="mt-2 min-h-7 break-words text-lg font-bold text-ink">
-      {loading ? "Consultando…" : data?.version || serverInfo.defaultHost}
+      {loading ? serverInfo.edition : data?.version || serverInfo.edition}
     </dd>
   );
 }

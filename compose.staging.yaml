@@ -1,0 +1,51 @@
+name: swiftmc-staging
+services:
+  backend:
+    image: ${STAGING_IMAGE:-ghcr.io/brielmarca/swiftmc-staging:${STAGING_IMAGE_TAG:?Set STAGING_IMAGE_TAG to an immutable tag}}
+    pull_policy: always
+    env_file: deploy/staging.env
+    # Linux VPS: reuse the EXISTING loopback-only PostgreSQL listener.
+    # This does not create a DB service, volume, network or published port.
+    network_mode: host
+    environment:
+      HOSTNAME: 127.0.0.1
+      PORT: "3100"
+    volumes:
+      # Trusted PostgreSQL CA (e.g. Cloudflare Origin CA); mode 444, not committed.
+      - ./deploy/certs:/run/secrets/db-certs:ro
+    restart: unless-stopped
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+      - /app/.next/cache:rw,nosuid,uid=1000,gid=1000,size=128m
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 1g
+    cpus: 2
+    pids_limit: 128
+    stop_grace_period: 30s
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3100/api/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+
+  migrate:
+    profiles: [tools]
+    image: ${STAGING_MIGRATE_IMAGE:-ghcr.io/brielmarca/swiftmc-staging-migrate:${STAGING_IMAGE_TAG:?Set STAGING_IMAGE_TAG to an immutable tag}}
+    pull_policy: always
+    env_file: deploy/staging.env
+    network_mode: host
+    # Prisma migrate resolves the certificate hostname locally while using verified TLS.
+    extra_hosts:
+      - "db-staging.swiftmc.com.br=127.0.0.1"
+    volumes:
+      - ./deploy/certs:/run/secrets/db-certs:ro
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: "no"

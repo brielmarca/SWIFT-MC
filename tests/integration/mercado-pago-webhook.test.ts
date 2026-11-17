@@ -5,7 +5,9 @@ import { OrderStatus } from "@prisma/client";
 
 import { createTestPrisma, hasDatabase } from "@/tests/integration/helpers";
 
-import { POST } from "@/app/api/webhooks/mercadopago/route";
+import { POST as disabledPOST } from "@/app/api/webhooks/mercadopago/route";
+import { parseMercadoPagoWebhookEnvelope, verifyMercadoPagoSignature, reconcileMercadoPagoWebhook } from "@/lib/payments/mercado-pago-webhook";
+import { createMercadoPagoOrdersClient, MercadoPagoUnavailableError } from "@/lib/payments/mercado-pago";
 
 const db = createTestPrisma();
 const databaseOptions = { skip: !hasDatabase ? "DATABASE_URL is not configured" : false };
@@ -13,6 +15,34 @@ const secret = "integration-webhook-secret";
 const accessToken = "integration-access-token";
 const originalFetch = globalThis.fetch;
 const createdOrderIds: string[] = [];
+
+// Test-only service adapter: the public webhook remains disabled. These tests
+// exercise the existing parser, signature verifier and real DB reconciliation.
+async function POST(request: Request): Promise<Response> {
+  const envelope = parseMercadoPagoWebhookEnvelope(await request.json());
+  if (!envelope) return Response.json({ received: true });
+  const metadata = {
+    providerOrderId: envelope.data.id,
+    requestId: request.headers.get("x-request-id") ?? "",
+    signature: request.headers.get("x-signature") ?? "",
+  };
+  if (!verifyMercadoPagoSignature(metadata, secret)) return Response.json({ error: "INVALID_SIGNATURE" }, { status: 401 });
+  try {
+    await reconcileMercadoPagoWebhook(db!, createMercadoPagoOrdersClient(accessToken), envelope, metadata);
+    return Response.json({ received: true });
+  } catch (error) {
+    if (!(error instanceof MercadoPagoUnavailableError)) throw error;
+    return Response.json({ error: "PROVIDER_UNAVAILABLE" }, { status: 503 });
+  }
+}
+
+test("public webhook stays disabled without database mutations or provider requests", async () => {
+  const { order, providerOrderId } = await fixture();
+  const calls = mockProvider(providerBody(providerOrderId, order.orderNumber));
+  assert.ok([400,503].includes((await disabledPOST(new Request("https://swiftmc.example/api/webhooks/mercadopago",{method:"POST"}))).status));
+  assert.equal(calls(), 0);
+  assert.equal(await db!.paymentEvent.count({ where: { providerResourceId: providerOrderId } }), 0);
+});
 
 type ProviderOverrides = Partial<{
   id: string;

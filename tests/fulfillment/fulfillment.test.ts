@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test, { beforeEach } from "node:test";
+import test, { after, afterEach, beforeEach } from "node:test";
 import {
   OrderStatus,
   FulfillmentStatus,
@@ -44,19 +44,23 @@ const mockGrantClient = {
   },
 };
 
-after(async () => {
+afterEach(async () => {
   if (!db) return;
   if (createdFulfillmentIds.length > 0) {
-    await db.fulfillment.deleteMany({ where: { id: { in: createdFulfillmentIds } } });
+    await db.fulfillment.deleteMany({ where: { orderId: { in: createdOrderIds } } });
   }
   if (createdOrderIds.length > 0) {
     await db.payment.deleteMany({ where: { orderId: { in: createdOrderIds } } });
     await db.order.deleteMany({ where: { id: { in: createdOrderIds } } });
   }
-  await db.$disconnect();
+  createdOrderIds.length = 0;
+  createdFulfillmentIds.length = 0;
 });
+after(async () => { await db?.$disconnect(); });
 
 beforeEach(() => {
+  process.env.MINECRAFT_FULFILLMENT_URL = "https://minecraft.example.test";
+  process.env.MINECRAFT_FULFILLMENT_TOKEN = "isolated-test-token";
   grantResult = { status: "granted", reference: "ref_123" };
   grantCalls = [];
   shouldThrow = false;

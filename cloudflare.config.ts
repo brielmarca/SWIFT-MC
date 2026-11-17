@@ -7,10 +7,28 @@ export default defineConfig(({ mode }) => {
   // Runtime secrets are supplied by Cloudflare, never serialized from .env.
   const env = loadEnv(mode ?? "production", process.cwd(), [
     "MINECRAFT_HOST", "MINECRAFT_PORT", "MINECRAFT_PUBLIC_ADDRESS", "MINECRAFT_DATA_API_URL",
-    "AUTH_HYPERDRIVE_ID", "APP_URL", "EMAIL_FROM",
+    "AUTH_HYPERDRIVE_ID", "APP_URL", "EMAIL_FROM", "MINECRAFT_FULFILLMENT_URL",
+    "MINECRAFT_BRIDGE_SERVER_ID", "MINECRAFT_BRIDGE_ALLOWED_SERVER_IDS",
+    "AUTH_RATE_LIMIT_NAMESPACE_ID", "MEDIA_R2_BUCKET",
   ]);
   const dataApiUrl = env.MINECRAFT_DATA_API_URL?.trim() || "";
+  const fulfillmentUrl = env.MINECRAFT_FULFILLMENT_URL?.trim() || "";
+  // Cloudflare requires the rate-limit binding's `namespace` to be an
+  // account-unique positive integer that the account owner defines; names like
+  // "auth" are rejected by the deploy API (error 10021). Non-numeric input
+  // falls back to the default so a bad build variable cannot break deploys.
+  const rateLimitNamespaceRaw =
+    env.AUTH_RATE_LIMIT_NAMESPACE_ID?.trim() || process.env.AUTH_RATE_LIMIT_NAMESPACE_ID?.trim() || "";
+  const rateLimitNamespaceId = /^[0-9]{1,10}$/.test(rateLimitNamespaceRaw) ? rateLimitNamespaceRaw : "1001";
   const stagingDiagnostics = mode === "auth-staging";
+  // Isolated staging deployments may override the Worker name (e.g.
+  // CF_WORKER_NAME=swift-mc-staging). Only valid Cloudflare Worker names are
+  // accepted; anything else falls back to the default so a stray build
+  // environment variable cannot silently rename the production Worker.
+  const nameOverride = process.env.CF_WORKER_NAME?.trim() || "";
+  const workerName = /^[a-z0-9][a-z0-9-]{0,62}$/.test(nameOverride)
+    ? nameOverride
+    : stagingDiagnostics ? "swift-mc-auth-staging" : "swift-mc";
   if (existsSync("app/auth-infrastructure-probe") && !stagingDiagnostics) {
     throw new Error("Remove staging diagnostic routes before a normal Worker build");
   }
@@ -19,18 +37,19 @@ export default defineConfig(({ mode }) => {
   }
   return {
     worker: defineWorker({
-      name: stagingDiagnostics ? "swift-mc-auth-staging" : "swift-mc",
+      name: workerName,
       entrypoint: "vinext/server/fetch-handler",
       compatibilityDate: "2026-10-07",
       compatibilityFlags: ["nodejs_compat"],
       assets: { notFoundHandling: "none" },
       env: {
         ASSETS: bindings.assets(),
+        ...(env.MEDIA_R2_BUCKET?.trim() ? { MEDIA_BUCKET: bindings.r2({ name: env.MEDIA_R2_BUCKET.trim() }) } : {}),
         IMAGES: bindings.images(),
         ...(env.AUTH_HYPERDRIVE_ID?.trim() ? {
           AUTH_HYPERDRIVE: bindings.hyperdrive({ id: env.AUTH_HYPERDRIVE_ID.trim() }),
         } : {}),
-        AUTH_RATE_LIMIT: bindings.rateLimit({ namespace: "auth", simple: { limit: 10, period: 60 } }),
+        AUTH_RATE_LIMIT: bindings.rateLimit({ namespace: rateLimitNamespaceId, simple: { limit: 10, period: 60 } }),
         ...(stagingDiagnostics ? {
           AUTH_DIAGNOSTICS_ENVIRONMENT: bindings.text("staging"),
           AUTH_DIAGNOSTICS_ENABLED: bindings.text("1"),
@@ -48,6 +67,14 @@ export default defineConfig(({ mode }) => {
         MINECRAFT_DATA_API_URL: bindings.text(dataApiUrl),
         // The integration is optional. A configured URL requires a deployed secret.
         ...(dataApiUrl ? { MINECRAFT_DATA_API_TOKEN: bindings.secret() } : {}),
+        // Internal scheduler authentication for POST /api/internal/fulfillments/process.
+        INTERNAL_JOB_SECRET: bindings.secret(),
+        MINECRAFT_BRIDGE_SECRET: bindings.secret(),
+        MINECRAFT_BRIDGE_SERVER_ID: bindings.text(env.MINECRAFT_BRIDGE_SERVER_ID?.trim() || "swift-survival"),
+        MINECRAFT_BRIDGE_ALLOWED_SERVER_IDS: bindings.text(env.MINECRAFT_BRIDGE_ALLOWED_SERVER_IDS?.trim() || ""),
+        // Optional legacy Minecraft fulfillment integration. A configured URL requires a deployed secret.
+        MINECRAFT_FULFILLMENT_URL: bindings.text(fulfillmentUrl),
+        ...(fulfillmentUrl ? { MINECRAFT_FULFILLMENT_TOKEN: bindings.secret() } : {}),
       },
     }),
   };

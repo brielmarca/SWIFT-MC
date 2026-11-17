@@ -70,13 +70,13 @@ export function OnlinePlayers() {
     </div>
 
     <div className="mt-6">
-      {loading && <NetworkState kind="loading" title="Buscando jogadores" description="Consultando quem está conectado à SwiftMC agora." />}
+      {loading && <NetworkState kind="loading" title="Buscando jogadores" description="Consultando quem está conectado à Swift MC agora." />}
 
       {!loading && !data && <NetworkState kind="error" title="Lista de jogadores indisponível" description="Não foi possível carregar os jogadores da rede. Tente atualizar em instantes.">
         <button type="button" onClick={() => void refresh()} className="network-action">Tentar novamente</button>
       </NetworkState>}
 
-      {!loading && data && data.length === 0 && <NetworkState kind="empty" title="A próxima aventura pode ser sua" description="Nenhum jogador online no momento. Copie o IP e confira o status da rede para entrar na SwiftMC."><CopyIpButton /></NetworkState>}
+      {!loading && data && data.length === 0 && <NetworkState kind="empty" title="A próxima aventura pode ser sua" description="Nenhum jogador online no momento. Copie o IP e confira o status da rede para entrar na Swift MC."><CopyIpButton /></NetworkState>}
 
       {!loading && data && data.length > 0 && visible.length === 0 && <NetworkState kind="empty" title="Nenhum jogador encontrado" description="Confira o username ou limpe a busca para ver todos os jogadores online.">
         <button type="button" onClick={() => setQuery("")} className="network-action">Limpar busca</button>
@@ -89,7 +89,7 @@ export function OnlinePlayers() {
         </li>)}
       </ul>}
 
-      {!loading && data && <p className="mt-6 text-xs leading-5 text-muted">Dados do servidor SwiftMC · Cache de até 10s. Use “Atualizar” para consultar novamente.</p>}
+      {!loading && data && <p className="mt-6 text-xs leading-5 text-muted">Dados do servidor Swift MC · Cache de até 10s. Use “Atualizar” para consultar novamente.</p>}
     </div>
   </div>;
 }

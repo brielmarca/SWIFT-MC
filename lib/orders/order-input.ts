@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { getRank } from "@/data/ranks";
+import { cashPackages } from "@/data/cash-packages";
 
 const minecraftUsernamePattern = /^[\p{L}\p{N}_ .#-]+$/u;
 
@@ -22,7 +23,8 @@ export type CreateOrderInput = {
 };
 
 export type ValidatedOrderInput = {
-  rank: NonNullable<ReturnType<typeof getRank>> & { priceCents: number };
+  rank: { slug: string; name: string; duration: string; priceCents: number };
+  cashAmount?: number;
   minecraftUsername: string;
   email: string;
 };
@@ -39,6 +41,14 @@ export function validateOrderInput(
   }
 
   const rank = getRank(result.data.rankSlug);
+
+  const pack = cashPackages.find(pack => `cash-${pack.amount}` === result.data.rankSlug);
+  if (pack) return { data: {
+    rank: { slug: `cash-${pack.amount}`, name: `${pack.amount} Cash`, duration: "Crédito único", priceCents: pack.price },
+    cashAmount: pack.amount + pack.bonus,
+    minecraftUsername: result.data.minecraftUsername,
+    email: result.data.email,
+  } };
 
   if (!rank) {
     return { error: "UNKNOWN_RANK" };

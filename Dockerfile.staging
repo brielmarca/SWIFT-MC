@@ -1,0 +1,37 @@
+FROM node:24.21.0-bookworm-slim AS dependencies
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
+COPY package.json package-lock.json ./
+COPY prisma ./prisma
+RUN npm ci && npx prisma generate
+
+FROM dependencies AS build
+COPY . .
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN BUILD_VPS=true npm run build
+
+FROM dependencies AS migrations
+COPY lib/staging-config.ts ./staging-config.ts
+COPY deploy/staging-preflight.mjs deploy/migrate-staging.mjs ./
+RUN mkdir -p /run/secrets/db-certs && chown node:node /run/secrets/db-certs
+USER node
+CMD ["node", "migrate-staging.mjs"]
+
+FROM node:24.21.0-bookworm-slim AS runtime
+WORKDIR /app
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 HOSTNAME=127.0.0.1 PORT=3100
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*   && mkdir -p /run/secrets/db-certs && chown node:node /run/secrets/db-certs
+COPY --from=build --chown=node:node /app/.next/standalone ./
+COPY --from=build --chown=node:node /app/.next/static ./.next/static
+COPY --from=build --chown=node:node /app/public ./public
+COPY --chown=node:node lib/staging-config.ts ./staging-config.ts
+COPY --chown=node:node deploy/staging-preflight.mjs ./
+USER node
+CMD ["node", "--import", "./staging-preflight.mjs", "server.js"]
+
+# Separate opt-in production target; staging services still select runtime above.
+FROM runtime AS production
+COPY --chown=node:node lib/production-config.ts ./production-config.ts
+COPY --chown=node:node deploy/production-preflight.mjs ./
+ENV PORT=3101
+CMD ["node", "--import", "./production-preflight.mjs", "server.js"]

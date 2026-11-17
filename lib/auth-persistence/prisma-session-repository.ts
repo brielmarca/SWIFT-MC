@@ -12,6 +12,7 @@ export class PrismaSessionRepository implements SessionRepository {
     authVersion: number;
     idleExpiresAt: Date;
     absoluteExpiresAt: Date;
+    mfaVerifiedAt?: Date | null;
   }): Promise<AuthSession> {
     const record = await this.prisma.session.create({
       data: {
@@ -21,6 +22,7 @@ export class PrismaSessionRepository implements SessionRepository {
         idleExpiresAt: params.idleExpiresAt,
         absoluteExpiresAt: params.absoluteExpiresAt,
         authenticatedAt: new Date(),
+        mfaVerifiedAt: params.mfaVerifiedAt ?? null,
       },
     });
     return mapSession(record);

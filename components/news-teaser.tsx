@@ -14,7 +14,7 @@ export function NewsTeaser() {
           icon={Newspaper}
           eyebrow="Novidades"
           title="Últimas notícias"
-          description="Atualizações, guias e avisos da comunidade direto da equipe do SWIFT MC."
+          description="Atualizações, guias e avisos da comunidade direto da equipe do Swift MC."
         />
         {posts.length > 0 ? (
           <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -24,7 +24,7 @@ export function NewsTeaser() {
           <p className="mt-12 text-center text-sm text-muted">Nenhuma publicação ainda. Volte em breve.</p>
         )}
         <div className="mt-8 flex justify-center">
-          <Link href="/community" className="button-secondary">Ver notícias e eventos</Link>
+          <Link href="/news" className="button-secondary">Ver notícias e eventos</Link>
         </div>
       </div>
     </section>

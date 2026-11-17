@@ -1,0 +1,13 @@
+[Unit]
+Description=SwiftMC staging lightweight resource/health snapshot
+After=docker.service
+Wants=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/srv/swiftmc-staging
+ExecStart=/usr/bin/env bash /srv/swiftmc-staging/scripts/monitor-staging.sh
+# Persistent diagnostics written under deploy/diagnostics (or STAGING_DIAGNOSTICS_DIR).
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7

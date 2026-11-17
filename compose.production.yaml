@@ -1,0 +1,37 @@
+name: swiftmc-production
+services:
+  backend:
+    image: swiftmc-backend-production:${PRODUCTION_IMAGE_TAG:-candidate}
+    build:
+      context: .
+      dockerfile: Dockerfile.staging
+      target: production
+    env_file: deploy/production.env
+    network_mode: host
+    environment:
+      HOSTNAME: 127.0.0.1
+      PORT: "3101"
+    volumes:
+      - type: bind
+        source: /etc/swiftmc-production/db-ca.pem
+        target: /run/secrets/db-ca.pem
+        read_only: true
+        bind:
+          create_host_path: false
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+      - /app/.next/cache:rw,nosuid,uid=1000,gid=1000,size=128m
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    init: true
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3101/api/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }

@@ -1,0 +1,14 @@
+{
+  "name": "swift-mc-production",
+  "main": "production-gateway.ts",
+  "compatibility_date": "2026-10-07",
+  "workers_dev": false,
+  "routes": [
+    { "pattern": "swiftmc.com.br", "custom_domain": true },
+    { "pattern": "www.swiftmc.com.br/*", "zone_name": "swiftmc.com.br" }
+  ],
+  "vars": {
+    "APP_URL": "https://swiftmc.com.br",
+    "BACKEND_ORIGIN": "https://origin.swiftmc.com.br"
+  }
+}

@@ -1,4 +1,5 @@
 import "server-only";
+import { stripeLiveMode } from "./stripe-mode";
 
 export function getDatabaseUrl(): string {
   const value = process.env.DATABASE_URL;
@@ -87,12 +88,18 @@ export type StripeWebhookConfig = {
   webhookSecret: string;
 };
 
+export function stripeTestEventsOnly(): boolean {
+  return !stripeLiveMode();
+}
+
 export function getStripeConfig(): StripeConfig {
   const secretKey = process.env.STRIPE_SECRET_KEY;
 
   if (!secretKey) {
     throw new Error("STRIPE_SECRET_KEY is required.");
   }
+
+  stripeLiveMode();
 
   if (!/^(sk|rk)_live_/.test(secretKey) && !/^(sk|rk)_test_/.test(secretKey)) {
     throw new Error("STRIPE_SECRET_KEY must be a valid Stripe secret key (sk_* or rk_*).");
@@ -102,7 +109,7 @@ export function getStripeConfig(): StripeConfig {
 }
 
 export function getStripeWebhookConfig(): StripeWebhookConfig {
-  const secretKey = process.env.STRIPE_SECRET_KEY;
+  const secretKey = getStripeConfig().secretKey;
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
   if (!secretKey) {
@@ -114,4 +121,15 @@ export function getStripeWebhookConfig(): StripeWebhookConfig {
   }
 
   return { secretKey, webhookSecret };
+}
+
+export type MinecraftBridgeConfig = { secret: string; serverId: string; allowedServerIds: Set<string> | null };
+
+export function getMinecraftBridgeConfig(env: Record<string, string | undefined> = process.env): MinecraftBridgeConfig | null {
+  const secret = env.MINECRAFT_BRIDGE_SECRET?.trim();
+  const serverId = env.MINECRAFT_BRIDGE_SERVER_ID?.trim();
+  if (!secret || secret.length < 32 || !serverId) return null;
+  const rawAllowed = env.MINECRAFT_BRIDGE_ALLOWED_SERVER_IDS?.trim();
+  const allowedServerIds = rawAllowed ? new Set(rawAllowed.split(",").map(s => s.trim()).filter(Boolean)) : null;
+  return { secret, serverId, allowedServerIds: allowedServerIds?.size ? allowedServerIds : null };
 }

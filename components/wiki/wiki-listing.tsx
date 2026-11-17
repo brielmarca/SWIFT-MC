@@ -27,7 +27,7 @@ export function WikiListing({ guides }: { guides: readonly WikiGuide[] }) {
   const resetFilters = () => { setQuery(""); setCategory("Todas"); };
 
   if (guides.length === 0) {
-    return <ContentEmpty title="Nenhum guia publicado ainda" description="Os guias do SWIFT MC aparecerão aqui assim que forem publicados. Enquanto isso, confira as perguntas frequentes."><Link href="/faq" className="network-action">Ir para o FAQ</Link></ContentEmpty>;
+    return <ContentEmpty title="Nenhum guia publicado ainda" description="Os guias do Swift MC aparecerão aqui assim que forem publicados. Enquanto isso, confira as perguntas frequentes."><Link href="/faq" className="network-action">Ir para o FAQ</Link></ContentEmpty>;
   }
 
   return <div>

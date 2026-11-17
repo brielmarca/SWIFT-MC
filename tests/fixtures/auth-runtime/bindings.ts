@@ -20,6 +20,6 @@ export async function GET(request: Request) {
     rateLimitConfigured: typeof env.AUTH_RATE_LIMIT?.limit === "function",
     coordinatorConfigured: typeof env.AUTH_RATE_LIMIT_COORDINATOR?.idFromName === "function",
     // Only presence flags cross the serialization boundary. Never return env or credentials.
-    secretsConfigured: [env.AUTH_RATE_LIMIT_KEY, env.AUTH_ENCRYPTION_KEY, env.DISCORD_CLIENT_SECRET].every((value) => typeof value === "string" && value.length > 0),
+    secretsConfigured: typeof env.DISCORD_CLIENT_SECRET === "string" && env.DISCORD_CLIENT_SECRET.length > 0,
   }, { headers: { "Cache-Control": "private, no-store" } });
 }

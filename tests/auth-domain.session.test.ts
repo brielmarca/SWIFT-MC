@@ -7,6 +7,7 @@ import {
 } from "@/lib/auth-domain/session-service";
 import {
   type SessionRepository, type UserRepository, type AuthUser, type AuthSession,
+  type AuthRole, type AuthStatus,
 } from "@/lib/auth-domain/repositories";
 import { Clock } from "@/lib/auth-domain/clock";
 
@@ -21,14 +22,14 @@ class FixedClock implements Clock {
 class FakeSessionRepository implements SessionRepository {
   constructor(private readonly clock: FixedClock) {}
   sessions = new Map<string, AuthSession>();
-  async create(params: { userId: string; tokenHash: string; authVersion: number; idleExpiresAt: Date; absoluteExpiresAt: Date }): Promise<AuthSession> {
+  async create(params: { userId: string; tokenHash: string; authVersion: number; idleExpiresAt: Date; absoluteExpiresAt: Date; mfaVerifiedAt?: Date | null }): Promise<AuthSession> {
     const id = `sess_${Math.random().toString(36).slice(2)}`;
     const now = this.clock.now();
     const session: AuthSession = {
       id, userId: params.userId, tokenHash: params.tokenHash, authVersion: params.authVersion,
       createdAt: now, lastSeenAt: now, idleExpiresAt: params.idleExpiresAt,
       absoluteExpiresAt: params.absoluteExpiresAt, revokedAt: null, revocationReason: null,
-      authenticatedAt: now, mfaVerifiedAt: null,
+      authenticatedAt: now, mfaVerifiedAt: params.mfaVerifiedAt ?? null,
     };
     this.sessions.set(id, session);
     return session;
@@ -57,14 +58,32 @@ class FakeUserRepository implements UserRepository {
   users = new Map<string, AuthUser>();
   async findById(userId: string): Promise<AuthUser | null> { return this.users.get(userId) ?? null; }
   async findByNormalizedEmail(): Promise<AuthUser | null> { return null; }
+  async createUser(params: {
+    emailNormalized: string | null;
+    displayName: string;
+    role: AuthRole;
+    status: AuthStatus;
+    authVersion: number;
+    emailVerifiedAt: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
+  }): Promise<AuthUser> {
+    const id = `user_${this.users.size + 1}`;
+    const user: AuthUser = { id, ...params, phoneE164: null, emailVerifiedAt: params.emailVerifiedAt ?? null };
+    this.users.set(id, user);
+    return user;
+  }
   async bumpAuthVersion(): Promise<boolean> { return true; }
+  async updateEmailVerifiedAt(): Promise<void> {}
+  async updateProfile(userId: string, data: { displayName: string; phoneE164: string | null }): Promise<AuthUser> { const u=this.users.get(userId); if(!u) throw new Error("missing"); u.displayName=data.displayName; u.phoneE164=data.phoneE164; return u; }
+  async updateEmail(userId: string, emailNormalized: string, emailVerifiedAt: Date): Promise<AuthUser> { const u=this.users.get(userId); if(!u) throw new Error("missing"); u.emailNormalized=emailNormalized; u.emailVerifiedAt=emailVerifiedAt; return u; }
   add(user: AuthUser) { this.users.set(user.id, user); }
 }
 
 function baseUser(overrides: Partial<AuthUser> = {}): AuthUser {
   return {
     id: "user_1", emailNormalized: "a@example.com", emailVerifiedAt: null,
-    displayName: "A", role: "USER", status: "ACTIVE", authVersion: 1,
+    displayName: "A", role: "USER", status: "ACTIVE", phoneE164: null, authVersion: 1,
     createdAt: new Date("2026-01-01T00:00:00Z"), updatedAt: new Date("2026-01-01T00:00:00Z"),
     ...overrides,
   };
@@ -375,4 +394,47 @@ test("lastSeen touch never extends absolute expiry", async () => {
   // Re-fetch to confirm absolute not extended in repo.
   const found = await repo.findByTokenDigest(digestSessionToken(issued.rawToken));
   assert.equal(found!.absoluteExpiresAt.getTime(), absolute);
+});
+
+test("MFA-required validation rejects sessions without MFA and accepts recent MFA", async () => {
+  const clock = new FixedClock("2026-10-22T00:00:00Z");
+  const repo = new FakeSessionRepository(clock);
+  const users = new FakeUserRepository();
+  const svc = makeService({ clock, sessionRepository: repo, userRepository: users });
+  const user = baseUser({ role: "ADMIN" });
+  users.add(user);
+
+  const issued = await svc.issueSession({ userId: user.id, authVersion: user.authVersion, rememberMe: false, isStaff: true, mfaVerifiedAt: null });
+  assert.equal(issued.ok, true);
+  if (!issued.ok) throw new Error("unreachable");
+  const denied = await svc.validateSession({ token: issued.rawToken, requireMfa: true });
+  assert.equal(denied.ok, false);
+  if (denied.ok) throw new Error("unreachable");
+  assert.equal(denied.code, "MFA_REQUIRED");
+
+  const elevated = await svc.issueSession({ userId: user.id, authVersion: user.authVersion, rememberMe: false, isStaff: true, mfaVerifiedAt: clock.now() });
+  assert.equal(elevated.ok, true);
+  if (!elevated.ok) throw new Error("unreachable");
+  const ok = await svc.validateSession({ token: elevated.rawToken, requireMfa: true });
+  assert.equal(ok.ok, true, JSON.stringify(ok));
+  clock.advance(SESSION_POLICY.mfaVerificationSeconds * 1000 + 1);
+  const stale = await svc.validateSession({ token: elevated.rawToken, requireMfa: true });
+  assert.equal(stale.ok, false);
+  if (stale.ok) throw new Error("unreachable");
+  assert.equal(stale.code, "MFA_REQUIRED");
+});
+
+test("privileged/admin session issuance ignores remember-me and uses admin absolute cap", async () => {
+  const clock = new FixedClock("2026-10-22T00:00:00Z");
+  const repo = new FakeSessionRepository(clock);
+  const users = new FakeUserRepository();
+  const svc = makeService({ clock, sessionRepository: repo, userRepository: users });
+  const user = baseUser({ role: "OWNER" });
+  users.add(user);
+  const issued = await svc.issueSession({ userId: user.id, authVersion: user.authVersion, rememberMe: true, isStaff: true, mfaVerifiedAt: null });
+  assert.equal(issued.ok, true);
+  if (!issued.ok) throw new Error("unreachable");
+  const absMs = issued.session.absoluteExpiresAt.getTime() - clock.now().getTime();
+  assert.ok(Math.abs(absMs - SESSION_POLICY.adminAbsoluteSeconds * 1000) < 1000);
+  assert.equal(issued.session.mfaVerifiedAt, null);
 });

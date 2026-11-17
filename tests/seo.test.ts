@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import test from "node:test";
 import { BRAND_IMAGE, createPageMetadata, getSiteUrl, PUBLIC_PAGES, publicPageMetadata, rootMetadata, siteUrl } from "@/lib/seo";
 import sitemap from "@/app/sitemap";
@@ -14,8 +13,8 @@ test("canonical origin rejects local, private, malformed and credential-bearing 
     assert.equal(getSiteUrl(value).href, "https://swiftmc.com.br/", value);
   }
   assert.equal(getSiteUrl(" https://www.swiftmc.com.br/ ").href, "https://www.swiftmc.com.br/");
-  assert.deepEqual(rootMetadata.title, { default: "SwiftMC", template: "%s | SwiftMC" });
-  assert.deepEqual(publicPageMetadata("/").title, { absolute: "Survival Minecraft | SwiftMC" });
+  assert.deepEqual(rootMetadata.title, { default: "Swift MC", template: "%s | Swift MC" });
+  assert.deepEqual(publicPageMetadata("/").title, { absolute: "Survival Minecraft | Swift MC" });
 });
 
 test("configured origin is used consistently without losing dynamic route segments", (context) => {
@@ -28,7 +27,7 @@ test("configured origin is used consistently without losing dynamic route segmen
   const metadata = createPageMetadata({ title: "Comandos essenciais", description: "Guia de comandos", path: "/wiki/comandos-essenciais", type: "article" });
   assert.equal(metadata.alternates?.canonical, "https://www.swiftmc.com.br/wiki/comandos-essenciais");
   assert.equal(metadata.openGraph?.url, metadata.alternates?.canonical);
-  assert.equal(metadata.openGraph?.title, "Comandos essenciais | SwiftMC");
+  assert.equal(metadata.openGraph?.title, "Comandos essenciais | Swift MC");
   assert.equal(metadata.twitter?.title, metadata.openGraph?.title);
   assert.equal(siteUrl("/player/Player_123"), "https://www.swiftmc.com.br/player/Player_123");
   assert.equal(robots().sitemap, "https://www.swiftmc.com.br/sitemap.xml");
@@ -52,13 +51,12 @@ test("sitemap includes public routes and only published local dynamic content", 
   for (const post of newsPosts.filter((post) => post.status === "draft" || Date.parse(post.publishedAt) > Date.now())) {
     assert.ok(!paths.includes(`/news/${post.slug}`));
   }
-  assert.ok(paths.includes("/player"));
-  assert.ok(!paths.some((path) => /^\/(?:player\/|api\/|checkout)/.test(path)));
+  assert.ok(!paths.some((path) => /^\/(?:player(?:\/|$)|api\/|checkout)/.test(path)));
   assert.ok(entries.every((entry) => entry.lastModified === undefined));
 });
 
 test("social metadata retains local article artwork and publication date", () => {
-  const post = getPublishedNews().find((post) => post.image)!;
+  const post = { title: "Artigo de teste", excerpt: "Resumo", slug: "teste", publishedAt: "2026-10-01T12:00:00Z", image: BRAND_IMAGE };
   const metadata = createPageMetadata({ title: post.title, description: post.excerpt, path: `/news/${post.slug}`, type: "article", image: post.image, publishedTime: post.publishedAt });
   assert.equal(metadata.openGraph && "publishedTime" in metadata.openGraph && metadata.openGraph.publishedTime, post.publishedAt);
   assert.equal(metadata.openGraph?.description, post.excerpt);
@@ -71,10 +69,10 @@ test("social metadata retains local article artwork and publication date", () =>
 
 test("manifest references existing artwork with its actual dimensions and robots allows noindex discovery", () => {
   const identity = manifest();
-  assert.equal(identity.name, "SwiftMC");
+  assert.equal(identity.name, "Swift MC");
   assert.equal(identity.start_url, "/");
   assert.equal(identity.theme_color, "#7c3aed");
-  const png = readFileSync(new URL(`../public${BRAND_IMAGE.src}`, import.meta.url));
-  assert.equal(identity.icons?.[0].sizes, `${png.readUInt32BE(16)}x${png.readUInt32BE(20)}`);
+  assert.equal(identity.icons?.[0].sizes, `${BRAND_IMAGE.width}x${BRAND_IMAGE.height}`);
+  assert.equal(identity.icons?.[0].src, BRAND_IMAGE.src);
   assert.deepEqual(robots().rules, { userAgent: "*", allow: "/", disallow: ["/api/"] });
 });

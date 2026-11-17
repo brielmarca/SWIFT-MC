@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { addRecentSearch, parseRecentSearches, MAX_RECENT_SEARCHES } from "@/lib/recent-searches";
-import { findMatchRanges, getSearchWords, MAX_RESULTS_PER_GROUP, SEARCH_GROUPS, searchSite, snippetAround } from "@/lib/site-search";
+import { mockEditorialContent } from "./helpers/content-fixtures";
+mockEditorialContent();
+const { findMatchRanges, getSearchWords, MAX_RESULTS_PER_GROUP, SEARCH_GROUPS, searchSite, snippetAround } = await import("@/lib/site-search");
 
 const NOW = Date.parse("2026-10-06T12:00:00Z");
 const groupIds = SEARCH_GROUPS.map((group) => group.id);
@@ -68,16 +70,7 @@ test("static player utility pages and the store are searchable from their nav la
   const store = searchSite("loja", NOW).find((group) => group.id === "paginas");
   assert.ok(store?.items.some((item) => item.href === "/store"), "store pages are results; the store keeps its own product search");
   const ranking = searchSite("ranking", NOW).find((group) => group.id === "paginas");
-  assert.ok(ranking?.items.some((item) => item.href === "/leaderboards"));
-});
-
-test("player lookup is offered only for valid Java usernames, without any remote request", () => {
-  const player = searchSite("Steve_99", NOW);
-  const group = player.find((entry) => entry.id === "jogador");
-  assert.deepEqual(group?.items, [{ id: "jogador:perfil", group: "jogador", title: "Buscar jogador: Steve_99", href: "/player/Steve_99", meta: "Perfil público" }]);
-  for (const invalid of ["ab", "inv@lid", "com espaço", "a".repeat(17)]) {
-    assert.ok(!searchSite(invalid, NOW).some((entry) => entry.id === "jogador"), `"${invalid}" offers no player lookup`);
-  }
+  assert.ok(!ranking?.items.some((item) => item.href === "/leaderboards"), "retired ranking page is not advertised");
 });
 
 test("highlight ranges are accent- and case-insensitive, merged and ordered", () => {

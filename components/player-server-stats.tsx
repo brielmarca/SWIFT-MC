@@ -34,16 +34,16 @@ export function PlayerServerStats({ username, uuid }: { username: string; uuid: 
   const { data, loading } = state;
   return <section className="mt-8 space-y-6" aria-labelledby="server-player-stats-title">
     <div className="flex flex-wrap items-center justify-between gap-3">
-      <div><p className="micro-label">Trajetória na rede</p><h2 id="server-player-stats-title" className="mt-1 text-lg font-extrabold text-ink">Na SwiftMC</h2></div>
+      <div><p className="micro-label">Trajetória na rede</p><h2 id="server-player-stats-title" className="mt-1 text-lg font-extrabold text-ink">Na Swift MC</h2></div>
       <NetworkRefresh loading={loading} onRefresh={() => void refresh()} />
     </div>
     {loading ? <NetworkState kind="loading" title="Consultando a trajetória" description="Buscando presença e estatísticas informadas pelo servidor." />
-      : !data ? <NetworkState kind="error" title="Dados do servidor indisponíveis" description="Este jogador pode ainda não ter dados na SwiftMC, ou a consulta está indisponível. A identidade Minecraft continua disponível acima.">
+      : !data ? <NetworkState kind="error" title="Dados do servidor indisponíveis" description="Este jogador pode ainda não ter dados na Swift MC, ou a consulta está indisponível. A identidade Minecraft continua disponível acima.">
         <button type="button" onClick={() => void refresh()} className="network-action">Tentar novamente</button>
       </NetworkState>
       : <>
         <section aria-labelledby="player-network-identity">
-          <h3 id="player-network-identity" className="mb-3 text-sm font-bold text-ink">Identidade na SwiftMC</h3>
+          <h3 id="player-network-identity" className="mb-3 text-sm font-bold text-ink">Identidade na Swift MC</h3>
           <dl className="grid gap-3 sm:grid-cols-2">
             <NetworkStat label="Rank" value={data.rank ? <NetworkPlayerRank rank={data.rank} /> : <span className="text-base text-muted">Indisponível</span>} detail="Rank informado pelo servidor" />
             <NetworkStat label="Presença" value={data.online === null ? <span className="text-base text-muted">Indisponível</span> : <span className="inline-flex items-center gap-2"><span aria-hidden="true" className={`h-2 w-2 rounded-full ${data.online ? "bg-ultraviolet" : "bg-muted"}`} />{data.online ? "Online" : "Offline"}</span>} detail="Estado na última consulta" />
@@ -69,7 +69,7 @@ export function PlayerServerStats({ username, uuid }: { username: string; uuid: 
             ].map(({ label, value }) => <NetworkStat key={label} label={label} value={value ? <time dateTime={value} className="block text-base leading-6">{formatPlayerTimestamp(value)}</time> : <span className="text-base text-muted">Indisponível</span>} />)}
           </dl>
         </section>
-        <p className="text-xs leading-5 text-muted">Dados do servidor SwiftMC · Cache de até 15s · Datas em UTC. “Indisponível” indica um campo não informado; zero é um valor registrado.</p>
+        <p className="text-xs leading-5 text-muted">Dados do servidor Swift MC · Cache de até 15s · Datas em UTC. “Indisponível” indica um campo não informado; zero é um valor registrado.</p>
       </>}
   </section>;
 }

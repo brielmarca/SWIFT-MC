@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   LoginRequestSchema, RegistrationRequestSchema, RegistrationCompleteRequestSchema,
-  PasswordResetRequestSchema, PasswordResetCompleteRequestSchema, LogoutRequestSchema,
+  PasswordResetRequestSchema, PasswordResetCompleteRequestSchema, PasswordChangeRequestSchema, LogoutRequestSchema,
 } from "@/lib/auth-domain/dto";
 
 function checkReject(schema: unknown, input: unknown) {
@@ -35,17 +35,19 @@ test("LoginRequest: rejects missing/bounded fields", () => {
   checkReject(LoginRequestSchema, { email: "a@example.com" });
 });
 
-test("RegistrationRequest: valid accepted, client-supplied role/status/rejected", () => {
-  checkAccept(RegistrationRequestSchema, { email: "a@example.com", password: "p", displayName: "A" });
-  checkReject(RegistrationRequestSchema, { email: "a@example.com", password: "p", displayName: "A", role: "ADMIN" });
-  checkReject(RegistrationRequestSchema, { email: "a@example.com", password: "p", displayName: "A", status: "ACTIVE" });
-  checkReject(RegistrationRequestSchema, { email: "a@example.com", password: "p", displayName: "A", authVersion: 1 });
+test("RegistrationRequest: valid accepted, client-supplied role/status/rejected and weak passwords rejected", () => {
+  checkAccept(RegistrationRequestSchema, { email: "a@example.com", password: "Strong-Pass-123!", displayName: "A" });
+  checkReject(RegistrationRequestSchema, { email: "a@example.com", password: "Strong-Pass-123!", displayName: "A", role: "ADMIN" });
+  checkReject(RegistrationRequestSchema, { email: "a@example.com", password: "Strong-Pass-123!", displayName: "A", status: "ACTIVE" });
+  checkReject(RegistrationRequestSchema, { email: "a@example.com", password: "Strong-Pass-123!", displayName: "A", authVersion: 1 });
+  checkReject(RegistrationRequestSchema, { email: "a@example.com", password: "short", displayName: "A" });
 });
 
-test("RegistrationCompleteRequest: requires challenge token", () => {
-  checkAccept(RegistrationCompleteRequestSchema, { email: "a@example.com", challengeToken: "tok", password: "p", displayName: "A" });
-  checkReject(RegistrationCompleteRequestSchema, { email: "a@example.com", password: "p", displayName: "A" });
-  checkReject(RegistrationCompleteRequestSchema, { email: "a@example.com", challengeToken: "tok", password: "p", displayName: "A", verified: true });
+test("RegistrationCompleteRequest: requires challenge token and a policy-compliant password", () => {
+  checkAccept(RegistrationCompleteRequestSchema, { email: "a@example.com", challengeToken: "tok", password: "Strong-Pass-123!", displayName: "A" });
+  checkReject(RegistrationCompleteRequestSchema, { email: "a@example.com", challengeToken: "tok", password: "short", displayName: "A" });
+  checkReject(RegistrationCompleteRequestSchema, { email: "a@example.com", password: "Strong-Pass-123!", displayName: "A" });
+  checkReject(RegistrationCompleteRequestSchema, { email: "a@example.com", challengeToken: "tok", password: "Strong-Pass-123!", displayName: "A", verified: true });
 });
 
 test("PasswordResetRequest: valid accepted", () => {
@@ -54,10 +56,16 @@ test("PasswordResetRequest: valid accepted", () => {
   checkReject(PasswordResetRequestSchema, {});
 });
 
-test("PasswordResetCompleteRequest: requires challenge token and new password", () => {
-  checkAccept(PasswordResetCompleteRequestSchema, { email: "a@example.com", challengeToken: "tok", newPassword: "p" });
-  checkReject(PasswordResetCompleteRequestSchema, { email: "a@example.com", newPassword: "p" });
+test("PasswordResetCompleteRequest: requires challenge token and a policy-compliant new password", () => {
+  checkAccept(PasswordResetCompleteRequestSchema, { email: "a@example.com", challengeToken: "tok", newPassword: "Strong-Pass-123!" });
+  checkReject(PasswordResetCompleteRequestSchema, { email: "a@example.com", challengeToken: "tok", newPassword: "short" });
   checkReject(PasswordResetCompleteRequestSchema, { email: "a@example.com", challengeToken: "tok" });
+});
+
+test("PasswordChangeRequest: requires current password and a policy-compliant new password", () => {
+  checkAccept(PasswordChangeRequestSchema, { currentPassword: "current-password-123", newPassword: "Strong-Pass-456!" });
+  checkReject(PasswordChangeRequestSchema, { currentPassword: "current-password-123", newPassword: "short" });
+  checkReject(PasswordChangeRequestSchema, { newPassword: "Strong-Pass-456!" });
 });
 
 test("LogoutRequest: accepts empty object", () => {

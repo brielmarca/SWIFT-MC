@@ -1,0 +1,21 @@
+name: SwiftMCBridge
+version: 0.2.0
+main: br.com.swiftmc.bridge.SwiftMCBridge
+api-version: '1.21'
+author: SwiftMC
+depend: [LuckPerms]
+softdepend: [SwiftCash]
+commands:
+  link:
+    description: Vincula sua conta Minecraft ao site
+    usage: /link <codigo>
+    permission: swiftbridge.link
+  swiftbridge:
+    description: Diagnostico e operacoes do SwiftMC-Bridge
+    usage: /swiftbridge status|poll
+    permission: swiftbridge.admin
+permissions:
+  swiftbridge.link:
+    default: true
+  swiftbridge.admin:
+    default: op

@@ -1,17 +1,10 @@
 import assert from "node:assert/strict";
 import { createHmac, randomUUID } from "node:crypto";
-import test, { after, before } from "node:test";
+import test, { after, before, mock } from "node:test";
 import { OrderStatus, PaymentProvider, PaymentStatus } from "@prisma/client";
 
 import { createTestPrisma, hasDatabase } from "@/tests/integration/helpers";
-
-import {
-  parseStripeWebhookEvent,
-  parseStripeSignature,
-  verifyStripeSignature,
-  reconcileStripeWebhook,
-} from "@/lib/payments/stripe-webhook";
-import { createStripeClient } from "@/lib/payments/stripe";
+import { MINECRAFT_NAMESPACE } from "@/lib/minecraft-bridge/vip";
 
 const db = createTestPrisma();
 const databaseOptions = { skip: !hasDatabase ? "DATABASE_URL is not configured" : false };
@@ -19,57 +12,26 @@ const secret = "whsec_stripe_integration_test_secret";
 const secretKey = "sk_test_stripe_integration_test_key";
 const originalFetch = globalThis.fetch;
 const createdOrderIds: string[] = [];
+const createdEventIds = new Set<string>();
+const createdUserIds: string[] = [];
 
-// Test-only service adapter mirroring the route handler structure.
-async function POST(request: Request): Promise<Response> {
-  const rawBody = await request.text();
-  const metadata = {
-    eventId: "",
-    timestamp: request.headers.get("stripe-timestamp") ?? "",
-    signature: request.headers.get("stripe-signature") ?? "",
-  };
-  // The route handler uses the stripe-signature header; the test builds the
-  // same metadata from the parsed signature header.
-  const parsed = parseStripeSignature(request.headers.get("stripe-signature") ?? "");
-  if (!parsed) return Response.json({ error: "INVALID_SIGNATURE_HEADER" }, { status: 401 });
-  metadata.timestamp = parsed.timestamp;
-  metadata.signature = parsed.signature;
-
-  if (!(await verifyStripeSignature(rawBody, metadata, secret))) {
-    return Response.json({ error: "INVALID_SIGNATURE" }, { status: 401 });
-  }
-
-  let event: { id: string; type: string; data: { object: unknown } };
-  try {
-    const parsedEvent = parseStripeWebhookEvent(JSON.parse(rawBody));
-    if (!parsedEvent) return Response.json({ error: "INVALID_EVENT_PAYLOAD" }, { status: 400 });
-    event = parsedEvent;
-  } catch {
-    return Response.json({ error: "INVALID_EVENT_PAYLOAD" }, { status: 400 });
-  }
-
-  metadata.eventId = event.id;
-  try {
-    const result = await reconcileStripeWebhook(
-      db!,
-      createStripeClient(secretKey),
-      event,
-      metadata,
-    );
-    const body: Record<string, boolean> = { received: true };
-    if (result === "duplicate") body.duplicate = true;
-    if (result === "ignored") body.ignored = true;
-    if (result === "processed") body.processed = true;
-    return Response.json(body, { status: 200 });
-  } catch (error) {
-    if (error instanceof Error && error.name === "StripeUnavailableError") {
-      return Response.json({ error: "PROVIDER_UNAVAILABLE" }, { status: 503 });
-    }
-    throw error;
-  }
-}
+// Exercise the production handler with the runner's isolated PostgreSQL client
+// through the same Hyperdrive-style binding path the Worker runtime uses.
+mock.module("@/lib/auth-api/get-env", {
+  namedExports: {
+    getWorkersEnv: async () => ({
+      APP_URL: "https://swift.example",
+      AUTH_HYPERDRIVE: { connectionString: process.env.DATABASE_URL! },
+    }),
+  },
+});
+// Keep live-mode tests on the disposable cluster, never the production URL.
+mock.module("@/lib/prisma", { namedExports: { getPrisma: () => db } });
+const { POST } = await import("@/app/api/webhooks/stripe/route");
 
 before(() => {
+  process.env.APP_ENV = "staging";
+  process.env.PURCHASES_ENABLED = "false";
   process.env.STRIPE_WEBHOOK_SECRET = secret;
   process.env.STRIPE_SECRET_KEY = secretKey;
 });
@@ -78,10 +40,15 @@ after(async () => {
   globalThis.fetch = originalFetch;
   if (!db) return;
   if (createdOrderIds.length > 0) {
-    await db.paymentEvent.deleteMany({ where: { providerResourceId: { in: createdOrderIds } } });
+    await db.bridgeDelivery.deleteMany({ where: { orderId: { in: createdOrderIds } } });
+    await db.paymentEvent.deleteMany({ where: { provider: PaymentProvider.STRIPE, providerEventId: { in: [...createdEventIds] } } });
+    await db.fulfillment.deleteMany({ where: { orderId: { in: createdOrderIds } } });
     await db.payment.deleteMany({ where: { orderId: { in: createdOrderIds } } });
     await db.order.deleteMany({ where: { id: { in: createdOrderIds } } });
   }
+  await db.minecraftIdentity.deleteMany({ where: { userId: { in: createdUserIds } } });
+  await db.minecraftDeliverySequence.deleteMany({ where: { accountId: { in: createdUserIds } } });
+  await db.user.deleteMany({ where: { id: { in: createdUserIds } } });
   await db.$disconnect();
 });
 
@@ -91,7 +58,6 @@ async function fixture(
     orderNumber: string;
     totalCents: number;
     currency: string;
-    providerPaymentId: string;
     rankSlug: string;
   }> = {},
 ) {
@@ -119,9 +85,7 @@ async function fixture(
       payments: {
         create: {
           provider: PaymentProvider.STRIPE,
-          providerOrderId: providerPaymentId,
           providerIdempotencyKey: randomUUID(),
-          providerPaymentId,
           amountCents: overrides.totalCents ?? 1990,
           currency: overrides.currency ?? "BRL",
           status: status === OrderStatus.PAID ? PaymentStatus.APPROVED : PaymentStatus.CREATED,
@@ -131,11 +95,11 @@ async function fixture(
     include: { payments: true },
   });
   createdOrderIds.push(order.id);
-  return order;
+  return { ...order, providerPaymentId };
 }
 
 function timestamp(): string {
-  return "1742505638683";
+  return String(Math.floor(Date.now() / 1000));
 }
 
 function signStripe(rawBody: string, requestTimestamp: string = timestamp()): string {
@@ -149,8 +113,10 @@ function stripeRequest(
   object: unknown,
   options: { timestamp?: string; signature?: string } = {},
 ): Request {
+  createdEventIds.add(eventId);
   const rawBody = JSON.stringify({
     id: eventId,
+    livemode: process.env.APP_ENV === "production",
     type: eventType,
     data: { object },
   });
@@ -170,12 +136,12 @@ function mockStripe(body: unknown, status = 200): () => number {
   let calls = 0;
   globalThis.fetch = async (_input, init) => {
     calls += 1;
-    assert.match(String(_input), /^https:\/\/api\.stripe\.com\/v1\//);
+    assert.match(String(_input), /^https:\/\/api\.stripe\.com\/v1\/(checkout\/sessions|invoices|subscriptions|charges)\/[A-Za-z0-9_]+$/);
     assert.equal(
       new Headers(init?.headers).get("authorization"),
-      `Bearer ${secretKey}`,
+      `Bearer ${process.env.STRIPE_SECRET_KEY}`,
     );
-    return Response.json(body, { status });
+    return Response.json({ livemode: process.env.APP_ENV === "production", ...(body as object) }, { status });
   };
   return () => calls;
 }
@@ -204,6 +170,44 @@ test("invalid and malformed signatures do not call provider or mutate payment", 
   }
 });
 
+test("expired signatures and modified raw bodies are rejected before any side effects", databaseOptions, async () => {
+  assert.ok(db);
+  const order = await fixture();
+  let calls = 0;
+  globalThis.fetch = async () => { calls += 1; throw new Error("must not be called"); };
+  const expired = stripeRequest("checkout.session.completed", "evt_expired", { id: "cs_test" }, { timestamp: String(Math.floor(Date.now() / 1000) - 600) });
+  const signed = stripeRequest("checkout.session.completed", "evt_tampered", { id: "cs_test" });
+  const tampered = new Request(signed.url, { method: "POST", headers: signed.headers, body: `${await signed.text()} ` });
+  for (const request of [expired, tampered]) {
+    const response = await POST(request);
+    assert.equal(response.status, 401);
+    assert.equal((await response.json()).error, "INVALID_SIGNATURE");
+  }
+  assert.equal(calls, 0);
+  assert.equal(await db.paymentEvent.count({ where: { providerEventId: { in: ["evt_expired", "evt_tampered"] } } }), 0);
+  assert.equal((await db.order.findUniqueOrThrow({ where: { id: order.id } })).status, "PENDING_PAYMENT");
+});
+
+test("Cash paid webhook queues exactly one persisted credit; refund cancels undelivered credit", databaseOptions, async () => {
+  assert.ok(db);
+  const user = await db.user.create({ data: { displayName: "Cash", emailNormalized: `${randomUUID()}@example.test`, status: "ACTIVE" } });
+  createdUserIds.push(user.id);
+  await db.minecraftIdentity.create({ data: { userId: user.id, namespace: MINECRAFT_NAMESPACE, subject: randomUUID(), lastKnownUsername: "CashPlayer", verifiedAt: new Date(), verificationMethod: "bridge_link" } });
+  const order = await fixture(OrderStatus.PENDING_PAYMENT, { rankSlug: "cash-100", totalCents: 999 });
+  await db.order.update({ where: { id: order.id }, data: { userId: user.id, cashAmount: 110 } });
+  const sessionId = `cs_${randomUUID().replaceAll("-", "")}`;
+  mockStripe({ id: sessionId, object: "checkout.session", mode: "payment", status: "complete", payment_status: "paid", amount_total: 999, currency: "brl", client_reference_id: order.orderNumber, payment_intent: order.providerPaymentId, metadata: { orderNumber: order.orderNumber, paymentId: order.payments[0].id } });
+  for (let i = 0; i < 2; i++) assert.equal((await POST(stripeRequest("checkout.session.completed", "evt_cash_paid", { id: sessionId }))).status, 200);
+  const deliveries = await db.bridgeDelivery.findMany({ where: { orderId: order.id } });
+  assert.equal(deliveries.length, 1);
+  assert.equal(deliveries[0].cashAmount, 110);
+  assert.equal(deliveries[0].kind, "CASH");
+  const chargeId = `ch_${randomUUID().replaceAll("-", "")}`;
+  mockStripe({ id: chargeId, status: "succeeded", amount: 999, currency: "brl", refunded: true, payment_intent: order.providerPaymentId, metadata: { orderNumber: order.orderNumber, paymentId: order.payments[0].id } });
+  assert.equal((await POST(stripeRequest("charge.refunded", "evt_cash_refund", { id: chargeId }))).status, 200);
+  assert.equal((await db.bridgeDelivery.findUniqueOrThrow({ where: { deliveryId: deliveries[0].deliveryId } })).status, "CANCELLED_REFUND");
+});
+
 test("checkout.session.completed marks payment approved and order paid", databaseOptions, async () => {
   assert.ok(db);
   const order = await fixture();
@@ -217,15 +221,19 @@ test("checkout.session.completed marks payment approved and order paid", databas
     amount_total: 1990,
     currency: "brl",
     client_reference_id: order.orderNumber,
-    metadata: { orderNumber: order.orderNumber },
+    payment_intent: order.providerPaymentId,
+    metadata: { orderNumber: order.orderNumber, paymentId: order.payments[0].id },
   };
   const calls = mockStripe(sessionBody);
   const result = await POST(stripeRequest("checkout.session.completed", "evt_completed_1", { id: sessionId }));
   assert.equal(result.status, 200);
   assert.equal(calls(), 1);
   assert.equal((await db.order.findUniqueOrThrow({ where: { id: order.id } })).status, "PAID");
-  const payment = await db.payment.findUniqueOrThrow({ where: { providerPaymentId: order.payments[0].providerPaymentId! } });
+  assert.equal(await db.fulfillment.count({ where: { orderId: order.id } }), 1);
+  const payment = await db.payment.findUniqueOrThrow({ where: { id: order.payments[0].id } });
   assert.equal(payment.status, "APPROVED");
+  assert.equal(payment.providerOrderId, sessionId);
+  assert.equal(payment.providerPaymentId, order.providerPaymentId);
   assert.equal(await db.paymentEvent.count({ where: { providerResourceId: "evt_completed_1" } }), 1);
 });
 
@@ -242,7 +250,8 @@ test("checkout.session.async_payment_succeeded marks payment approved and order 
     amount_total: 1990,
     currency: "brl",
     client_reference_id: order.orderNumber,
-    metadata: { orderNumber: order.orderNumber },
+    payment_intent: order.providerPaymentId,
+    metadata: { orderNumber: order.orderNumber, paymentId: order.payments[0].id },
   };
   const calls = mockStripe(sessionBody);
   const result = await POST(stripeRequest("checkout.session.async_payment_succeeded", "evt_async_succeeded", { id: sessionId }));
@@ -264,124 +273,40 @@ test("checkout.session.async_payment_failed marks payment rejected and order fai
     amount_total: 1990,
     currency: "brl",
     client_reference_id: order.orderNumber,
-    metadata: { orderNumber: order.orderNumber },
+    payment_intent: null,
+    metadata: { orderNumber: order.orderNumber, paymentId: order.payments[0].id },
   };
   const calls = mockStripe(sessionBody);
   const result = await POST(stripeRequest("checkout.session.async_payment_failed", "evt_async_failed", { id: sessionId }));
   assert.equal(result.status, 200);
   assert.equal(calls(), 1);
   assert.equal((await db.order.findUniqueOrThrow({ where: { id: order.id } })).status, "PAYMENT_FAILED");
-  const payment = await db.payment.findUniqueOrThrow({ where: { providerPaymentId: order.payments[0].providerPaymentId! } });
+  const payment = await db.payment.findUniqueOrThrow({ where: { id: order.payments[0].id } });
   assert.equal(payment.status, "REJECTED");
 });
 
-test("invoice.paid marks subscription payment approved and order paid", databaseOptions, async () => {
+test("checkout.session.expired expires a pending order and cancels the payment", databaseOptions, async () => {
   assert.ok(db);
   const order = await fixture();
-  const invoiceId = `in_${randomUUID().replaceAll("-", "")}`;
-  const invoiceBody = {
-    id: invoiceId,
-    object: "invoice",
-    status: "paid",
-    subscription: `sub_${randomUUID().replaceAll("-", "")}`,
-    customer: `cus_${randomUUID().replaceAll("-", "")}`,
-    amount_paid: 1990,
+  const sessionId = `cs_${randomUUID().replaceAll("-", "")}`;
+  const sessionBody = {
+    id: sessionId,
+    object: "checkout.session",
+    mode: "payment",
+    status: "expired",
+    payment_status: "unpaid",
+    amount_total: 1990,
     currency: "brl",
-    metadata: { orderNumber: order.orderNumber },
+    client_reference_id: order.orderNumber,
+    payment_intent: null,
+    metadata: { orderNumber: order.orderNumber, paymentId: order.payments[0].id },
   };
-  const calls = mockStripe(invoiceBody);
-  const result = await POST(stripeRequest("invoice.paid", "evt_invoice_paid", { id: invoiceId }));
+  const calls = mockStripe(sessionBody);
+  const result = await POST(stripeRequest("checkout.session.expired", "evt_session_expired", { id: sessionId }));
   assert.equal(result.status, 200);
   assert.equal(calls(), 1);
-  assert.equal((await db.order.findUniqueOrThrow({ where: { id: order.id } })).status, "PAID");
-});
-
-test("invoice.payment_failed marks payment rejected and order failed", databaseOptions, async () => {
-  assert.ok(db);
-  const order = await fixture();
-  const invoiceId = `in_${randomUUID().replaceAll("-", "")}`;
-  const invoiceBody = {
-    id: invoiceId,
-    object: "invoice",
-    status: "open",
-    subscription: null,
-    customer: null,
-    amount_paid: 0,
-    currency: "brl",
-    metadata: { orderNumber: order.orderNumber },
-  };
-  const calls = mockStripe(invoiceBody);
-  const result = await POST(stripeRequest("invoice.payment_failed", "evt_invoice_failed", { id: invoiceId }));
-  assert.equal(result.status, 200);
-  assert.equal(calls(), 1);
-  assert.equal((await db.order.findUniqueOrThrow({ where: { id: order.id } })).status, "PAYMENT_FAILED");
-  const payment = await db.payment.findUniqueOrThrow({ where: { providerPaymentId: order.payments[0].providerPaymentId! } });
-  assert.equal(payment.status, "REJECTED");
-});
-
-test("customer.subscription.updated active keeps order paid", databaseOptions, async () => {
-  assert.ok(db);
-  const order = await fixture(OrderStatus.PAID);
-  const subscriptionId = `sub_${randomUUID().replaceAll("-", "")}`;
-  const subscriptionBody = {
-    id: subscriptionId,
-    object: "subscription",
-    status: "active",
-    customer: `cus_${randomUUID().replaceAll("-", "")}`,
-    cancel_at_period_end: false,
-    ended_at: null,
-    metadata: { orderNumber: order.orderNumber },
-  };
-  const calls = mockStripe(subscriptionBody);
-  const result = await POST(stripeRequest("customer.subscription.updated", "evt_sub_updated", { id: subscriptionId }));
-  assert.equal(result.status, 200);
-  assert.equal(calls(), 1);
-  assert.equal((await db.order.findUniqueOrThrow({ where: { id: order.id } })).status, "PAID");
-  const payment = await db.payment.findUniqueOrThrow({ where: { providerPaymentId: order.payments[0].providerPaymentId! } });
-  assert.equal(payment.status, "APPROVED");
-});
-
-test("customer.subscription.updated past_due marks payment rejected", databaseOptions, async () => {
-  assert.ok(db);
-  const order = await fixture(OrderStatus.PENDING_PAYMENT);
-  const subscriptionId = `sub_${randomUUID().replaceAll("-", "")}`;
-  const subscriptionBody = {
-    id: subscriptionId,
-    object: "subscription",
-    status: "past_due",
-    customer: `cus_${randomUUID().replaceAll("-", "")}`,
-    cancel_at_period_end: false,
-    ended_at: null,
-    metadata: { orderNumber: order.orderNumber },
-  };
-  const calls = mockStripe(subscriptionBody);
-  const result = await POST(stripeRequest("customer.subscription.updated", "evt_sub_past_due", { id: subscriptionId }));
-  assert.equal(result.status, 200);
-  assert.equal(calls(), 1);
-  assert.equal((await db.order.findUniqueOrThrow({ where: { id: order.id } })).status, "PAYMENT_FAILED");
-  const payment = await db.payment.findUniqueOrThrow({ where: { providerPaymentId: order.payments[0].providerPaymentId! } });
-  assert.equal(payment.status, "REJECTED");
-});
-
-test("customer.subscription.deleted marks payment cancelled but keeps order paid", databaseOptions, async () => {
-  assert.ok(db);
-  const order = await fixture(OrderStatus.PAID);
-  const subscriptionId = `sub_${randomUUID().replaceAll("-", "")}`;
-  const subscriptionBody = {
-    id: subscriptionId,
-    object: "subscription",
-    status: "canceled",
-    customer: `cus_${randomUUID().replaceAll("-", "")}`,
-    cancel_at_period_end: true,
-    ended_at: null,
-    metadata: { orderNumber: order.orderNumber },
-  };
-  const calls = mockStripe(subscriptionBody);
-  const result = await POST(stripeRequest("customer.subscription.deleted", "evt_sub_deleted", { id: subscriptionId }));
-  assert.equal(result.status, 200);
-  assert.equal(calls(), 1);
-  assert.equal((await db.order.findUniqueOrThrow({ where: { id: order.id } })).status, "PAID");
-  const payment = await db.payment.findUniqueOrThrow({ where: { providerPaymentId: order.payments[0].providerPaymentId! } });
+  assert.equal((await db.order.findUniqueOrThrow({ where: { id: order.id } })).status, "EXPIRED");
+  const payment = await db.payment.findUniqueOrThrow({ where: { id: order.payments[0].id } });
   assert.equal(payment.status, "CANCELLED");
 });
 
@@ -397,13 +322,15 @@ test("charge.refunded marks payment refunded and order refunded", databaseOption
     currency: "brl",
     refunded: true,
     receipt_email: null,
+    payment_intent: order.providerPaymentId,
+    metadata: { orderNumber: order.orderNumber, paymentId: order.payments[0].id },
   };
   const calls = mockStripe(chargeBody);
   const result = await POST(stripeRequest("charge.refunded", "evt_charge_refunded", { id: chargeId }));
   assert.equal(result.status, 200);
   assert.equal(calls(), 1);
   assert.equal((await db.order.findUniqueOrThrow({ where: { id: order.id } })).status, "REFUNDED");
-  const payment = await db.payment.findUniqueOrThrow({ where: { providerPaymentId: order.payments[0].providerPaymentId! } });
+  const payment = await db.payment.findUniqueOrThrow({ where: { id: order.payments[0].id } });
   assert.equal(payment.status, "REFUNDED");
 });
 
@@ -420,7 +347,8 @@ test("duplicate event is idempotent success", databaseOptions, async () => {
     amount_total: 1990,
     currency: "brl",
     client_reference_id: order.orderNumber,
-    metadata: { orderNumber: order.orderNumber },
+    payment_intent: order.providerPaymentId,
+    metadata: { orderNumber: order.orderNumber, paymentId: order.payments[0].id },
   };
   const calls = mockStripe(sessionBody);
   const eventId = "evt_duplicate_test";
@@ -428,6 +356,7 @@ test("duplicate event is idempotent success", databaseOptions, async () => {
   assert.equal((await POST(stripeRequest("checkout.session.completed", eventId, { id: sessionId }))).status, 200);
   assert.equal(calls(), 1);
   assert.equal(await db.paymentEvent.count({ where: { providerResourceId: eventId } }), 1);
+  assert.equal(await db.fulfillment.count({ where: { orderId: order.id } }), 1);
   assert.equal((await db.order.findUniqueOrThrow({ where: { id: order.id } })).status, "PAID");
 });
 
@@ -444,7 +373,8 @@ test("amount mismatch does not mark order paid", databaseOptions, async () => {
     amount_total: 2500,
     currency: "brl",
     client_reference_id: order.orderNumber,
-    metadata: { orderNumber: order.orderNumber },
+    payment_intent: order.providerPaymentId,
+    metadata: { orderNumber: order.orderNumber, paymentId: order.payments[0].id },
   };
   mockStripe(sessionBody);
   const result = await POST(stripeRequest("checkout.session.completed", "evt_amount_mismatch", { id: sessionId }));
@@ -468,7 +398,8 @@ test("currency mismatch does not mark order paid", databaseOptions, async () => 
     amount_total: 1990,
     currency: "usd",
     client_reference_id: order.orderNumber,
-    metadata: { orderNumber: order.orderNumber },
+    payment_intent: order.providerPaymentId,
+    metadata: { orderNumber: order.orderNumber, paymentId: order.payments[0].id },
   };
   mockStripe(sessionBody);
   const result = await POST(stripeRequest("checkout.session.completed", "evt_currency_mismatch", { id: sessionId }));
@@ -491,12 +422,13 @@ test("stale pending event cannot regress a paid order", databaseOptions, async (
     amount_total: 1990,
     currency: "brl",
     client_reference_id: order.orderNumber,
-    metadata: { orderNumber: order.orderNumber },
+    payment_intent: order.providerPaymentId,
+    metadata: { orderNumber: order.orderNumber, paymentId: order.payments[0].id },
   };
   mockStripe(sessionBody);
   assert.equal((await POST(stripeRequest("checkout.session.completed", "evt_stale_pending", { id: sessionId }))).status, 200);
   assert.equal((await db.order.findUniqueOrThrow({ where: { id: order.id } })).status, "PAID");
-  const payment = await db.payment.findUniqueOrThrow({ where: { providerPaymentId: order.payments[0].providerPaymentId! } });
+  const payment = await db.payment.findUniqueOrThrow({ where: { id: order.payments[0].id } });
   assert.equal(payment.status, "APPROVED");
 });
 
@@ -520,4 +452,30 @@ test("unknown event type is acknowledged as ignored", databaseOptions, async () 
   assert.equal(result.status, 200);
   assert.equal((await result.json()).ignored, true);
   assert.equal(await db.paymentEvent.count({ where: { providerResourceId: "evt_unknown" } }), 1);
+});
+
+test("live Cash outage retry, concurrent distinct events and refund replay queue one credit", databaseOptions, async () => {
+  assert.ok(db);
+  const previous = { ...process.env };
+  try {
+    Object.assign(process.env, { APP_ENV: "production", BACKEND_RUNTIME: "node", APP_URL: "https://swiftmc.com.br", STRIPE_TEST_PURCHASES_ENABLED: "false", STRIPE_SECRET_KEY: "sk_live_integration_fixture" });
+    const user = await db.user.create({ data: { displayName: "Live fixture", emailNormalized: `${randomUUID()}@example.test`, emailVerifiedAt: new Date() } });
+    createdUserIds.push(user.id);
+    await db.minecraftIdentity.create({ data: { userId: user.id, namespace: MINECRAFT_NAMESPACE, subject: randomUUID(), lastKnownUsername: "LiveFixture", verifiedAt: new Date(), verificationMethod: "bridge_link" } });
+    const order = await fixture(OrderStatus.PENDING_PAYMENT, { rankSlug: "cash-100", totalCents: 999 });
+    await db.order.update({ where: { id: order.id }, data: { userId: user.id, cashAmount: 110 } });
+    const id = `cs_${randomUUID().replaceAll("-", "")}`;
+    const event = `evt_${randomUUID().replaceAll("-", "")}`;
+    globalThis.fetch = async () => Response.json({}, { status: 503 });
+    assert.equal((await POST(stripeRequest("checkout.session.completed", event, { id }))).status, 503);
+    mockStripe({ id, object: "checkout.session", mode: "payment", status: "complete", payment_status: "paid", amount_total: 999, currency: "brl", client_reference_id: order.orderNumber, payment_intent: order.providerPaymentId, metadata: { orderNumber: order.orderNumber, paymentId: order.payments[0].id } });
+    const responses = await Promise.all([event, `${event}_other`, event].map(e => POST(stripeRequest("checkout.session.completed", e, { id }))));
+    assert.ok(responses.every(r => r.status === 200));
+    assert.equal(await db.bridgeDelivery.count({ where: { orderId: order.id } }), 1);
+    const charge = `ch_${randomUUID().replaceAll("-", "")}`;
+    mockStripe({ id: charge, status: "succeeded", refunded: true, amount: 999, currency: "brl", payment_intent: order.providerPaymentId, metadata: { orderNumber: order.orderNumber, paymentId: order.payments[0].id } });
+    for (const suffix of ["refund", "refund", "refund_other"]) assert.equal((await POST(stripeRequest("charge.refunded", `${event}_${suffix}`, { id: charge }))).status, 200);
+    assert.equal((await db.bridgeDelivery.findFirstOrThrow({ where: { orderId: order.id } })).status, "CANCELLED_REFUND");
+    assert.equal((await db.order.findUniqueOrThrow({ where: { id: order.id } })).status, "REFUNDED");
+  } finally { process.env = previous; }
 });

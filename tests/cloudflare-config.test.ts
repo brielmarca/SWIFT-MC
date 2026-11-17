@@ -34,6 +34,64 @@ test("Workers config emits allowlisted variables and secret declarations, never 
   }
 });
 
+test("CF_WORKER_NAME overrides the Worker name only for valid isolated names", () => {
+  const saved = process.env.CF_WORKER_NAME;
+  try {
+    process.env.CF_WORKER_NAME = "swift-mc-staging";
+    assert.equal(config({ mode: "production", isPreview: false }).worker.name, "swift-mc-staging");
+    process.env.CF_WORKER_NAME = "Invalid Name!";
+    assert.equal(config({ mode: "production", isPreview: false }).worker.name, "swift-mc");
+    delete process.env.CF_WORKER_NAME;
+    assert.equal(config({ mode: "production", isPreview: false }).worker.name, "swift-mc");
+  } finally {
+    if (saved === undefined) delete process.env.CF_WORKER_NAME;
+    else process.env.CF_WORKER_NAME = saved;
+  }
+});
+
+test("rate limit binding uses an account-unique numeric namespace id", () => {
+  const saved = process.env.AUTH_RATE_LIMIT_NAMESPACE_ID;
+  try {
+    delete process.env.AUTH_RATE_LIMIT_NAMESPACE_ID;
+    let rateLimit = config({ mode: "production", isPreview: false }).worker.env.AUTH_RATE_LIMIT;
+    assert.equal(rateLimit.type, "rate-limit");
+    assert.match(String((rateLimit as { namespace?: string }).namespace), /^[0-9]{1,10}$/);
+    assert.equal((rateLimit as { namespace?: string }).namespace, "1001");
+    assert.deepEqual((rateLimit as { simple?: unknown }).simple, { limit: 10, period: 60 });
+
+    process.env.AUTH_RATE_LIMIT_NAMESPACE_ID = "not-a-number";
+    rateLimit = config({ mode: "production", isPreview: false }).worker.env.AUTH_RATE_LIMIT;
+    assert.equal((rateLimit as { namespace?: string }).namespace, "1001");
+
+    process.env.AUTH_RATE_LIMIT_NAMESPACE_ID = "1002";
+    rateLimit = config({ mode: "production", isPreview: false }).worker.env.AUTH_RATE_LIMIT;
+    assert.equal((rateLimit as { namespace?: string }).namespace, "1002");
+  } finally {
+    if (saved === undefined) delete process.env.AUTH_RATE_LIMIT_NAMESPACE_ID;
+    else process.env.AUTH_RATE_LIMIT_NAMESPACE_ID = saved;
+  }
+});
+
+test("internal job secret is declared and fulfillment bindings stay optional", () => {
+  const saved = process.env.MINECRAFT_FULFILLMENT_URL;
+  try {
+    delete process.env.MINECRAFT_FULFILLMENT_URL;
+    let worker = config({ mode: "production", isPreview: false }).worker;
+    assert.deepEqual(worker.env.INTERNAL_JOB_SECRET, { type: "secret" });
+    assert.deepEqual(worker.env.MINECRAFT_FULFILLMENT_URL, { type: "text", value: "" });
+    assert.ok(!("MINECRAFT_FULFILLMENT_TOKEN" in worker.env));
+    assert.ok(!("DATABASE_URL" in worker.env));
+
+    process.env.MINECRAFT_FULFILLMENT_URL = "https://fulfill.example.com/";
+    worker = config({ mode: "production", isPreview: false }).worker;
+    assert.deepEqual(worker.env.MINECRAFT_FULFILLMENT_URL, { type: "text", value: "https://fulfill.example.com/" });
+    assert.deepEqual(worker.env.MINECRAFT_FULFILLMENT_TOKEN, { type: "secret" });
+  } finally {
+    if (saved === undefined) delete process.env.MINECRAFT_FULFILLMENT_URL;
+    else process.env.MINECRAFT_FULFILLMENT_URL = saved;
+  }
+});
+
 test("installed cf supports future auth binding declarations without provisioning resources", () => {
   assert.equal(typeof bindings.hyperdrive, "function");
   assert.equal(typeof bindings.rateLimit, "function");

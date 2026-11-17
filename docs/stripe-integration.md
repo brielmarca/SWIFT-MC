@@ -1,4 +1,4 @@
-# Stripe Integration — SwiftMC Store
+# Stripe Integration — Swift MC Store
 
 ## Overview
 

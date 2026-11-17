@@ -11,14 +11,15 @@ export function StoreSection() {
         <SectionHeading
           icon={Diamond}
           eyebrow="VIPs"
-          title="Assinaturas VIP mensais"
-          description="Quatro níveis com cobrança mensal. Cada um inclui tudo do anterior + kits mais fortes enquanto a assinatura estiver ativa."
+          title="VIPs mensais"
+          description="Quatro níveis com duração de 1 mês e compra avulsa, sem renovação automática. Cada um inclui tudo do anterior + kits mais fortes enquanto o VIP estiver ativo."
         />
         <div className="mt-10 grid items-stretch gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {ranks.map((rank) => <RankCard key={rank.slug} rank={rank} variant="preview" />)}
         </div>
-        <div className="mt-8 flex justify-center">
+        <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Link href="/store" className="button-secondary">Explorar loja completa</Link>
+          <Link href="/store#cash" className="button-secondary">Ver pacotes de Cash</Link>
         </div>
       </div>
     </section>

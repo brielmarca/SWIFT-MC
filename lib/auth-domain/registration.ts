@@ -1,145 +1,39 @@
 import "server-only";
 import { normalizeAuthEmail } from "@/lib/auth/email";
-import { sanitizeAuthAuditMetadata } from "@/lib/auth/audit-metadata";
-import { AuthUser, RegisterOutcome } from "./types";
-import {
-  UserRepository, IdentityRepository, PasswordCredentialRepository,
-} from "./repositories";
-import { AuditRepository } from "./repositories";
-import { Clock } from "./clock";
+import { generateSecurityToken, digestSecurityToken } from "@/lib/auth/tokens";
+import type { RegisterOutcome } from "./types";
+import { createEmailVerificationService, type EmailVerificationDeps } from "./email-verification";
 
-/**
- * Registration domain contract for future verified-email registration.
- *
- * Registration is NOT enabled. This module prepares the service contract and
- * validation boundary so a future implementation can wire real repositories
- * without rewriting the domain logic.
- *
- * Server-side invariants (never client-supplied):
- *   - role is ALWAYS USER
- *   - status is ALWAYS ACTIVE
- *   - authVersion is controlled server-side (starts at 1)
- *   - userId is server-generated
- *   - email verification is required before completion
- */
-
-export type RegistrationRequest = {
-  email: string;
-  password: string;
-  displayName: string;
-};
-
-export interface RegistrationDeps {
-  userRepository: UserRepository;
-  identityRepository: IdentityRepository;
-  passwordCredentialRepository: PasswordCredentialRepository;
-  auditRepository: AuditRepository;
-  clock: Clock;
-}
-
+export type RegistrationDeps = EmailVerificationDeps;
 export interface RegistrationService {
-  /**
-   * Request registration. Normalizes email and returns a generic acknowledgement
-   * that never discloses whether an account already exists. Future: creates a
-   * REGISTER email challenge.
-   */
-  requestRegistration(params: {
-    email: string;
-    requestId: string;
-  }): Promise<{ ok: true; acknowledgement: string }>;
-
-  /**
-   * Complete registration. Requires a valid consumed/verified registration
-   * challenge. Creates User + EMAIL_PASSWORD AuthIdentity + PasswordCredential
-   * atomically in the real implementation.
-   */
-  completeRegistration(params: {
-    email: string;
-    password: string;
-    displayName: string;
-    challengeToken: string;
-    requestId: string;
-  }): Promise<RegisterOutcome>;
+  requestRegistration(params: { email: string; requestId: string }): Promise<{
+    ok: true; acknowledgement: string; challengeToken?: string; existingAccount?: boolean;
+  }>;
+  completeRegistration(params: { email: string; password: string; displayName: string; challengeToken: string; requestId: string }): Promise<RegisterOutcome>;
 }
 
+/** Requires a transaction. Deliver mail only after commit. */
 export function createRegistrationService(deps: RegistrationDeps): RegistrationService {
-  const {
-    auditRepository, clock,
-  } = deps;
-
-  async function recordAudit(params: {
-    eventType: string;
-    outcome: string;
-    actorUserId: string | null;
-    subjectUserId: string | null;
-    metadata: Record<string, unknown>;
-  }) {
-    await auditRepository.append({
-      eventType: params.eventType,
-      outcome: params.outcome,
-      requestId: (params.metadata.requestId as string) ?? "",
-      metadata: sanitizeAuthAuditMetadata(params.metadata),
-      actorUserId: params.actorUserId,
-      subjectUserId: params.subjectUserId,
-    });
-  }
-
   return {
     async requestRegistration({ email, requestId }) {
-      // Normalize email (throws on invalid). Do not look up the account here;
-      // the acknowledgement is identical whether or not the email exists.
-      normalizeAuthEmail(email);
-
-      await recordAudit({
-        eventType: "PASSWORD_RESET_REQUESTED", // placeholder; future REGISTER event
-        outcome: "success",
-        actorUserId: null,
-        subjectUserId: null,
-        metadata: sanitizeAuthAuditMetadata({ requestId, purpose: "REGISTER" }),
+      const normalized = normalizeAuthEmail(email);
+      const existing = await deps.userRepository.findByNormalizedEmail(normalized);
+      const acknowledgement = "Se for possível, enviaremos as instruções para o email informado.";
+      if (existing && (existing.status !== "ACTIVE" || existing.emailVerifiedAt)) return { ok: true, acknowledgement };
+      // Pending registrations store only a challenge, never a password.
+      await deps.emailChallengeRepository.invalidateOutstanding(normalized, "REGISTER");
+      const token = generateSecurityToken("email-register");
+      await deps.emailChallengeRepository.create({
+        userId: existing?.id ?? null, emailNormalized: normalized, purpose: "REGISTER",
+        tokenHash: digestSecurityToken(token, "email-register"), authVersion: existing?.authVersion ?? null,
+        expiresAt: new Date(deps.clock.now().getTime() + 10 * 60 * 1000),
       });
-
-      return {
-        ok: true,
-        acknowledgement: "Se for possível, enviaremos as instruções para o email informado.",
-      };
+      await deps.auditRepository.append({ eventType: "REGISTRATION_REQUESTED", outcome: "success", requestId, actorUserId: null, subjectUserId: existing?.id ?? null, metadata: {} });
+      return { ok: true, acknowledgement, challengeToken: token, existingAccount: !!existing };
     },
-
-    async completeRegistration({ email, displayName, challengeToken, requestId }) {
-      const normalizedEmail = normalizeAuthEmail(email);
-
-      // Future: require a valid consumed/verified registration challenge here.
-      // The challengeToken is validated against EmailChallengeRepository (not yet wired).
-      void challengeToken;
-
-      const now = clock.now();
-
-      // Server-controlled invariants:
-      //   role = USER, status = ACTIVE, authVersion = 1, userId server-generated.
-      const user: AuthUser = {
-        id: "", // server-generated by repository
-        emailNormalized: normalizedEmail,
-        emailVerifiedAt: null,
-        displayName,
-        role: "USER",
-        status: "ACTIVE",
-        authVersion: 1,
-        createdAt: now,
-        updatedAt: now,
-      };
-
-      // The real repository implementation performs account creation atomically:
-      // User + EMAIL_PASSWORD identity + PasswordCredential in one transaction.
-      // Not implemented here; no database mutations occur.
-
-      await recordAudit({
-        eventType: "OAUTH_COMPLETED", // placeholder; future REGISTRATION_COMPLETED event
-        outcome: "success",
-        actorUserId: null,
-        subjectUserId: null,
-        metadata: sanitizeAuthAuditMetadata({ requestId }),
-      });
-
-      return { ok: true, userId: user.id };
+    async completeRegistration(params) {
+      const result = await createEmailVerificationService(deps).completeRegistration(params);
+      return result.ok ? result : { ok: false, code: "REGISTER_FAILED" };
     },
   };
 }

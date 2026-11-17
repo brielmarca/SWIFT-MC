@@ -28,4 +28,32 @@ export class PrismaIdentityRepository implements IdentityRepository {
     if (!record || !record.user) return null;
     return { userId: record.userId, user: mapUser(record.user) };
   }
+
+  async createIdentity(params: {
+    userId: string;
+    provider: AuthIdentity["provider"];
+    providerSubject: string;
+    createdAt: Date;
+  }): Promise<AuthIdentity> {
+    const record = await this.prisma.authIdentity.create({
+      data: {
+        userId: params.userId,
+        provider: params.provider,
+        providerSubject: params.providerSubject,
+        createdAt: params.createdAt,
+      },
+    });
+    return mapAuthIdentity(record);
+  }
+
+  async deleteByUserAndProvider(userId: string, provider: AuthIdentity["provider"]): Promise<void> {
+    await this.prisma.authIdentity.deleteMany({ where: { userId, provider } });
+  }
+
+  async updateProviderSubject(userId: string, provider: AuthIdentity["provider"], providerSubject: string): Promise<void> {
+    await this.prisma.authIdentity.update({
+      where: { userId_provider: { userId, provider } },
+      data: { providerSubject },
+    });
+  }
 }

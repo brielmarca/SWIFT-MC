@@ -14,18 +14,14 @@ export type NavigationGroup = {
 export const navigationGroups: NavigationGroup[] = [
   { label: "Jogar", items: [
     { href: "/play", label: "Como jogar" },
-    { href: "/status", label: "Status" },
-    { href: "/online", label: "Online" },
-    { href: "/leaderboards", label: "Ranking" },
+    { href: "/status", label: "Status e conexão", activePaths: ["/status", "/online"] },
   ] },
   { label: "Loja", items: [
     { href: "/store", label: "VIPs", activePaths: ["/store", "/ranks"] },
   ] },
   { label: "Comunidade", items: [
-    { href: "/community", label: "Visão geral" },
     { href: "/news", label: "Notícias" },
-    { href: "/events", label: "Eventos" },
-    { href: "/player", label: "Jogadores" },
+    { href: "/lore", label: "Lore" },
     { href: "https://discord.gg/Bupp8tWvpu", label: "Discord", external: true },
   ] },
   { label: "Recursos", items: [

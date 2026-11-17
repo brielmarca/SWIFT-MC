@@ -1,0 +1,19 @@
+[Unit]
+Description=Swift MC staging-only Cloudflare Tunnel
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+DynamicUser=yes
+LoadCredential=tunnel.json:/etc/swiftmc-staging/tunnel.json
+ExecStart=/usr/bin/cloudflared tunnel --config /etc/swiftmc-staging/config.yml --credentials-file %d/tunnel.json run
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,13 @@
+{
+  "name": "swift-mc-vps-staging",
+  "main": "staging-gateway.ts",
+  "compatibility_date": "2026-10-07",
+  "workers_dev": false,
+  "routes": [
+    { "pattern": "staging.swiftmc.com.br", "custom_domain": true }
+  ],
+  "vars": {
+    "APP_URL": "https://staging.swiftmc.com.br",
+    "BACKEND_ORIGIN": "https://staging-origin.swiftmc.com.br"
+  }
+}

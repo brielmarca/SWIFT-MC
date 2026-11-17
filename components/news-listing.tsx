@@ -32,7 +32,7 @@ export function NewsListing({ posts }: { posts: readonly NewsPost[] }) {
   const resetFilters = () => { setQuery(""); setCategory("Todas"); setTag("Todos"); setPage(1); };
 
   if (posts.length === 0) {
-    return <ContentEmpty title="Nenhuma publicação disponível" description="As notícias do SWIFT MC aparecerão aqui assim que forem publicadas." />;
+    return <ContentEmpty title="Nenhuma publicação disponível" description="As notícias do Swift MC aparecerão aqui assim que forem publicadas." />;
   }
 
   return <div>

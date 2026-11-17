@@ -53,18 +53,15 @@ test("filtered section links, hash history and keyboard tabs", async ({ page }) 
 for (const [route, section, subtopic] of [
   // JOGAR
   ["/play", "Jogar", "Como jogar"],
-  ["/status", "Jogar", "Status"],
-  ["/online", "Jogar", "Online"],
-  ["/leaderboards", "Jogar", "Ranking"],
+  ["/status", "Jogar", "Status e conexão"],
+  ["/online", "Jogar", "Status e conexão"],
   // LOJA
   ["/store", "Loja", "VIPs"],
   ["/ranks/swift", "Loja", "VIPs"],
   // COMUNIDADE
-  ["/community", "Comunidade", "Visão geral"],
   ["/news", "Comunidade", "Notícias"],
   ["/news/temporada-4-sobrevivencia", "Comunidade", "Notícias"],
-  ["/events", "Comunidade", "Eventos"],
-  ["/player", "Comunidade", "Jogadores"],
+  ["/lore", "Comunidade", "Lore"],
   // RECURSOS
   ["/wiki", "Recursos", "Wiki"],
   ["/wiki/como-entrar-no-servidor", "Recursos", "Wiki"],
@@ -99,7 +96,7 @@ for (const route of ["/", "/store", "/ranks/swift", "/ranks/eclipse", "/ranks/co
       const image = page.getByRole("img", { name: `Arte do rank ${slug}`, exact: false });
       await image.scrollIntoViewIfNeeded();
       await expect.poll(() => image.evaluate((node: HTMLImageElement) => node.complete && node.naturalWidth > 0)).toBe(true);
-      expect(decodeURIComponent(await image.evaluate((node: HTMLImageElement) => node.currentSrc))).toContain(`/brand/ranks/${slug}-v2.jpeg`);
+      expect(decodeURIComponent(await image.evaluate((node: HTMLImageElement) => node.currentSrc))).toContain(`/brand/ranks/${slug}-v2.webp`);
     }
   });
 }

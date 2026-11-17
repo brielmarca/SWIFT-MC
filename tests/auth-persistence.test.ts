@@ -36,7 +36,7 @@ interface StubbedPrisma {
   calls: Call[];
   user: { findUnique: unknown; updateMany: unknown; create: unknown };
   authIdentity: { findUnique: unknown };
-  passwordCredential: { findUnique: unknown; update: unknown };
+  passwordCredential: { findUnique: unknown; update: unknown; updateMany: unknown };
   session: { create: unknown; findUnique: unknown; updateMany: unknown; findMany: unknown };
   authBrowserContext: { create: unknown; findUnique: unknown; updateMany: unknown };
   oAuthTransaction: { create: unknown; findUnique: unknown; updateMany: unknown };
@@ -68,6 +68,7 @@ function makePrisma(): StubbedPrisma {
     passwordCredential: {
       findUnique: stub("passwordCredential", "findUnique", null),
       update: stub("passwordCredential", "update", {}),
+      updateMany: stub("passwordCredential", "updateMany", { count: 1 }),
     },
     session: {
       create: stub("session", "create", {}),
@@ -200,7 +201,7 @@ test("mappers.mapOAuthTransaction preserves intent and link fields", () => {
   assert.equal(tx.intent, "LOGIN");
   assert.equal(tx.linkUserId, null);
   assert.equal(tx.initiatingSessionId, null);
-  assert.equal("pkceVerifierCiphertext" in tx, false);
+  assert.equal(tx.pkceVerifierCiphertext, "cipher");
   assert.equal(tx.consumedAt, null);
 });
 
@@ -344,22 +345,39 @@ test("password repository findByIdentity reads by identity id", async () => {
   assert.equal(credential.passwordHash, "$swiftmc$scrypt$v=1$N=32768,r=8,p=3$salt$salt");
 });
 
-test("password repository replacePasswordHash never accepts plaintext and refreshes changedAt", async () => {
+test("password repository replacePasswordHashIfUnchanged updates only the verified hash and refreshes changedAt", async () => {
   const prisma = makePrisma();
+  let capturedWhere: unknown = null;
   let capturedHash: unknown = null;
   let capturedChangedAt: unknown = null;
-  prisma.passwordCredential.update = (args: unknown) => {
-    assert.deepEqual((args as { where: unknown }).where, { identityId: "ident_1" });
+  prisma.passwordCredential.updateMany = (args: unknown) => {
+    capturedWhere = (args as { where: unknown }).where;
     capturedHash = (args as { data: { passwordHash: unknown } }).data.passwordHash;
     capturedChangedAt = (args as { data: { changedAt: unknown } }).data.changedAt;
-    return Promise.resolve({});
+    return Promise.resolve({ count: 1 });
   };
   const repo = new PrismaPasswordCredentialRepository(client(prisma));
+  const expected = "$swiftmc$scrypt$v=1$N=32768,r=8,p=3$oldsalt$oldkey";
   const hash = "$swiftmc$scrypt$v=1$N=32768,r=8,p=3$newhash$newkey";
-  await repo.replacePasswordHash("ident_1", hash);
+  const replaced = await repo.replacePasswordHashIfUnchanged("ident_1", expected, hash);
+  assert.equal(replaced, true, "matching expected hash means the row was replaced");
+  assert.deepEqual(capturedWhere, { identityId: "ident_1", passwordHash: expected }, "update must be pinned to the hash verified by the caller");
   assert.equal(capturedHash, hash);
   assert.ok(capturedChangedAt instanceof Date);
   assert.notEqual(capturedHash, "plaintext-password");
+});
+
+test("password repository replacePasswordHashIfUnchanged reports a lost race instead of overwriting", async () => {
+  const prisma = makePrisma();
+  let capturedArgs: unknown = null;
+  prisma.passwordCredential.updateMany = (args: unknown) => {
+    capturedArgs = args;
+    return Promise.resolve({ count: 0 });
+  };
+  const repo = new PrismaPasswordCredentialRepository(client(prisma));
+  const replaced = await repo.replacePasswordHashIfUnchanged("ident_1", "$expected-hash", "$new-hash");
+  assert.equal(replaced, false, "zero matched rows must surface as a lost race");
+  assert.deepEqual((capturedArgs as { where: unknown }).where, { identityId: "ident_1", passwordHash: "$expected-hash" });
 });
 
 // ---------------------------------------------------------------------------
@@ -554,7 +572,7 @@ test("oauth repository create preserves LOGIN and LINK fields separately", async
   assert.equal(link.intent, "LINK");
   assert.equal(link.linkUserId, "user_1");
   assert.equal(link.initiatingSessionId, "sess_1");
-  assert.equal("pkceVerifierCiphertext" in link, false);
+  assert.equal(link.pkceVerifierCiphertext, "cipher");
 
   const login = await repo.create({
     stateHash: "login-state", browserContextId: "ctx_1", intent: "LOGIN",
@@ -771,7 +789,7 @@ test("all repositories implement their domain contracts", () => {
   assert.equal(typeof identityRepo.findByUserAndProvider, "function");
   assert.equal(typeof identityRepo.resolveOwner, "function");
   assert.equal(typeof passwordRepo.findByIdentity, "function");
-  assert.equal(typeof passwordRepo.replacePasswordHash, "function");
+  assert.equal(typeof passwordRepo.replacePasswordHashIfUnchanged, "function");
   assert.equal(typeof sessionRepo.create, "function");
   assert.equal(typeof sessionRepo.findByTokenDigest, "function");
   assert.equal(typeof sessionRepo.touchLastSeen, "function");

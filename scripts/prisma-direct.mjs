@@ -12,9 +12,22 @@ if (!["postgres:", "postgresql:"].includes(url.protocol) || url.hostname.endsWit
 }
 const action = process.argv[2];
 if (!["status", "deploy", "dev"].includes(action) || process.argv.length !== 3) throw new Error("Expected status, deploy or dev");
+
+const env = { ...process.env, DATABASE_URL: direct, DIRECT_DATABASE_URL: direct };
+if (process.env.DATABASE_SSL_CA_PATH) env.PGSSLROOTCERT = process.env.DATABASE_SSL_CA_PATH;
+const loopback = new Set(["127.0.0.1", "localhost", "[::1]"]);
+const stagingDb = url.pathname === "/swiftmc_staging";
+const hostaddr = url.searchParams.get("hostaddr");
+if (stagingDb && (loopback.has(url.hostname) || (hostaddr && loopback.has(hostaddr)))) {
+  env.PGSSLMODE = "verify-full";
+  env.PGHOSTADDR = hostaddr && loopback.has(hostaddr) ? hostaddr : url.hostname;
+} else if (process.env.DATABASE_SSL_SERVERNAME || url.searchParams.get("sslmode") === "verify-full") {
+  env.PGSSLMODE ??= "verify-full";
+}
+
 const result = spawnSync(process.execPath, ["node_modules/prisma/build/index.js", "migrate", action], {
   stdio: "inherit",
-  env: { ...process.env, DATABASE_URL: direct, DIRECT_DATABASE_URL: direct },
+  env,
 });
 if (result.error) throw new Error("Unable to launch Prisma CLI");
 process.exitCode = result.status ?? 1;
