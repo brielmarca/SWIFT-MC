@@ -22,9 +22,14 @@ export function middleware(request: NextRequest) {
     status: 404,
     headers: { 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex, nofollow, noarchive', 'Referrer-Policy': 'no-referrer' },
   })
+  // Keep the private console's public alias in the Next routing config.
+  // A middleware rewrite picks up X-Forwarded-Proto=https from the TLS edge
+  // and can mistakenly proxy to https://localhost:3100 (an HTTP port).
   const adminPrefix = "/console-r7m4q9v2"
   const isConsole = pathname === adminPrefix || pathname.startsWith(adminPrefix + '/')
-  if (isConsole) {
+  if (isConsole && process.env.BACKEND_RUNTIME !== 'node') {
+    // Keep the existing rewrite for Cloudflare/vinext, where Next.js config
+    // rewrites might not be handled by the Workers adapter.
     const target = request.nextUrl.clone()
     target.pathname = '/admin' + pathname.slice(adminPrefix.length)
     const rewritten = NextResponse.rewrite(target)
@@ -34,7 +39,7 @@ export function middleware(request: NextRequest) {
     return rewritten
   }
   const isAuthPage = AUTH_PAGES.includes(pathname)
-  const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/')
+  const isAdminRoute = isLegacyAdmin || isConsole
   const isPrivatePage = pathname === '/account' || pathname.startsWith('/account/') ||
     pathname === '/checkout' || pathname.startsWith('/checkout/')
   // Public read-only API caches retain their explicit upstream policies.
