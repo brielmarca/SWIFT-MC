@@ -117,6 +117,11 @@ export default async function AccountPage() {
                 <span>Ver histórico de pedidos</span>
               </Link>
             </section>
+            <section className="glass-panel flex flex-col gap-4 p-5 sm:p-6 lg:col-span-3">
+              <h2 className="text-lg font-bold text-ink">Privacidade e seus dados</h2>
+              <p className="text-sm leading-6 text-muted">Solicite acesso, correção, exclusão ou outras medidas relacionadas aos seus dados. A solicitação será analisada antes de qualquer alteração.</p>
+              <Link href="/account/privacy" className="button-secondary self-start">Gerenciar solicitações de privacidade</Link>
+            </section>
           </section>
         </div>
       </main>

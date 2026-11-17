@@ -12,7 +12,7 @@ async function loadData() {
   const env = await getWorkersEnv();
   if (!env.AUTH_HYPERDRIVE) return null;
   const prisma = getPrisma();
-  const [users, orders, approvedOrders, fulfillmentsPending, bridgePending, activeVips, cancellationOpen, recentOrders, recentAudit] = await Promise.all([
+  const [users, orders, approvedOrders, fulfillmentsPending, bridgePending, activeVips, cancellationOpen, privacyOpen, recentOrders, recentAudit] = await Promise.all([
     prisma.user.count(),
     prisma.order.count(),
     prisma.order.count({ where: { status: { in: ["PAID", "FULFILLED"] } } }),
@@ -20,10 +20,11 @@ async function loadData() {
     prisma.bridgeDelivery.count({ where: { status: "PENDING" } }),
     prisma.vipEntitlement.count({ where: { status: "ACTIVE", revokedAt: null, expiresAt: { gt: new Date() } } }),
     prisma.orderCancellationRequest.count({ where: { status: "OPEN" } }),
+    prisma.privacyRequest.count({ where: { status: { in: ["OPEN", "IN_REVIEW"] } } }),
     prisma.order.findMany({ orderBy: { createdAt: "desc" }, take: 6, select: { id: true, orderNumber: true, rankName: true, status: true, totalCents: true, currency: true, createdAt: true } }),
     prisma.authAuditEvent.findMany({ orderBy: { createdAt: "desc" }, take: 6, select: { id: true, eventType: true, outcome: true, createdAt: true } }),
   ]);
-  return { users, orders, approvedOrders, fulfillmentsPending, bridgePending, activeVips, cancellationOpen, recentOrders, recentAudit };
+  return { users, orders, approvedOrders, fulfillmentsPending, bridgePending, activeVips, cancellationOpen, privacyOpen, recentOrders, recentAudit };
 }
 
 export default async function AdminPage() {
@@ -37,6 +38,7 @@ export default async function AdminPage() {
     { label: "Processamentos pendentes", value: data.fulfillmentsPending, href: "/console-r7m4q9v2/deliveries" },
     { label: "Entregas Bridge pendentes", value: data.bridgePending, href: "/console-r7m4q9v2/deliveries" },
     { label: "Cancelamentos solicitados", value: data.cancellationOpen, href: "/console-r7m4q9v2/cancellations" },
+    { label: "Privacidade em análise", value: data.privacyOpen, href: "/console-r7m4q9v2/privacy" },
   ] : [];
 
   return (

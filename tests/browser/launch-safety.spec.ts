@@ -11,7 +11,7 @@ for (const path of ["/", "/store", "/ranks/swift", "/ranks/eclipse", "/ranks/cos
     await expect(page.getByRole("main")).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     if (["/privacy", "/terms", "/refund"].includes(path)) {
-      await expect(page.getByRole("main")).toContainText(/pendente|preliminar|não foi aprovado/);
+      await expect(page.getByRole("main")).toContainText(/pendente|preliminar|não foi aprovado|em revisão|dependem de aprovação/);
     }
     expect(errors).toEqual([]);
   });

@@ -19,8 +19,8 @@ export default function CookiesPage() {
         </section>
         <section className="content-panel p-6">
           <h2 className="text-lg font-bold text-ink">Estatísticas e publicidade</h2>
-          <p className="mt-3">Nesta versão, a SwiftMC não habilita ferramentas analíticas ou publicitárias opcionais. Caso sejam integradas posteriormente, deverão permanecer bloqueadas até uma escolha positiva na categoria correspondente.</p>
-          <p className="mt-2">As preferências são armazenadas localmente no seu navegador, podendo ser alteradas ou revogadas pelo botão <strong className="text-ink">Cookies</strong>, disponível em todas as páginas.</p>
+          <p className="mt-3">Ferramentas analíticas opcionais, quando configuradas, só devem carregar após consentimento positivo na categoria correspondente. Tecnologias publicitárias opcionais também devem permanecer bloqueadas até uma escolha positiva; a configuração efetiva depende do ambiente publicado.</p>
+          <p className="mt-2">As preferências são armazenadas localmente no seu navegador e não representam um registro central de consentimento. Podem ser alteradas ou revogadas pelo botão <strong className="text-ink">Cookies</strong>, disponível em todas as páginas.</p>
         </section>
         <section className="content-panel p-6">
           <h2 className="text-lg font-bold text-ink">Gerenciar preferências</h2>

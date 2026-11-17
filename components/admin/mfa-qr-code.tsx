@@ -41,7 +41,6 @@ export function MfaQrCode({ uri }: { uri: string }) {
       {imageUrl ? (
         <div className="inline-flex rounded-xl border border-white/10 bg-white p-3">
           {/* A local data: image preserves the secret on-device; Next image optimization would send it to a server. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={imageUrl} width={264} height={264} alt="QR Code para configurar a autenticação de dois fatores" className="h-[264px] w-[264px] max-w-full" />
         </div>
       ) : (

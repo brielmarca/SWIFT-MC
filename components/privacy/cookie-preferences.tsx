@@ -47,12 +47,16 @@ export function CookiePreferences() {
   const [marketing, setMarketing] = useState(false);
 
   useEffect(() => {
-    const loaded = readCookiePreferences();
-    setCurrent(loaded);
-    setAnalytics(loaded?.analytics ?? false);
-    setMarketing(loaded?.marketing ?? false);
-    setMounted(true);
-    setOpen(!loaded);
+    // Defer initialization until after paint to avoid cascading React effect updates.
+    // The banner remains hidden server-side and on the first client render.
+    const frame = window.requestAnimationFrame(() => {
+      const loaded = readCookiePreferences();
+      setCurrent(loaded);
+      setAnalytics(loaded?.analytics ?? false);
+      setMarketing(loaded?.marketing ?? false);
+      setMounted(true);
+      setOpen(!loaded);
+    });
     const reopen = () => setOpen(true);
     const syncAcrossTabs = (event: StorageEvent) => {
       if (event.key !== STORAGE_KEY && event.key !== null) return;
@@ -65,6 +69,7 @@ export function CookiePreferences() {
     window.addEventListener(OPEN_EVENT, reopen);
     window.addEventListener("storage", syncAcrossTabs);
     return () => {
+      window.cancelAnimationFrame(frame);
       window.removeEventListener(OPEN_EVENT, reopen);
       window.removeEventListener("storage", syncAcrossTabs);
     };
@@ -106,7 +111,7 @@ export function CookiePreferences() {
             Cookies necessários mantêm login e segurança. Estatísticas e publicidade são opcionais, começam desativadas e dependem de consentimento.
           </p>
           <p className="mt-2 text-xs leading-5 text-white/65">
-            Atualmente não há integração de rastreamento publicitário ou analítico habilitada nesta versão; suas escolhas ficam salvas apenas neste navegador.
+            Ferramentas opcionais de estatísticas e publicidade só devem funcionar com autorização positiva, quando configuradas. Suas preferências ficam salvas apenas neste navegador.
           </p>
           <div className="mt-4 space-y-3">
             <div className="flex items-start justify-between gap-3 border-t border-white/15 pt-3">

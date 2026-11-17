@@ -1,10 +1,18 @@
 import { expect, test } from "@playwright/test";
 
+test.beforeEach(async ({ page }) => {
+  // Authentication flows are exercised after optional cookies were rejected.
+  // First-visit consent behavior is covered by cookie-consent.spec.ts.
+  await page.addInitScript(() => localStorage.setItem("swiftmc-cookie-preferences-v1", JSON.stringify({
+    version: 1, necessary: true, analytics: false, marketing: false, updatedAt: "2026-11-16T00:00:00.000Z",
+  })));
+});
+
 const resetToken = "A".repeat(43);
 const email = "ui-only@example.test";
 const password = "UI-only password 123!";
 const routes = [
-  { path: "/login", title: "Bem-vindo de volta", action: "Entrar", endpoint: "/api/login", body: { email, password } },
+  { path: "/login", title: "Bem-vindo de volta", action: "Entrar", endpoint: "/api/login", body: { email, password, rememberMe: true } },
   { path: "/register", title: "Entre para o Swift MC", action: "Criar conta", endpoint: "/api/register", body: { email } },
   { path: "/forgot-password", title: "Recupere sua conta", action: "Enviar instruções", endpoint: "/api/password-reset/request", body: { email } },
   { path: "/reset-password", title: "Defina uma nova senha", action: "Redefinir senha", endpoint: "/api/password-reset/complete", body: { email, newPassword: password, challengeToken: resetToken } },
@@ -44,8 +52,13 @@ for (const route of routes) {
       const brand = await page.getByRole("region", { name: "Swift MC", exact: true }).boundingBox();
       expect(brand!.width / 1440).toBeCloseTo(.57, 2);
     }
-    for (const control of await page.getByRole("main").locator("input, button, a").all()) {
+    for (const control of await page.getByRole("main").locator('input:not([type="checkbox"]), button, a').all()) {
       expect((await control.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    }
+    // The native checkbox is visually small but its enclosing label is the 44px target.
+    if (route.path === "/login") {
+      const clickableLabel = await page.getByText("Manter conectado neste dispositivo").boundingBox();
+      expect(clickableLabel!.height).toBeGreaterThanOrEqual(44);
     }
     const submit = page.getByRole("button", { name: route.action, exact: true });
     await expect(submit).toBeEnabled();
@@ -64,10 +77,13 @@ for (const route of routes) {
     await expect(page.getByLabel("Email", { exact: true })).toHaveValue(email);
     await expect(submit).toBeEnabled();
     await expect(page).toHaveURL(url);
-    expect(await page.evaluate(() => ({ local: { ...localStorage }, session: { ...sessionStorage } }))).toEqual({ local: {}, session: {} });
+    expect(await page.evaluate(() => ({
+      extraLocal: Object.keys(localStorage).filter(key => key !== "swiftmc-cookie-preferences-v1"),
+      session: { ...sessionStorage },
+    }))).toEqual({ extraLocal: [], session: {} });
     await page.reload();
     await expect(page.getByRole("form").getByRole("alert")).toHaveCount(0);
-    for (const input of await page.locator("input").all()) await expect(input).toHaveValue("");
+    for (const input of await page.getByRole("main").locator('input:not([type="checkbox"])').all()) await expect(input).toHaveValue("");
   });
 }
 
@@ -77,7 +93,7 @@ test("keyboard navigation, password visibility, and auth links", async ({ page }
   await page.keyboard.press("Tab");
   await expect(page.getByRole("link", { name: "← Voltar à Swift MC" })).toBeFocused();
   await page.keyboard.press("Tab");
-  await expect(page.getByRole("button", { name: "Continuar com Discord" })).toBeFocused();
+  await expect(page.getByRole("button", { name: "Entrar com Discord" })).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(page.getByLabel("Email", { exact: true })).toBeFocused();
   await page.keyboard.press("Tab");
@@ -91,6 +107,8 @@ test("keyboard navigation, password visibility, and auth links", async ({ page }
   await page.keyboard.press("Space");
   await expect(password).toHaveAttribute("type", "password");
   await page.keyboard.press("Tab");
+  await expect(page.getByRole("checkbox", { name: "Manter conectado neste dispositivo" })).toBeFocused();
+  await page.keyboard.press("Tab");
   await expect(page.getByRole("link", { name: "Esqueci minha senha" })).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL("/forgot-password");
@@ -101,19 +119,24 @@ test("keyboard navigation, password visibility, and auth links", async ({ page }
   await expect(page).toHaveURL("/login");
 });
 
-test("Discord button is disabled without OAuth backend", async ({ page, context }) => {
+test("Discord 503 produces an accessible retryable failure without external navigation", async ({ page, context }) => {
+  await page.route("**/api/auth/discord/start", route => route.fulfill({ status: 503, json: { error: { code: "UNAVAILABLE" } } }));
   await page.goto("/login");
   const requests: string[] = [];
   page.on("request", (request) => {
     if (new URL(request.url()).origin !== "http://127.0.0.1:3100" || request.url().includes("/api/") || request.method() === "POST" || request.isNavigationRequest()) requests.push(request.url());
   });
-  await page.getByRole("button", { name: "Continuar com Discord" }).click();
-  await expect(page.getByRole("button", { name: "Continuar com Discord" })).toBeDisabled();
+  await page.getByRole("button", { name: "Entrar com Discord" }).click();
+  await expect(page.locator(".auth-discord-wrap [role=alert]")).toHaveText("Não foi possível iniciar o login com Discord.");
+  await expect(page.getByRole("button", { name: "Entrar com Discord" })).toBeEnabled();
   await expect(page).toHaveURL("/login");
   expect(context.pages()).toHaveLength(1);
-  expect(requests).toEqual([]);
+  expect(requests).toEqual(["http://127.0.0.1:3100/api/auth/discord/start"]);
     expect((await context.cookies()).map(cookie => cookie.name)).toEqual(["__Host-swiftmc_csrf"]);
-  expect(await page.evaluate(() => [localStorage.length, sessionStorage.length])).toEqual([0, 0]);
+  expect(await page.evaluate(() => [
+    Object.keys(localStorage).filter(key => key !== "swiftmc-cookie-preferences-v1").length,
+    sessionStorage.length,
+  ])).toEqual([0, 0]);
 });
 
 for (const route of ["/reset-password"]) {

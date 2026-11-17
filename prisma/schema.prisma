@@ -241,6 +241,7 @@ model User {
   sessions              Session[]
   orders                Order[]
   cancellationRequests  OrderCancellationRequest[]
+  privacyRequests       PrivacyRequest[]
   editorialPostsAuthored ContentPost[] @relation("ContentPostAuthor")
   editorialPostsEdited ContentPost[] @relation("ContentPostEditor")
   oauthLinkTransactions OAuthTransaction[]
@@ -563,4 +564,19 @@ model ContentPost {
   @@index([status, publishedAt])
   @@index([createdAt])
   @@index([authorId])
+}
+
+// Requests from authenticated data subjects. No automatic export/deletion is performed.
+model PrivacyRequest {
+  id        String    @id @default(cuid())
+  userId    String
+  kind      String    @db.VarChar(32)
+  details   String?   @db.VarChar(800)
+  status    String    @default("OPEN") @db.VarChar(24)
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
 }

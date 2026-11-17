@@ -8,6 +8,14 @@ const immutableRankArtwork = ["swift", "eclipse", "cosmic", "overdrive"].map((sl
 const nextConfig: NextConfig = {
   output: process.env.BUILD_VPS === "true" ? "standalone" : undefined,
   poweredByHeader: false,
+  // Resolve console aliases internally after the middleware has hidden
+  // direct /admin requests; do not invoke an HTTPS loopback proxy.
+  async rewrites() {
+    return [
+      { source: "/console-r7m4q9v2", destination: "/admin" },
+      { source: "/console-r7m4q9v2/:path*", destination: "/admin/:path*" },
+    ];
+  },
   async headers() {
     // Static Next/RSC and vinext bootstrap scripts require inline scripts today.
     // This is a baseline CSP, not a nonce-based XSS defense. No unsafe-eval in production.

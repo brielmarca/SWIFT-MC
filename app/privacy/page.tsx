@@ -29,7 +29,7 @@ export default function PrivacyPage() {
         <section className="content-panel p-6">
           <h2 className="text-lg font-bold text-ink">Direitos dos titulares</h2>
           <p className="mt-3">Conforme as condições da LGPD, você pode solicitar informações sobre tratamento, acesso, correção, exclusão quando cabível, portabilidade nas hipóteses aplicáveis e revogação de consentimentos opcionais. Algumas informações de pedidos e segurança podem exigir retenção para cumprimento de obrigações legais ou defesa de direitos.</p>
-          <p className="mt-2">O canal público específico de solicitações de privacidade ainda não foi aprovado. Até sua definição, não envie documentos sensíveis por canais não autenticados.</p>
+          <p className="mt-2">Para solicitações autenticadas, acesse <a href="/account/privacy" className="font-semibold text-ultraviolet underline underline-offset-4">Privacidade da minha conta</a>. Este canal permite registrar pedidos para análise, mas não realiza exportação ou exclusão automaticamente. A identificação e o contato público do controlador ainda precisam ser aprovados. Não envie documentos sensíveis no campo de descrição.</p>
         </section>
         <section className="content-panel p-6">
           <h2 className="text-lg font-bold text-ink">Cookies e armazenamento no navegador</h2>

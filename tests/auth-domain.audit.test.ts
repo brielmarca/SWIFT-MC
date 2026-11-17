@@ -36,7 +36,14 @@ test("audit event catalog contains canonical events", () => {
   assert.equal(AUTH_AUDIT_EVENTS.ADMIN_PROVISIONED, "ADMIN_PROVISIONED");
   assert.equal(AUTH_AUDIT_EVENTS.ADMIN_PROVISIONING_CLAIMED, "ADMIN_PROVISIONING_CLAIMED");
   assert.equal(AUTH_AUDIT_EVENTS.CONTENT_POST_PUBLISHED, "CONTENT_POST_PUBLISHED");
-  assert.equal(Object.keys(AUTH_AUDIT_EVENTS).length, 35);
+  for (const event of [
+    "PRIVACY_REQUEST_CREATED",
+    "PRIVACY_REQUEST_REVIEW_STARTED",
+    "PRIVACY_REQUEST_REOPENED",
+    "PRIVACY_REQUEST_COMPLETED",
+    "PRIVACY_REQUEST_REJECTED",
+  ] as const) assert.equal(AUTH_AUDIT_EVENTS[event], event);
+  assert.equal(Object.keys(AUTH_AUDIT_EVENTS).length, 40);
 });
 
 test("audit outcomes are success/failure/rate_limited", () => {
@@ -77,4 +84,17 @@ test("sanitizeAuthAuditMetadata strips nested secrets", () => {
   assert.equal(clean.password, undefined);
   assert.equal(clean.csrf, undefined);
   assert.equal(clean.reason, "INVALID_CREDENTIALS");
+});
+
+test("privacy audit metadata keeps only reviewed classifications, never free text", () => {
+  const secret = generateSessionToken();
+  const record = buildAuthAuditRecord({
+    eventType: "PRIVACY_REQUEST_REVIEW_STARTED",
+    outcome: "success",
+    requestId: "privacy_test_1",
+    actorUserId: "admin",
+    subjectUserId: "user",
+    metadata: { kind: "ACCESS", status: "IN_REVIEW", details: "sensitive", sessionToken: secret },
+  });
+  assert.deepEqual(record.metadata, { kind: "ACCESS", status: "IN_REVIEW" });
 });
