@@ -19,6 +19,9 @@ export interface AuthBindings {
   DISCORD_REDIRECT_URI?: string;
   AUTH_ENCRYPTION_KEY?: string;
   AUTH_ADMIN_MFA_REQUIRED?: string;
+  TURNSTILE_ENABLED?: string;
+  TURNSTILE_SITE_KEY?: string;
+  TURNSTILE_SECRET_KEY?: string;
 }
 
 export interface DiagnosticBindings extends AuthBindings {

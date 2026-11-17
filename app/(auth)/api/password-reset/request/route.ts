@@ -6,6 +6,7 @@ import { createEmailService } from "@/lib/auth/email-service";
 import { createRateLimiter, rateLimitResponse } from "@/lib/auth-infrastructure/rate-limit";
 import { createHash } from "node:crypto";
 import { requireCsrfToken } from "@/lib/auth/middleware";
+import { requireTurnstile, withoutTurnstileToken } from "@/lib/auth/turnstile";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -54,7 +55,7 @@ export async function POST(request: Request): Promise<Response> {
     return jsonError("REQUEST_FAILED", "Invalid request body.", 400);
   }
 
-  const input = validatePasswordReset(body);
+  const input = validatePasswordReset(withoutTurnstileToken(body));
   if (!input.success) {
     return jsonError("REQUEST_FAILED", "Invalid request data.", 400);
   }
@@ -76,6 +77,9 @@ export async function POST(request: Request): Promise<Response> {
   } catch {
     return rateLimitResponse();
   }
+
+  const captchaError = await requireTurnstile(request, body, env, ["forgot"]);
+  if (captchaError) return captchaError;
 
   const requestId = crypto.randomUUID();
   const emailService = createEmailService(env);

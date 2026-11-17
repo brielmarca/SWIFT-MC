@@ -9,6 +9,7 @@ import { createRateLimiter, rateLimitResponse } from "@/lib/auth-infrastructure/
 import { createHash } from "node:crypto";
 import { requireCsrfToken } from "@/lib/auth/middleware";
 import { generateSessionToken } from "@/lib/auth/tokens";
+import { requireTurnstile, withoutTurnstileToken } from "@/lib/auth/turnstile";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -61,7 +62,7 @@ export async function POST(request: Request): Promise<Response> {
     return genericLoginFailure();
   }
 
-  const loginInput = validateLogin(body);
+  const loginInput = validateLogin(withoutTurnstileToken(body));
   if (!loginInput.success) {
     return genericLoginFailure();
   }
@@ -90,6 +91,9 @@ export async function POST(request: Request): Promise<Response> {
   } catch {
     return rateLimitResponse();
   }
+
+  const captchaError = await requireTurnstile(request, body, env, ["login"]);
+  if (captchaError) return captchaError;
 
   const requestId = crypto.randomUUID();
 

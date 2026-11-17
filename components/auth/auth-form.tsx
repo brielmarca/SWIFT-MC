@@ -6,6 +6,7 @@ import { authAvailability } from "@/lib/auth-ui";
 import { extractCsrfTokenFromCookie } from "@/lib/auth-client";
 import { AuthField, AuthMessage, AuthSubmit, PasswordField } from "./auth-fields";
 import { DiscordAuthButton } from "./discord-auth-button";
+import { TurnstileWidget } from "./turnstile-widget";
 
 export type AuthMode = "login" | "register" | "forgot" | "reset" | "verify" | "verify-existing" | "resend";
 const submitLabels = { login: "Entrar", register: "Criar conta", forgot: "Enviar instruções", reset: "Redefinir senha", verify: "Concluir cadastro", "verify-existing": "Verificar email", resend: "Reenviar verificação" };
@@ -24,7 +25,7 @@ const subscribeToHydration = () => () => {};
 const clientReady = () => true;
 const serverReady = () => false;
 
-export function AuthForm({ mode, returnPath = "/" }: { mode: AuthMode; returnPath?: string }) {
+export function AuthForm({ mode, returnPath = "/", turnstile = { enabled: false, siteKey: "" } }: { mode: AuthMode; returnPath?: string; turnstile?: { enabled: boolean; siteKey: string } }) {
   const fieldId = useId();
   // Server HTML and the first hydration render keep credentials disabled.
   const hydrated = useSyncExternalStore(subscribeToHydration, clientReady, serverReady);
@@ -32,10 +33,15 @@ export function AuthForm({ mode, returnPath = "/" }: { mode: AuthMode; returnPat
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState<string | null>(null);
   const [acknowledgement, setAcknowledgement] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [captchaResetSignal, setCaptchaResetSignal] = useState(0);
   const attempted = useRef(false);
   const newPassword = mode === "verify" || mode === "reset";
   const needsPassword = mode === "login" || newPassword;
   const verification = mode === "verify" || mode === "verify-existing";
+  const captchaRequired = turnstile.enabled && (mode === "login" || mode === "register" || mode === "forgot" || mode === "resend");
+  const captchaAction = mode === "login" ? "login" : mode === "forgot" ? "forgot" : "register";
+  const resetCaptcha = () => { setTurnstileToken(null); setCaptchaResetSignal((value) => value + 1); };
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -77,6 +83,11 @@ export function AuthForm({ mode, returnPath = "/" }: { mode: AuthMode; returnPat
       return;
     }
 
+    if (captchaRequired && !turnstileToken) {
+      setServerError("Conclua a verificação humana para continuar.");
+      return;
+    }
+
     attempted.current = true;
     setSubmitting(true);
 
@@ -87,6 +98,8 @@ export function AuthForm({ mode, returnPath = "/" }: { mode: AuthMode; returnPat
         : mode === "verify-existing" ? { email, challengeToken }
         : { email, password };
 
+      const bodyWithCaptcha = captchaRequired ? { ...body, turnstileToken } : body;
+
       // Read CSRF token from cookie and send as header
       const csrfToken = extractCsrfTokenFromCookie();
 
@@ -96,7 +109,7 @@ export function AuthForm({ mode, returnPath = "/" }: { mode: AuthMode; returnPat
           "Content-Type": "application/json",
           ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
         },
-        body: JSON.stringify(body),
+        body: JSON.stringify(bodyWithCaptcha),
       });
 
       // Session cookies are managed exclusively by the browser's HTTP layer.
@@ -133,23 +146,26 @@ export function AuthForm({ mode, returnPath = "/" }: { mode: AuthMode; returnPat
     } finally {
       attempted.current = false;
       setSubmitting(false);
+      if (captchaRequired) resetCaptcha();
     }
   }
 
   return <>
-    {(mode === "login" || mode === "register") && <DiscordAuthButton returnPath={returnPath} label={mode === "login" ? "Entrar com Discord" : "Cadastrar com Discord"} />}
+    {(mode === "login" || mode === "register") && <DiscordAuthButton returnPath={returnPath} label={mode === "login" ? "Entrar com Discord" : "Cadastrar com Discord"} captchaRequired={captchaRequired} turnstileToken={turnstileToken} onCaptchaConsumed={resetCaptcha} />}
     {(mode === "login" || mode === "register") && <div className="auth-divider"><span>ou</span></div>}
     <form method="post" action={endpointForMode[mode]} noValidate onSubmit={submit} onChange={() => { setErrors({}); setServerError(null); setAcknowledgement(null); }} aria-label={submitLabels[mode]}>
-      <fieldset disabled={!hydrated || submitting} className="auth-fields">
+      <fieldset disabled={!hydrated || submitting || (captchaRequired && !turnstile.siteKey)} className="auth-fields">
         <AuthField id={`${fieldId}-email`} name="email" label="Email" type="email" autoComplete="email" autoCapitalize="none" spellCheck={false} required maxLength={254} placeholder="voce@exemplo.com" error={errors.email} />
         {mode === "verify" && <AuthField id="displayName" name="displayName" label="Nome de exibição" autoComplete="nickname" required maxLength={100} error={errors.displayName} />}
         {needsPassword && <PasswordField id="password" name="password" label={mode === "reset" ? "Nova senha" : "Senha"} autoComplete={newPassword ? "new-password" : "current-password"} required minLength={newPassword ? 12 : undefined} error={errors.password} hint={newPassword ? "Use pelo menos 12 caracteres. Prefira uma frase única, com palavras, números e símbolos." : undefined} />}
         {newPassword && <PasswordField id="confirmation" name="confirmation" label={mode === "reset" ? "Confirmar nova senha" : "Confirmar senha"} autoComplete="new-password" required error={errors.confirmation} />}
         {mode === "login" && <Link className="auth-forgot" href="/forgot-password">Esqueci minha senha</Link>}
+        {captchaRequired && turnstile.siteKey && <TurnstileWidget siteKey={turnstile.siteKey} action={captchaAction} onToken={setTurnstileToken} resetSignal={captchaResetSignal} />}
+        {captchaRequired && !turnstile.siteKey && <AuthMessage>Verificação humana indisponível. Tente novamente mais tarde.</AuthMessage>}
         {serverError && <AuthMessage>{serverError}</AuthMessage>}
         {acknowledgement && <AuthMessage tone="success">{acknowledgement}</AuthMessage>}
         {authAvailability.message && <AuthMessage>{authAvailability.message}</AuthMessage>}
-        <AuthSubmit disabled={!hydrated || submitting} loading={submitting}>{submitLabels[mode]}</AuthSubmit>
+        <AuthSubmit disabled={!hydrated || submitting || (captchaRequired && (!turnstile.siteKey || !turnstileToken))} loading={submitting}>{submitLabels[mode]}</AuthSubmit>
       </fieldset>
       <noscript><p className="auth-message">Ative JavaScript para usar o formulário de autenticação.</p></noscript>
     </form>

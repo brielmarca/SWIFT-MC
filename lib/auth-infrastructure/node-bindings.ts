@@ -26,6 +26,9 @@ export function getNodeAuthBindings(): AuthBindings & BridgeBindings & { APP_URL
     DISCORD_REDIRECT_URI: process.env.DISCORD_REDIRECT_URI,
     AUTH_ENCRYPTION_KEY: process.env.AUTH_ENCRYPTION_KEY,
     AUTH_ADMIN_MFA_REQUIRED: process.env.AUTH_ADMIN_MFA_REQUIRED,
+    TURNSTILE_ENABLED: process.env.TURNSTILE_ENABLED,
+    TURNSTILE_SITE_KEY: process.env.TURNSTILE_SITE_KEY,
+    TURNSTILE_SECRET_KEY: process.env.TURNSTILE_SECRET_KEY,
   };
 }
 
