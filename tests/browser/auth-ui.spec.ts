@@ -108,14 +108,15 @@ test("keyboard navigation, password visibility, and auth links", async ({ page }
   await expect(page).toHaveURL("/login");
 });
 
-test("Discord returns an accessible retryable failure when OAuth backend is unavailable", async ({ page, context }) => {
+test("Discord 503 produces an accessible retryable failure without external navigation", async ({ page, context }) => {
+  await page.route("**/api/auth/discord/start", route => route.fulfill({ status: 503, json: { error: { code: "UNAVAILABLE" } } }));
   await page.goto("/login");
   const requests: string[] = [];
   page.on("request", (request) => {
     if (new URL(request.url()).origin !== "http://127.0.0.1:3100" || request.url().includes("/api/") || request.method() === "POST" || request.isNavigationRequest()) requests.push(request.url());
   });
   await page.getByRole("button", { name: "Entrar com Discord" }).click();
-  await expect(page.getByRole("alert").last()).toHaveText("Não foi possível iniciar o login com Discord.");
+  await expect(page.locator(".auth-discord-wrap [role=alert]")).toHaveText("Não foi possível iniciar o login com Discord.");
   await expect(page.getByRole("button", { name: "Entrar com Discord" })).toBeEnabled();
   await expect(page).toHaveURL("/login");
   expect(context.pages()).toHaveLength(1);
