@@ -3,7 +3,7 @@ import Link from "next/link";
 import { AuthHeader } from "@/components/auth-header";
 import { Footer } from "@/components/footer";
 
-export type AdminSection = "overview" | "posts" | "orders" | "cancellations" | "users" | "deliveries" | "audit" | "security" | "provisioning" | "media";
+export type AdminSection = "overview" | "posts" | "orders" | "cancellations" | "privacy" | "users" | "deliveries" | "audit" | "security" | "provisioning" | "media";
 
 const sections: { id: AdminSection; href: string; title: string }[] = [
   { id: "overview", href: "/console-r7m4q9v2", title: "Visão geral" },
@@ -11,6 +11,7 @@ const sections: { id: AdminSection; href: string; title: string }[] = [
   { id: "posts", href: "/console-r7m4q9v2/posts", title: "Publicações" },
   { id: "orders", href: "/console-r7m4q9v2/orders", title: "Pedidos" },
   { id: "cancellations", href: "/console-r7m4q9v2/cancellations", title: "Cancelamentos" },
+  { id: "privacy", href: "/console-r7m4q9v2/privacy", title: "Privacidade" },
   { id: "users", href: "/console-r7m4q9v2/users", title: "Usuários" },
   { id: "deliveries", href: "/console-r7m4q9v2/deliveries", title: "Entregas" },
   { id: "audit", href: "/console-r7m4q9v2/audit", title: "Auditoria" },
