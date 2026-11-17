@@ -4,6 +4,8 @@ export const AUDIT_METADATA_MAX_BYTES = 4096;
 type AuditValue = string | number | boolean;
 const ENUM_FIELDS: Readonly<Record<string, readonly string[]>> = Object.freeze({
   provider: ["EMAIL_PASSWORD", "DISCORD"],
+  kind: ["ACCESS", "CORRECTION", "DELETION", "PORTABILITY", "CONSENT", "OTHER"],
+  status: ["OPEN", "IN_REVIEW", "CLOSED", "REJECTED"],
   role: ["USER", "SUPPORT", "MODERATOR", "ADMIN", "OWNER"],
   intent: ["LOGIN", "LINK"],
   challengePurpose: ["REGISTER", "VERIFY_EMAIL", "CHANGE_EMAIL", "PASSWORD_RESET"],

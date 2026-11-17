@@ -1,10 +1,14 @@
 import "server-only";
+import { createHash } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { getWorkersEnv } from "@/lib/auth-api/get-env";
 import { getPrisma } from "@/lib/prisma";
 import { requireSession, requireCsrfToken } from "@/lib/auth/middleware";
 import { hasTrustedBrowserMutation } from "@/lib/auth/browser-security";
+import { createRateLimiter, rateLimitResponse } from "@/lib/auth-infrastructure/rate-limit";
+import { buildAuthAuditRecord } from "@/lib/auth-domain/audit";
 import { privacyRequestInputSchema } from "@/lib/privacy-request-input";
+import { readPrivacyJson } from "@/lib/privacy-request-api";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -36,21 +40,35 @@ export async function POST(request: Request) {
   const csrf = requireCsrfToken(request);
   if (csrf) return csrf;
   if (!env.AUTH_HYPERDRIVE) return json({ error: "Serviço indisponível." }, 503);
-  if (!request.headers.get("content-type")?.toLowerCase().startsWith("application/json")) return json({ error: "Envie JSON." }, 415);
-  const input = privacyRequestInputSchema.safeParse(await request.json().catch(() => null));
+  // Extra per-account limit beyond the existing protected-IP rate limiter.
+  const rate = createRateLimiter(env);
+  const key = createHash("sha256").update("swiftmc:privacy:create:v1\0" + auth.user.id).digest("hex");
+  try { if (!(await rate.check({ key }))) return rateLimitResponse(); } catch { return rateLimitResponse(); }
+  let body: unknown;
+  try { body = await readPrivacyJson(request); }
+  catch (error) { return json({ error: error instanceof RangeError ? "Corpo da solicitação excede o limite." : "Envie JSON válido." }, error instanceof RangeError ? 413 : 400); }
+  const input = privacyRequestInputSchema.safeParse(body);
   if (!input.success) return json({ error: "Solicitação inválida. Limite de 800 caracteres." }, 400);
   try {
     const db = getPrisma();
-    const existing = await db.privacyRequest.findFirst({
-      where: { userId: auth.user.id, kind: input.data.kind, status: { in: ["OPEN", "IN_REVIEW"] } },
-      select: { id: true, status: true, createdAt: true },
+    const result = await db.$transaction(async tx => {
+      const existing = await tx.privacyRequest.findFirst({
+        where: { userId: auth.user.id, kind: input.data.kind, status: { in: ["OPEN", "IN_REVIEW"] } },
+        select: { id: true, status: true, createdAt: true },
+      });
+      if (existing) return { existing: true, row: existing };
+      const row = await tx.privacyRequest.create({
+        data: { userId: auth.user.id, kind: input.data.kind, details: input.data.details || null },
+        select: { id: true, status: true, createdAt: true },
+      });
+      await tx.authAuditEvent.create({ data: buildAuthAuditRecord({
+        eventType: "PRIVACY_REQUEST_CREATED", outcome: "success",
+        requestId: crypto.randomUUID(), actorUserId: auth.user.id, subjectUserId: auth.user.id,
+        metadata: { kind: input.data.kind, status: "OPEN" },
+      }) });
+      return { existing: false, row };
     });
-    if (existing) return json({ ok: true, alreadyRequested: true, request: existing }, 200);
-    const created = await db.privacyRequest.create({
-      data: { userId: auth.user.id, kind: input.data.kind, details: input.data.details || null },
-      select: { id: true, status: true, createdAt: true },
-    });
-    return json({ ok: true, alreadyRequested: false, request: created }, 201);
+    return json({ ok: true, alreadyRequested: result.existing, request: result.row }, result.existing ? 200 : 201);
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002")
       return json({ ok: true, alreadyRequested: true }, 200);

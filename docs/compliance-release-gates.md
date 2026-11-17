@@ -20,3 +20,6 @@ After core fixes, evaluate Turnstile on registration, login, forgot-password and
 
 ## Critical vulnerability resolved in this branch (pending CI validation)
 The previous lockfile included react-server-dom-webpack 19.3.0 (CVE-2026-126187 / GHSA-xqc2-xf4c-x3h3, critical). The direct dependency and lockfile now target 19.3.1 alongside React and React DOM 19.3.1, using integrity hashes from the public vitejs/vite-plugin-react pnpm lockfile. **Do not mark remediated in deployed environments until `npm ci`, `npm audit`, build and production deployment are validated.** Rebuild fresh runtime images; old containers remain vulnerable.
+
+## Endpoint release gate
+The privacy and admin APIs documented in `docs/privacy-endpoints.md` require authorization/CSRF/MFA and concurrent-write tests in staging. Admin status transitions do not equal actual delivery or deletion. Keep domain DNS, TLS and production release changes separate from this PR.
