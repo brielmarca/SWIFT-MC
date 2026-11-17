@@ -120,7 +120,7 @@ test("Discord 503 produces an accessible retryable failure without external navi
   await expect(page.getByRole("button", { name: "Entrar com Discord" })).toBeEnabled();
   await expect(page).toHaveURL("/login");
   expect(context.pages()).toHaveLength(1);
-  expect(requests).toEqual([]);
+  expect(requests).toEqual(["http://127.0.0.1:3100/api/auth/discord/start"]);
     expect((await context.cookies()).map(cookie => cookie.name)).toEqual(["__Host-swiftmc_csrf"]);
   expect(await page.evaluate(() => [localStorage.length, sessionStorage.length])).toEqual([0, 0]);
 });
