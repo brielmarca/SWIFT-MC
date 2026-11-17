@@ -1,6 +1,12 @@
 import { expect, test } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
+  // Navigation/security tests start with optional cookies denied. Consent controls
+  // are tested separately; their first-visit banner must not obscure unrelated UI.
+  await page.addInitScript(() => localStorage.setItem("swiftmc-cookie-preferences-v1", JSON.stringify({
+    version: 1, necessary: true, analytics: false, marketing: false,
+    updatedAt: "2026-11-16T00:00:00.000Z",
+  })));
   // UI probes never send payloads to integrations or external hosts.
   await page.route("**/*", async (route) => {
     const url = new URL(route.request().url());
@@ -71,8 +77,14 @@ test("image optimizer rejects remote URLs and private files are not served", asy
     expect(await response.text()).not.toMatch(/DATABASE_URL|MERCADOPAGO_ACCESS_TOKEN|\[core\]/);
   }
   const redirect = await request.get("/checkout/swift?returnUrl=https://attacker.example", { maxRedirects: 0 });
-  expect([307, 308]).toContain(redirect.status());
-  expect(redirect.headers().location).toBe("/ranks/swift");
+  if ([307, 308].includes(redirect.status())) {
+    expect(redirect.headers().location).toBe("/ranks/swift");
+  } else {
+    // Modern Next.js streaming redirects can return 200 with an internal
+    // meta refresh rather than an HTTP Location header.
+    expect(redirect.status()).toBe(200);
+    expect(await redirect.text()).toMatch(/<meta id="__next-page-redirect" http-equiv="refresh" content="1;url=\/ranks\/swift"/);
+  }
 });
 
 test("search, hash and forged cart values remain inert", async ({ page }, testInfo) => {

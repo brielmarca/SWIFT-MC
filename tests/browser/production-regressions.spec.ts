@@ -1,6 +1,12 @@
 import { expect, test, type Page } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
+  // Navigation/security tests start with optional cookies denied. Consent controls
+  // are tested separately; their first-visit banner must not obscure unrelated UI.
+  await page.addInitScript(() => localStorage.setItem("swiftmc-cookie-preferences-v1", JSON.stringify({
+    version: 1, necessary: true, analytics: false, marketing: false,
+    updatedAt: "2026-11-16T00:00:00.000Z",
+  })));
   // Visual/navigation checks must not contact the Minecraft server in either runtime.
   await page.route("**/api/server-status", (route) => route.fulfill({
     json: { online: false, players: null, maxPlayers: null, version: null, publicAddress: "play.example.test" },
