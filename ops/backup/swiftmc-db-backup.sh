@@ -5,7 +5,8 @@ umask 077
 : "${PGSERVICE:?Set PGSERVICE to a configured PostgreSQL service}"
 : "${BACKUP_DIR:?Set BACKUP_DIR to a private absolute backup directory}"
 : "${BACKUP_AGE_RECIPIENT:?Set BACKUP_AGE_RECIPIENT to an age public recipient}"
-[[ "$BACKUP_DIR" == /* ]] || { echo "BACKUP_DIR must be absolute" >&2; exit 2; }
+[[ "$BACKUP_DIR" == /var/backups/swiftmc || "$BACKUP_DIR" == /var/backups/swiftmc/* ]] || { echo "BACKUP_DIR must be under /var/backups/swiftmc" >&2; exit 2; }
+[[ ! -L "$BACKUP_DIR" ]] || { echo "BACKUP_DIR may not be a symlink" >&2; exit 2; }
 [[ "$PGSERVICE" =~ ^[a-zA-Z0-9_-]+$ ]] || { echo "Invalid PGSERVICE" >&2; exit 2; }
 for cmd in pg_dump pg_restore age sha256sum mktemp flock; do command -v "$cmd" >/dev/null || { echo "Missing $cmd" >&2; exit 2; }; done
 mkdir -p -- "$BACKUP_DIR"

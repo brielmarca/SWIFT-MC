@@ -17,3 +17,6 @@ Run Prisma migration `20261116220000_privacy_requests` in a controlled migration
 
 ## Deferred — Cloudflare Turnstile CAPTCHA
 After core fixes, evaluate Turnstile on registration, login, forgot-password and resend/verification endpoints. **Always** verify token server-side with Cloudflare Siteverify using a secret kept in server-only environment, bind to expected action/hostname, use short-lived single-use tokens, fail closed on invalid responses, retain rate limiting and add non-JavaScript/accessibility fallback. Never expose the secret or accept client-side validation alone. Staging/test keys must be isolated from production keys. 
+
+## Critical vulnerability resolved in this branch (pending CI validation)
+The previous lockfile included react-server-dom-webpack 19.3.0 (CVE-2026-126187 / GHSA-xqc2-xf4c-x3h3, critical). The direct dependency and lockfile now target 19.3.1 alongside React and React DOM 19.3.1, using integrity hashes from the public vitejs/vite-plugin-react pnpm lockfile. **Do not mark remediated in deployed environments until `npm ci`, `npm audit`, build and production deployment are validated.** Rebuild fresh runtime images; old containers remain vulnerable.
