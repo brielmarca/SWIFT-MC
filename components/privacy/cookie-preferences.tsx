@@ -106,7 +106,7 @@ export function CookiePreferences() {
             Cookies necessários mantêm login e segurança. Estatísticas e publicidade são opcionais, começam desativadas e dependem de consentimento.
           </p>
           <p className="mt-2 text-xs leading-5 text-white/65">
-            Atualmente não há integração de rastreamento publicitário ou analítico habilitada nesta versão; suas escolhas ficam salvas apenas neste navegador.
+            Ferramentas opcionais de estatísticas e publicidade só devem funcionar com autorização positiva, quando configuradas. Suas preferências ficam salvas apenas neste navegador.
           </p>
           <div className="mt-4 space-y-3">
             <div className="flex items-start justify-between gap-3 border-t border-white/15 pt-3">

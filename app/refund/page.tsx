@@ -25,7 +25,7 @@ export default function RefundPage() {
         </section>
         <section className="content-panel border border-amber-400/20 p-6">
           <h2 className="text-lg font-bold text-ink">Política operacional em revisão</h2>
-          <p className="mt-3">Os critérios internos de atendimento, os prazos de resposta e os dados comerciais do fornecedor ainda dependem de aprovação. Esta página é informativa e não altera os direitos previstos em lei.</p>
+          <p className="mt-3">Os critérios internos de atendimento, os prazos de resposta e os dados comerciais do fornecedor ainda dependem de aprovação. A equipe deve verificar solicitações recebidas e registrar o resultado em procedimento interno, sem tratar uma solicitação como estorno concluído. Esta página é informativa e não altera os direitos previstos em lei.</p>
         </section>
       </div>
     </ContentPage>

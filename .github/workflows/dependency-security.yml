@@ -1,0 +1,23 @@
+name: dependency-security
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 8 * * 1"
+  pull_request:
+    paths:
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/dependency-security.yml"
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - name: Audit production dependencies (high+)
+        run: npm audit --omit=dev --audit-level=high

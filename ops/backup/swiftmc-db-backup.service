@@ -1,0 +1,21 @@
+[Unit]
+Description=SwiftMC encrypted PostgreSQL backup
+Documentation=man:pg_dump(1)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=swiftmc-backup
+Group=swiftmc-backup
+EnvironmentFile=/etc/swiftmc/backup.env
+ExecStart=/opt/swiftmc/ops/backup/swiftmc-db-backup.sh
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/backups/swiftmc
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+# Create the service account, private config and directory manually after review.
