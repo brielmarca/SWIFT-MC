@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* global AbortSignal, URL, console, fetch, process */
 /**
  * Read-only public-endpoint smoke audit. No credentials and no private URLs.
  * Reports approximate response-header TTFB and CDN/cache headers.

@@ -47,12 +47,16 @@ export function CookiePreferences() {
   const [marketing, setMarketing] = useState(false);
 
   useEffect(() => {
-    const loaded = readCookiePreferences();
-    setCurrent(loaded);
-    setAnalytics(loaded?.analytics ?? false);
-    setMarketing(loaded?.marketing ?? false);
-    setMounted(true);
-    setOpen(!loaded);
+    // Defer initialization until after paint to avoid cascading React effect updates.
+    // The banner remains hidden server-side and on the first client render.
+    const frame = window.requestAnimationFrame(() => {
+      const loaded = readCookiePreferences();
+      setCurrent(loaded);
+      setAnalytics(loaded?.analytics ?? false);
+      setMarketing(loaded?.marketing ?? false);
+      setMounted(true);
+      setOpen(!loaded);
+    });
     const reopen = () => setOpen(true);
     const syncAcrossTabs = (event: StorageEvent) => {
       if (event.key !== STORAGE_KEY && event.key !== null) return;
@@ -65,6 +69,7 @@ export function CookiePreferences() {
     window.addEventListener(OPEN_EVENT, reopen);
     window.addEventListener("storage", syncAcrossTabs);
     return () => {
+      window.cancelAnimationFrame(frame);
       window.removeEventListener(OPEN_EVENT, reopen);
       window.removeEventListener("storage", syncAcrossTabs);
     };
