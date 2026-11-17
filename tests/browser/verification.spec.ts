@@ -1,5 +1,13 @@
 import { expect, test } from "@playwright/test";
 
+test.beforeEach(async ({ page }) => {
+  // Registration and verification behavior after the player rejects optional cookies.
+  // First-visit consent is covered by cookie-consent.spec.ts.
+  await page.addInitScript(() => localStorage.setItem("swiftmc-cookie-preferences-v1", JSON.stringify({
+    version: 1, necessary: true, analytics: false, marketing: false, updatedAt: "2026-11-16T00:00:00.000Z",
+  })));
+});
+
 const token = "A".repeat(43);
 test("registration requests email only; the email link collects credentials without persisting them", async ({ page }) => {
   await page.route("**/api/register", r => r.fulfill({ json: { ok: true, acknowledgement: "Confira seu email." } }));
@@ -33,7 +41,7 @@ test("registration requests email only; the email link collects credentials with
   expect(sent.postDataJSON()).toEqual({ email: "browser@example.test", displayName: "Player", password: "Browser password 123!", challengeToken: token });
   expect(sent.headers()["x-csrf-token"]).toBeTruthy();
   await expect(form.getByRole("alert")).toHaveText("Link expirado. Solicite um novo email.");
-  expect(await page.evaluate(() => [localStorage.length, sessionStorage.length])).toEqual([0, 0]);
+  expect(await page.evaluate(() => [Object.keys(localStorage).filter(key => key !== "swiftmc-cookie-preferences-v1").length, sessionStorage.length])).toEqual([0, 0]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
