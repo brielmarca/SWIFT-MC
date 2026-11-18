@@ -21,11 +21,11 @@ export function Hero() {
 
           <div>
             <h1 className="max-w-4xl text-4xl font-extrabold uppercase leading-[1.05] tracking-[-0.04em] text-ink sm:text-5xl lg:text-[3.5rem]">
-              <span className="block">A melhor experiência</span>
-              <span className="gradient-text block">Survival Minecraft</span>
+              <span className="block">SwiftMC: servidor de</span>
+              <span className="gradient-text block">Minecraft Survival</span>
             </h1>
             <p className="mt-4 max-w-xl text-base leading-6 text-muted">
-              Economia balanceada, proteção total de terrenos, sistema de habilidades mcMMO, dungeons customizadas e uma comunidade acolhedora pronta para te receber.
+              O SwiftMC é um servidor brasileiro de Minecraft Java Survival. Explore uma economia entre jogadores, proteja seus terrenos, evolua habilidades mcMMO e descubra dungeons com a comunidade.
             </p>
           </div>
 
