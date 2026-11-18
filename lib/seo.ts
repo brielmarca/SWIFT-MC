@@ -2,7 +2,7 @@ import "server-only";
 import type { Metadata } from "next";
 
 export const SITE_NAME = "SwiftMC";
-export const SITE_DESCRIPTION = "Rede brasileira de Minecraft Survival com economia, proteção de terrenos e uma comunidade ativa.";
+export const SITE_DESCRIPTION = "Conheça a SwiftMC, servidor brasileiro de Minecraft Java Survival com economia, proteção de terrenos, habilidades mcMMO e dungeons. Veja como jogar e participe.";
 const DEFAULT_SITE_URL = "https://swiftmc.com.br";
 
 /** Public HTTPS origin only; never inferred from request or deployment headers. */
@@ -31,6 +31,18 @@ export function siteUrl(path: string): string {
   const url = new URL(path, origin);
   if (url.origin !== origin.origin) throw new Error("Metadata URLs must stay on the site origin");
   return url.href;
+}
+
+/** Consistent, authoritative website identity for search engines. */
+export function websiteIdentitySchema() {
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: SITE_NAME,
+    alternateName: "SWIFT MC",
+    url: siteUrl("/"),
+    inLanguage: "pt-BR",
+  } as const;
 }
 
 export const BRAND_IMAGE = {
@@ -80,7 +92,7 @@ export function createPageMetadata({ title, description, path, image = BRAND_IMA
 }
 
 export const PUBLIC_PAGES = {
-  "/": { title: "Survival Minecraft", description: SITE_DESCRIPTION },
+  "/": { title: "Servidor de Minecraft Survival no Brasil", description: SITE_DESCRIPTION },
   "/play": { title: "Como jogar", description: "Endereço, status e instruções para entrar no servidor Minecraft Java SwiftMC." },
   "/store": { title: "Loja de ranks", description: "Compare as assinaturas VIP mensais Swift, Eclipse, Cosmic e Overdrive da rede SwiftMC." },
   "/status": { title: "Status do servidor", description: "Consulte o status, jogadores e versão atual do servidor Minecraft SwiftMC." },
@@ -99,7 +111,7 @@ export function publicPageMetadata(path: keyof typeof PUBLIC_PAGES): Metadata {
   const metadata = createPageMetadata({ ...PUBLIC_PAGES[path], path });
   // Next.js does not apply the root layout's template to its index page.
   // An absolute homepage title also avoids double branding in vinext.
-  if (path === "/") metadata.title = { absolute: `${PUBLIC_PAGES[path].title} | ${SITE_NAME}` };
+  if (path === "/") metadata.title = { absolute: `${SITE_NAME} | ${PUBLIC_PAGES[path].title}` };
   return metadata;
 }
 
