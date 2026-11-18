@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { BRAND_IMAGE, createPageMetadata, getSiteUrl, PUBLIC_PAGES, publicPageMetadata, rootMetadata, siteUrl } from "@/lib/seo";
+import { BRAND_IMAGE, createPageMetadata, getSiteUrl, PUBLIC_PAGES, publicPageMetadata, rootMetadata, siteUrl, websiteIdentitySchema } from "@/lib/seo";
 import sitemap from "@/app/sitemap";
 import robots from "@/app/robots";
 import manifest from "@/app/manifest";
@@ -15,7 +15,19 @@ test("canonical origin rejects local, private, malformed and credential-bearing 
   }
   assert.equal(getSiteUrl(" https://www.swiftmc.com.br/ ").href, "https://www.swiftmc.com.br/");
   assert.deepEqual(rootMetadata.title, { default: "SwiftMC", template: "%s | SwiftMC" });
-  assert.deepEqual(publicPageMetadata("/").title, { absolute: "Survival Minecraft | SwiftMC" });
+  assert.deepEqual(publicPageMetadata("/").title, { absolute: "SwiftMC | Servidor de Minecraft Survival no Brasil" });
+});
+
+test("homepage website structured data identifies the same canonical brand and domain", () => {
+  assert.deepEqual(websiteIdentitySchema(), {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "SwiftMC",
+    alternateName: "SWIFT MC",
+    url: "https://swiftmc.com.br/",
+    inLanguage: "pt-BR",
+  });
+  assert.match(String(publicPageMetadata("/").description), /Minecraft Java Survival/);
 });
 
 test("configured origin is used consistently without losing dynamic route segments", (context) => {
@@ -31,6 +43,7 @@ test("configured origin is used consistently without losing dynamic route segmen
   assert.equal(metadata.openGraph?.title, "Comandos essenciais | SwiftMC");
   assert.equal(metadata.twitter?.title, metadata.openGraph?.title);
   assert.equal(siteUrl("/player/Player_123"), "https://www.swiftmc.com.br/player/Player_123");
+  assert.equal(websiteIdentitySchema().url, "https://www.swiftmc.com.br/");
   assert.equal(robots().sitemap, "https://www.swiftmc.com.br/sitemap.xml");
   assert.ok(sitemap().every(({ url }) => url.startsWith("https://www.swiftmc.com.br/")));
   assert.throws(() => siteUrl("//other.example.com/"));
